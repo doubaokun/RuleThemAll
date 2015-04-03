@@ -1,0 +1,11 @@
+def simple {
+    when (
+        battery (
+            plugged ac
+        ,   level is above 50%
+        )
+    ,   headset connected
+    ) do {
+        set sound profile to vibrate
+    }
+}

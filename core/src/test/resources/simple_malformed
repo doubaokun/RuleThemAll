@@ -1,0 +1,27 @@
+def simple {
+    when (
+        battery (
+            plugged ac,
+            level is above 50%
+        ),
+        headset connected
+    ) do {
+        set sound profile to vibrate
+    }
+}
+
+def simple {
+    when (
+        xor (
+            battery (
+                or (
+                    plugged ac,
+                    level is above 50%
+                )
+            ),
+            headset connected
+        )
+    ) do {
+        set sound profile to vibrate
+    }
+}
