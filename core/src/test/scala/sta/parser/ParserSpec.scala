@@ -1,8 +1,11 @@
 package sta.parser
 
-import java.io.InputStream
+import scala.language.implicitConversions
 
+import java.io.InputStream
+import kj.android.common.UsedFeatures._
 import org.scalatest.{ Matchers, WordSpec }
+import scalaz.{ Equal, Tag }
 import spire.implicits._
 import spire.math.UByte
 import sta.model.Definition
@@ -10,10 +13,7 @@ import sta.model.actions._
 import sta.model.system._
 import sta.model.triggers._
 import sta.model.triggers.functions._
-import kj.android.common.UsedFeatures._
 import sta.tests.PropertyChecks
-
-import scalaz.{ Equal, Tag }
 
 class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserHelpers with BasicRulesSpec {
   implicit def loadInputStream(is: InputStream): String = io.Source.fromInputStream(is).mkString
@@ -36,33 +36,31 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
 
       "is script" when {
         "parsing simple" should {
-          implicit def eqBP: Equal[BatteryPlugged] = Equal.equalA
-          implicit def eqH: Equal[Headset] = Equal.equalA
-          implicit def bt(l: BatteryLevel): UByte = l.value
-
           val expected = Vector(
-            Definition(Tag("simple1"),
+            Definition(
+              Tag("simple1"),
               AndTrigger(
                 AndTrigger(
-                  AtomicTrigger[BatteryPlugged](EqualFunction(BatteryPlugged.AC)),
-                  AtomicTrigger[BatteryLevel](GTFunction(ub"50"))
+                  AtomicTrigger[Battery](_.plugged == Battery.Plugged.withName("ac")),
+                  AtomicTrigger[Battery](_.level > ub"50")
                 ),
-                AtomicTrigger[Headset](EqualFunction(Headset.Connected))
+                AtomicTrigger[Headset](_ == Headset.withName("connected"))
               ),
               Vector(
                 ChangeSoundProfile(Tag(1))
               )
             ),
-            Definition(Tag("simple2"),
+            Definition(
+              Tag("simple2"),
               XorTrigger(
                 OrTrigger(
-                  AtomicTrigger[BatteryPlugged](EqualFunction(BatteryPlugged.AC)),
-                  AtomicTrigger[BatteryLevel](GTFunction(ub"50"))
+                  AtomicTrigger[Battery](_.plugged == Battery.Plugged.withName("usb")),
+                  AtomicTrigger[Battery](_.level <= ub"70")
                 ),
-                AtomicTrigger[Headset](EqualFunction(Headset.Connected))
+                AtomicTrigger[Headset](_ == Headset.withName("disconnected"))
               ),
               Vector(
-                ChangeSoundProfile(Tag(1))
+                ChangeSoundProfile(Tag(0))
               )
             )
           )
@@ -78,11 +76,11 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
           }
 
           "yield first definition equal to expected" in {
-            actual.foreach(_.apply(0) should ===(expected(0)))
+            actual.foreach(a => a.head.copy(actions = a.head.actions.toVector) should ===(expected.head))
           }
 
           "yield second definition equal to expected" in {
-            actual.foreach(_.apply(1) should ===(expected(1)))
+            actual.foreach(a => a.apply(1).copy(actions = a(1).actions.toVector) should ===(expected(1)))
           }
         }
       }

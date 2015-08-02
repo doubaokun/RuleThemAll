@@ -1,7 +1,10 @@
 package kj.android.logging
 
 trait Logging {
-  private implicit val logTag = new LogTag(this.getClass.getName.substring(0, 23))
+  protected implicit lazy val logTag = {
+    val name = this.getClass.getSimpleName
+    new LogTag(name.substring(0, math.min(name.length, 23)))
+  }
 
   protected def log = Logger
 }

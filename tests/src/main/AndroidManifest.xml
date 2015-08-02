@@ -4,6 +4,9 @@
 
     <uses-sdk android:minSdkVersion="18" android:targetSdkVersion="21" android:maxSdkVersion="21" />
 
+    <!-- ScalaMeter -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application>
         <activity android:name=".BenchmarkActivity">
             <intent-filter>

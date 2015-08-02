@@ -2,7 +2,7 @@ def simple {
     when (
         battery (
             plugged ac
-        ,   level is above 50%
+        ,   level > 50%
         )
     ,   headset connected
     ) do {

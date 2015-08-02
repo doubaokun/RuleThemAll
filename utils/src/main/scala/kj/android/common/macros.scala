@@ -1,14 +1,10 @@
 package kj.android.common
 
-import scala.annotation.{ compileTimeOnly, StaticAnnotation }
 import scala.language.experimental.macros
-import scala.reflect.macros.{ blackbox, whitebox }
 
-/**
-  * Feature that its availability on device should be checked before their creation.
-  *
-  * @param features to check its availability
-  */
+import scala.annotation.StaticAnnotation
+import scala.reflect.macros.blackbox
+
 class feature(features: String*) extends StaticAnnotation
 
 class category(category: String) extends StaticAnnotation
@@ -33,11 +29,14 @@ private class UsedFeaturesImpl(val c: blackbox.Context) extends MacrosHelpers {
     val annotations = allAnnotationsFor(c)(tpe)
 
     val category = annotations.map(_.tree).collectFirst {
-      case q"""new $parent($arg)""" if parent.tpe =:= weakTypeOf[category] ⇒ arg
-    }.getOrElse(c.abort(c.enclosingPosition, s"Cannot generate UsedFeatures for $tpe: no category defined."))
+      case q"""new $parent($arg)""" if parent.tpe =:= weakTypeOf[category] => arg
+    }.getOrElse(c.abort(
+      c.enclosingPosition,
+      s"Cannot generate UsedFeatures for $tpe: no category defined."
+    ))
     val features = annotations.map(_.tree).collectFirst {
-      case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[feature] ⇒ args
-    }.getOrElse(List.empty).foldLeft(q"Set.empty[String]") { case (acc, f) ⇒ q"$acc + $f" }
+      case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[feature] => args
+    }.getOrElse(List.empty).foldLeft(q"Set.empty[String]") { case (acc, f) => q"$acc + $f" }
 
     q"""new kj.android.common.UsedFeatures[$tpe] {
       def category: String = $category

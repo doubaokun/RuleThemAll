@@ -1,88 +1,118 @@
 package sta.parser
 
-import org.parboiled2.CharPredicate._
-import org.parboiled2._
-import spire.math.{ Natural ⇒ Nat, Rational, SafeLong, UByte, UInt }
+import scala.language.higherKinds
+import scala.language.implicitConversions
 
+import fastparse.all._
 import scala.util.Try
+import spire.math.{ Natural => Nat, Rational, SafeLong, UByte, UInt }
 
-trait BasicRules { this: Parser ⇒
-  def Percent: Rule1[UByte] = rule(
-    capture('0' | ('1' ~ '0' ~ '0') | (Digit19 ~ Digit.?)) ~ '%' ~> ((s: String) ⇒ UByte(s.toByte))
+trait BasicRules {
+  private def digit = P(CharIn('0' to '9').!)
+
+  private def digit19 = P(CharIn('1' to '9').!)
+
+  private def hexDigit = P(CharIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')))
+
+  private implicit def parserExtras[T](parser: Parser[T]): BasicRules.ParserExtras[T] =
+    new BasicRules.ParserExtras[T](parser)
+
+  sealed abstract class Converter[T](radix: Int, conv: (String, Int) => T) {
+    def unapply(s: String): Option[T] = Try(conv(s, radix)).toOption
+  }
+
+  private object ToInt extends Converter[Int](10, java.lang.Integer.parseInt)
+
+  private object ToHexInt extends Converter[Int](16, java.lang.Integer.parseInt)
+
+  private object ToLong extends Converter[Long](10, java.lang.Long.parseLong)
+
+  private object ToHexLong extends Converter[Long](16, java.lang.Long.parseLong)
+
+  private object ToDouble {
+    def unapply(s: String): Option[Double] = Try(java.lang.Double.parseDouble(s)).toOption
+  }
+
+  lazy val Percent: P[UByte] = P(
+    ("0" | "100" | (digit19 ~ digit.?)).! ~ "%" map ((s: String) => UByte(s.toByte))
   )
 
-  def Byte: Rule1[UByte] = rule(
-    ("0x" ~ capture(HexDigit.+) ~> ((s: String) ⇒ {
-      val v = Try(java.lang.Integer.parseInt(s, 16))
-      test(v.isSuccess && v.get <= 255) ~ push(UByte(v.get))
-    })) | (capture(('0' ~ !'x') | (Digit19 ~ Digit.*)) ~> ((s: String) ⇒ {
-      val v = Try(s.toInt)
-      test(v.isSuccess && v.get <= 255) ~ push(UByte(v.get))
-    }))
+  lazy val Byte: P[UByte] = {
+    val p16: P[UByte] = for {
+      ToHexInt(v) <- "0x" ~ hexDigit.rep(1).! if v <= 255
+    } yield UByte(v)
+
+    val p10: P[UByte] = for {
+      ToInt(v) <- (("0" ~ !"x") | (digit19 ~ digit.rep)).! if v <= 255
+    } yield UByte(v)
+
+    P(p16 | p10)
+  }
+
+  lazy val UnsignedInt: P[UInt] = {
+    val p16: P[UInt] = for {
+      ToHexLong(v) <- "0x" ~ hexDigit.rep(1).! if v <= 4294967295L
+    } yield UInt(v)
+
+    val p10: P[UInt] = for {
+      ToLong(v) <- (("0" ~ !"x") | (digit19 ~ digit.rep)).! if v <= 4294967295L
+    } yield UInt(v)
+
+    P(p16 | p10)
+  }
+
+  lazy val Int: P[Int] = {
+    val p = for {
+      ToInt(v) <- ("-".? ~ ("0" | (digit19 ~ digit.rep))).!
+    } yield v
+
+    P(p)
+  }
+
+  lazy val Natural: P[Nat] = P(
+    P("0" | (digit19 ~ digit.rep)).! map (Nat(_))
   )
 
-  def UnsignedInt: Rule1[UInt] = rule(
-    (capture(('0' ~ !'x') | (Digit19 ~ Digit.*)) ~> ((s: String) ⇒ {
-      val v = Try(s.toLong)
-      test(v.isSuccess && v.get <= 4294967295L) ~ push(UInt(v.get))
-    })) | ("0x" ~ capture(HexDigit.+) ~> ((s: String) ⇒ {
-      val v = Try(java.lang.Long.parseLong(s, 16))
-      test(v.isSuccess && v.get <= 4294967295L) ~ push(UInt(v.get))
-    }))
+  lazy val Integer: P[SafeLong] = P(
+    ("-".? ~ ("0" | (digit19 ~ digit.rep))).! map (SafeLong(_))
   )
 
-  def Natural: Rule1[Nat] = rule(
-    capture('0' | (Digit19 ~ Digit.*)) ~> (Nat(_: String))
+  lazy val Float: P[Float] = {
+    val p = for {
+      ToDouble(v) <- ("-".? ~ digit.rep(1) ~ ("." ~ digit.rep(1)).?).!
+      if v >= scala.Float.MinValue && v <= scala.Float.MaxValue
+    } yield v.toFloat
+
+    P(p)
+  }
+
+  lazy val Decimal: P[Rational] = P(
+    ("-".? ~ ((digit.rep(1) ~ "/" ~ (digit19 ~ digit.rep)) |
+      (digit.rep(1) ~ ("." ~ digit.rep(1) ~
+        ("E" ~ "-".? ~ digit.rep(1)).?).?))).! map (Rational(_))
   )
 
-  def Int: Rule1[Int] = rule(
-    capture('-'.? ~ ('0' | (Digit19 ~ Digit.*))) ~> ((s: String) ⇒ {
-      val v = Try(s.toInt)
-      test(v.isSuccess) ~ push(v.get)
-    })
-  )
+  lazy val String: P[String] = {
+    val Q = "\""
+    val TQ = "\"\"\""
+    val NL = "\n"
 
-  def Integer: Rule1[SafeLong] = rule(
-    capture('-'.? ~ ('0' | (Digit19 ~ Digit.*))) ~> (SafeLong(_: String))
-  )
+    def singleChar = P("\\\"".! | "\\\\".! | (!(NL | Q) ~ AnyChar).!)
 
-  def Float: Rule1[Float] = rule(
-    capture('-'.? ~ Digit.+ ~ ('.' ~ Digit.+).?) ~> ((s: String) ⇒ {
-      val v = Try(s.toDouble)
-      test(v.isSuccess && {
-        val vv = v.get
-        vv <= scala.Float.MaxValue && vv >= scala.Float.MinValue
-      }) ~ push(v.get.toFloat)
-    })
-  )
+    def single = P(Q ~ singleChar.rep.! ~ Q)
 
-  def Decimal: Rule1[Rational] = rule(
-    capture('-'.? ~
-      ((Digit.+ ~ '/' ~ (Digit19 ~ Digit.*)) |
-        (Digit.+ ~ ('.' ~ Digit.+ ~ ('E' ~ '-'.? ~ Digit.+).?).?))
-    ) ~> (Rational(_: String))
-  )
+    def tripleChar = P((Q.? ~ Q.? ~ !Q ~ AnyChar).!)
 
-  // String literal rules taken from paulp/scala-parser
-  private def Quote = rule('"')
-  private def SingleChar = rule("\\\"" | "\\\\" | noneOf("\n\""))
-  private def SingleString: Rule1[String] = rule(Quote ~ capture(SingleChar.*) ~ Quote)
+    def triple = P(TQ ~ tripleChar.rep.! ~ TQ)
 
-  private final val TQ = "\"\"\""
-  private def OptQuote = rule(Quote.?)
-  private def NonQuoteChar = rule(!Quote ~ ANY)
-  private def TripleChar = rule(OptQuote ~ OptQuote ~ NonQuoteChar)
-  private def TripleEnd = rule(TQ ~ ch('"').*)
-  private def TripleStart = rule(TQ ~ (!TQ ~ '"').*)
-  private def TripleString: Rule1[String] = rule(TripleStart ~ capture(TripleChar.*) ~ TripleEnd)
+    P(triple | single)
+  }
+}
 
-  def String: Rule1[String] = rule(TripleString | SingleString)
+object BasicRules {
 
-  def Space: Rule0 = rule(' ')
+  class ParserExtras[T](private val parser: Parser[T]) extends AnyVal {
+    def withFilter(p: T => Boolean) = parser.filter(p)
+  }
 
-  def Newline: Rule0 = rule('\r'.? ~ '\n')
-
-  def Whitespace: Rule0 = rule(Space | Newline)
-
-  def Newline1: Rule0 = rule(Space.* ~ Newline ~ Whitespace.*)
 }

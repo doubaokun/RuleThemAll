@@ -1,24 +1,23 @@
 package sta.services
 
+import android.app.Service
+import android.content.{ Context, Intent, IntentFilter }
+import android.net.Uri
+import android.os.{ IBinder, Parcelable }
+import android.support.v4.content.WakefulBroadcastReceiver
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-
-import android.app.Service
-import android.content.{ BroadcastReceiver, Context, Intent, IntentFilter }
-import android.net.Uri
-import android.os.{ Parcelable, IBinder }
-import android.support.v4.content.WakefulBroadcastReceiver
-import shapeless.HMap
 import kj.android.concurrent.{ Atomic, Scheduler }
 import kj.android.logging.Logging
-import sta.model.{ Model, ModelKV }
-import sta.store.DefinitionsStore
-
 import scala.concurrent.duration.Duration
 import scalaz._
 import scalaz.concurrent._
+import shapeless.HMap
+import sta.model.{ Model, ModelKV }
+import sta.store.DefinitionsStore
 
-object STAService { // TODO
+object STAService {
+  // TODO
   val URI = "uri"
   val LOAD = "load"
   val UNLOAD = "unload"
@@ -47,16 +46,21 @@ object STAService { // TODO
   }
 
   sealed abstract class IntentType
+
   case class Automatic(intent: String) extends IntentType {
     override def hashCode(): Int = intent.hashCode
   }
+
   case class Manual(intent: String, interval: Duration) extends IntentType {
     override def hashCode(): Int = intent.hashCode
   }
+
   case class Suspended(underlying: IntentType) extends IntentType
+
 }
 
-class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
+class STAService(store: DefinitionsStore) extends Service with Logging {
+  ctx =>
 
   import sta.services.STAService._
 
@@ -65,18 +69,18 @@ class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
       val pm = getPackageManager
       val collected = ServiceMacros.collect
       val services = collected.foldLeft(Map.empty[IntentType, ServiceFragment[Model]]) {
-        case (map, wst) if wst.features.forall(pm.hasSystemFeature) ⇒
+        case (map, wst) if wst.features.forall(pm.hasSystemFeature) =>
           val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
           map ++ wst.actual.reactOn.map {
-            case intent if manual.isDefinedAt(intent) ⇒ Suspended(Manual(intent, manual(intent))) -> wst.actual
-            case intent                               ⇒ Suspended(Automatic(intent)) -> wst.actual
+            case intent if manual.isDefinedAt(intent) => Suspended(Manual(intent, manual(intent))) -> wst.actual
+            case intent => Suspended(Automatic(intent)) -> wst.actual
           }
-        case (map, _) ⇒ map
+        case (map, _) => map
       }
       new ServicesMap(services = services)
     }
 
-    def update(map: ServicesMap)(f: ServicesMap ⇒ ServicesMap): ServicesMap = {
+    def update(map: ServicesMap)(f: ServicesMap => ServicesMap): ServicesMap = {
       map.stopTasks()
       val newMap = f(map)
       newMap.runTasks()
@@ -88,7 +92,7 @@ class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
     private val cancel = new AtomicBoolean(false)
 
     private val tasks: Map[IntentType, Task[Unit]] = services.keysIterator.collect {
-      case (m @ Manual(intent, interval)) ⇒
+      case (m @ Manual(intent, interval)) =>
         (m, Scheduler.schedule(
           stateProcessor.onReceive(ctx, registerReceiver(null, new IntentFilter(intent))),
           Duration(0, TimeUnit.SECONDS),
@@ -102,9 +106,9 @@ class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
 
     def runTasks(): Unit = {
       tasks.foreach {
-        case (k, t) ⇒ t.runAsyncInterruptibly(_.fold(
-          th ⇒ log.error(s"Task $k ended with failure", th),
-          _ ⇒ log.debug(s"Task $k ended with success")
+        case (k, t) => t.runAsyncInterruptibly(_.fold(
+          th => log.error(s"Task $k ended with failure", th),
+          _ => log.debug(s"Task $k ended with success")
         ), cancel)
       }
     }
@@ -121,16 +125,16 @@ class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
   //  private val requestProcessor = new BroadcastReceiver { // runs on main thread
   //    private def onAdd(toAdd: Set[String]): Unit = {
   //      val filters = Set.newBuilder[String]
-  //      workers.update { worker ⇒
+  //      workers.update { worker =>
   //        val newServices = worker.services.map {
-  //          case (Suspended(m @ Manual(v, _)), sf) if toAdd.contains(v) ⇒ (m, sf)
-  //          case (Suspended(a @ Automatic(v)), sf) if toAdd.contains(v) ⇒
+  //          case (Suspended(m @ Manual(v, _)), sf) if toAdd.contains(v) => (m, sf)
+  //          case (Suspended(a @ Automatic(v)), sf) if toAdd.contains(v) =>
   //            filters += v
   //            (a, sf)
-  //          case (a @ Automatic(v), sf) ⇒
+  //          case (a @ Automatic(v), sf) =>
   //            filters += v
   //            (a, sf)
-  //          case other ⇒ other
+  //          case other => other
   //        }
   //        ServicesMap.update(worker)(_.copy(services = newServices))
   //      }
@@ -139,14 +143,14 @@ class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
   //
   //    private def onRemove(toRemove: Set[String]): Unit = {
   //      val filters = Set.newBuilder[String]
-  //      workers.update { worker ⇒
+  //      workers.update { worker =>
   //        val newServices = worker.services.map {
-  //          case (n @ Automatic(v), sf) if toRemove.contains(v) ⇒ (Suspended(n), sf)
-  //          case (m @ Manual(v, _), sf) if toRemove.contains(v) ⇒ (Suspended(m), sf)
-  //          case (n @ Automatic(v), sf) ⇒
+  //          case (n @ Automatic(v), sf) if toRemove.contains(v) => (Suspended(n), sf)
+  //          case (m @ Manual(v, _), sf) if toRemove.contains(v) => (Suspended(m), sf)
+  //          case (n @ Automatic(v), sf) =>
   //            filters += v
   //            (n, sf)
-  //          case other ⇒ other
+  //          case other => other
   //        }
   //        ServicesMap.update(worker)(_.copy(services = newServices))
   //      }
@@ -161,49 +165,50 @@ class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
   //
   //    def onReceive(context: Context, intent: Intent): Unit = { // TODO
   //      intent.getAction match {
-  //        case LOAD_PLUGIN ⇒
+  //        case LOAD_PLUGIN =>
   //        //          try {
   //        //            for {
-  //        //              path ← intent.extra[String].path
-  //        //              clazz ← intent.extra[String].className
+  //        //              path <- intent.extra[String].path
+  //        //              clazz <- intent.extra[String].className
   //        //            } {
   //        //              val cl = new DexClassLoader(path, cacheDirectory, null, getClassLoader)
   //        //              loadPlugin(cl, clazz)
   //        //            }
   //        //          } catch {
-  //        //            case th: Throwable ⇒ log.error("Error occurred during creating class loader", th)
+  //        //            case th: Throwable => log.error("Error occurred during creating class loader", th)
   //        //          }
-  //        case LOAD ⇒ intent.extra[Array[String]].uri.map { path ⇒
+  //        case LOAD => intent.extra[Array[String]].uri.map { path =>
   //          //          onAdd(store.registerExecutions(ScriptPath(path)))
   //        }
-  //        case UNLOAD ⇒ intent.extra[Array[String]].path.map { path ⇒
+  //        case UNLOAD => intent.extra[Array[String]].path.map { path =>
   //          //          onRemove(store.unregisterExecutions(ScriptPath(path)))
   //        }
-  //        case other ⇒ log.warn(s"Unknown intent received: $other")
+  //        case other => log.warn(s"Unknown intent received: $other")
   //      }
   //    }
   //  }
 
-  private val stateProcessor = new WakefulBroadcastReceiver { // runs on main thread
+  private val stateProcessor = new WakefulBroadcastReceiver {
+    // runs on main thread
     def onReceive(context: Context, intent: Intent): Unit = {
       implicit val ctx = context
 
-      workers.get.services.get(Automatic(intent.getAction)).foreach { service ⇒
+      workers.get.services.get(Automatic(intent.getAction)).foreach { service =>
         \/.fromTryCatchNonFatal(service.handle(intent)).fold(
-          th ⇒ log.error("Error has occurred during handling incoming intent", th),
-          result ⇒ state.update(map ⇒ result.foldLeft(map) { (acc, model) ⇒
+          th => log.error("Error has occurred during handling incoming intent", th),
+          result => state.update(map => result.foldLeft(map) { (acc, model) =>
             import model.companion._
-            acc + (Key, model)
+            acc + (Key -> model)
           }).fold(
-            th ⇒
+            th =>
               log.error("Error has occurred during updating state", th),
-            map ⇒
-              store.definitions.foreach { d ⇒ // TODO ec
+            map =>
+              store.definitions.foreach { d => // TODO ec
                 Task(d.execute(map)).runAsync(_.foreach(_.fold(
-                  _ ⇒ (), // TODO update definition cache (but definition should return it's updated state first)
-                  v ⇒ {
+                  _ => (), // TODO update definition cache (but definition should return it's updated state first)
+                  v => {
                     v.leftMap(_.foreach {
-                      case (name, th) ⇒
+                      case (name, th) =>
                         log.error(s"Error has occurred during running action $name in ${d.name}", th)
                     })
                     ()
@@ -231,7 +236,7 @@ class STAService(store: DefinitionsStore) extends Service with Logging { ctx ⇒
 
     val w = workers.get
     registerStateProcessor(w.services.keysIterator.collect {
-      case Automatic(v) ⇒ v
+      case Automatic(v) => v
     }.toSet, unregisterFirst = false)
     w.runTasks()
 

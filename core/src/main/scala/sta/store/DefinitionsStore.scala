@@ -1,10 +1,7 @@
 package sta.store
 
-import java.io.File
-
 import android.content.Context
-import android.net.Uri
-
+import java.io.File
 import kj.android.logging.Logging
 import sta.model.Definition
 

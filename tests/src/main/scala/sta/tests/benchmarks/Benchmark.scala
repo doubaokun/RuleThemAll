@@ -1,32 +1,27 @@
 package sta.tests.benchmarks
 
-import com.artfulbits.benchmark.Meter
+import kj.android.logging.Logging
+import org.scalameter.Key._
+import org.scalameter._
 
-abstract class Benchmark {
-  val meter: Meter = Meter.getInstance()
-  //  meter.setOutput(BenchmarkOutput)
+abstract class Benchmark extends Logging {
+  protected def bench[A](name: String, reps: Int)(snippet: => A): Unit = {
+    def default() = config(
+      preJDK7 -> true,
+      exec.maxWarmupRuns -> reps,
+      exec.benchRuns -> reps
+    ) withWarmer new Warmer.Default
 
-  protected def bench[@specialized A](name: String, reps: Int)(snippet: ⇒ A) = {
-    def loop(warmup: Boolean = false) = {
-      var i = 0
-      var result = snippet
-      while (i < reps) {
-        result = snippet
-        i = i + 1
-        if (!warmup) meter.recap()
-      }
-      result
-    }
+    val time = default() withMeasurer {
+      new Measurer.Default
+    } measure snippet
 
-    meter.start(s"START $name")
+    log.info(s"Time: $time [ms]")
 
-    loop(warmup = true)
-    meter.skip(s"WARMUP $name")
+    val memory = default() withMeasurer {
+      new Measurer.MemoryFootprint
+    } measure snippet
 
-    meter.loop(reps)
-    loop()
-    meter.unloop()
-
-    meter.finish(s"END $name")
+    log.info(s"Memory: $memory [kB]")
   }
 }

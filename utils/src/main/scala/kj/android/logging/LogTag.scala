@@ -1,11 +1,12 @@
 package kj.android.logging
 
-import scala.annotation.compileTimeOnly
 import scala.language.experimental.macros
+
+import scala.annotation.compileTimeOnly
 import scala.reflect.macros.blackbox
 
 /**
-  * Note, that calling LogTag constructor directly should be avoided!
+  * Calling LogTag constructor directly should be avoided.
   * You should use apply method in companion object instead
   */
 class LogTag(val tag: String) extends AnyVal {
@@ -19,9 +20,9 @@ object LogTag {
   def safeApply(c: blackbox.Context)(tag: c.Expr[String]) = {
     import c.universe._
     tag.tree match {
-      case q"${ t: String }" if t.length > 23 ⇒ q"new LogTag(${t.substring(0, 23)})"
-      case q"${ t: String }"                  ⇒ q"new LogTag($t)"
-      case _                                  ⇒ c.abort(c.enclosingPosition, "Log tag must be a literal")
+      case q"${ t: String }" if t.length > 23 => q"new LogTag(${t.substring(0, 23)})"
+      case q"${ t: String }" => q"new LogTag($t)"
+      case _ => q"${tag.value.substring(0, scala.math.min(tag.value.length, 23))}"
     }
   }
 }

@@ -2,7 +2,7 @@ package sta.tests
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import android.os.Bundle
+import android.os.{ StrictMode, Bundle }
 import sta.tests.benchmarks.ParserBenchmark
 
 class BenchmarkActivity extends Activity {
@@ -13,6 +13,10 @@ class BenchmarkActivity extends Activity {
     else
       setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
 
+    StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build())
+
     new ParserBenchmark(getResources.getAssets)
+
+    finish()
   }
 }

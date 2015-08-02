@@ -1,36 +1,52 @@
 package sta.parser.triggers
 
-import kj.android.common.UsedFeatures
-import org.parboiled2._
-import spire.math.UByte
-import sta.model.system._
-import sta.model.triggers._
-import sta.model.triggers.functions._
-import kj.android.common.UsedFeatures._
-
 import scala.language.implicitConversions
-import scalaz._
 
-trait BatteryRules extends TriggerParserPart { this: TriggerParser ⇒
-  protected def prefix: String = implicitly[UsedFeatures[Battery]].category
+import fastparse.noApi._
+import kj.android.common.UsedFeatures
+import sta.model.system._
+import sta.model.triggers.AtomicTrigger
+import sta.parser.WhitespaceSkip
 
-  private implicit def bt(l: BatteryLevel): UByte = l.value
-  private implicit def eq: Equal[BatteryPlugged] = Equal.equalA
+object BatteryRules extends TriggerParser[BatteryLike] with WhitespaceSkip {
+  import Battery._
+  import white._
 
-  private def level: Rule1[AtomicTrigger[BatteryLevel]] = rule(
-    "level" ~ "is" ~ (
-      (("below" ~ Percent) ~> (n ⇒ AtomicTrigger[BatteryLevel](LTFunction(n)))) |
-      (("above" ~ Percent) ~> (n ⇒ AtomicTrigger[BatteryLevel](GTFunction(n))))
+  def prefix: String = implicitly[UsedFeatures[Battery]].category
+
+  private def powerState: P[AtomicTrigger[PowerState]] = P(
+    "power" ~ mapParser(PowerState.namesToValuesMap) map (v =>
+      AtomicTrigger[PowerState](_ == v))
+  )
+
+  private def batteryState: P[AtomicTrigger[BatteryState]] = P(
+    "state" ~ mapParser(BatteryState.namesToValuesMap) map (v => AtomicTrigger[BatteryState](_ == v))
+  )
+
+  private def level: P[AtomicTrigger[Battery]] = P(
+    "level" ~ (
+      (("<" ~ Percent) map (n => AtomicTrigger[Battery](_.level < n))) |
+      (("<=" ~ Percent) map (n => AtomicTrigger[Battery](_.level <= n))) |
+      ((">" ~ Percent) map (n => AtomicTrigger[Battery](_.level > n))) |
+      ((">=" ~ Percent) map (n => AtomicTrigger[Battery](_.level >= n))) |
+      (("==" ~ Percent) map (n => AtomicTrigger[Battery](_.level == n))) |
+      (("!=" ~ Percent) map (n => AtomicTrigger[Battery](_.level != n)))
     )
   )
 
-  private def plugged: Rule1[AtomicTrigger[BatteryPlugged]] = rule(
-    "plugged" ~ (
-      (endWS("ac") ~ push(AtomicTrigger[BatteryPlugged](EqualFunction(BatteryPlugged.AC)))) |
-      (endWS("usb") ~ push(AtomicTrigger[BatteryPlugged](EqualFunction(BatteryPlugged.USB)))) |
-      (endWS("wireless") ~ push(AtomicTrigger[BatteryPlugged](EqualFunction(BatteryPlugged.Wireless))))
-    )
+  private def plugged: P[AtomicTrigger[Battery]] = P(
+    "plugged" ~ mapParser(Plugged.namesToValuesMap) map (v => AtomicTrigger[Battery](_.plugged == v))
   )
 
-  protected def MainT: Rule1[Trigger] = rule(level | plugged)
+  private def present: P[AtomicTrigger[Battery]] = P(
+    ("present".! map (_ => AtomicTrigger[Battery](_.present == true))) |
+      ("absent".! map (_ => AtomicTrigger[Battery](_.present == false)))
+  )
+
+  private def status: P[AtomicTrigger[Battery]] = P(
+    "status" ~ mapParser(Status.namesToValuesMap) map (v => AtomicTrigger[Battery](_.status == v))
+  )
+
+  val Main: P[AtomicTrigger[_ <: BatteryLike]] =
+    powerState | batteryState | level | plugged | present | status
 }

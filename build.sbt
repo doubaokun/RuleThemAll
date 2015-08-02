@@ -1,6 +1,6 @@
-
 import Dependencies._
 import Settings._
+
 
 name := "Script 'Em All"
 
@@ -18,28 +18,32 @@ lazy val utils = project.in(file("utils")).settings(
 
 lazy val `core-common` = project.in(file("core/common")).settings(
   libraryDependencies ++= Seq(
-    parboiled,
+    enumeratum,
+    fastparse,
+    macrosExtra,
     reflect,
     spire
-  ) ++ shapeless,
+  ) ++ shapeless ++ records,
   buildConfigGenerator in Android := Seq.empty
 ).settings(libAndroidSettings: _*).dependsOnLocal(utils).excludeFromLinting(
-    _ / "sta" / "common" / "Common.scala",
-    _ / "sta" / "model" / "definition.scala",
-    _ / "sta" / "parser" / "macros.scala",
-    _ / "sta" / "services" / "macros.scala"
+    _ / "sta" / "common" / "Common",
+    _ / "sta" / "model" / "definition",
+    _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
+    _ / "sta" / "services" / "macros"
   )
 
 lazy val core = project.in(file("core")).settings(
   libraryDependencies ++= Seq(
     `android-support-v4`,
-    parboiled,
+    fastparse,
     scodec.core
-  ) ++ shapeless
+  ) ++ shapeless ++ records
 ).settings(libAndroidSettings: _*).dependsOnLocal(`core-common`, utils).excludeFromLinting(
-    _ / "sta" / "parser" / "**"
+    _ / "sta" / "parser" / **,
+    _ / "sta" / "model" / "system" / **
   )
 
-lazy val tests = project.in(file("tests")).settings(benchmarkSettings: _*).dependsOnLocal(core, `core-common`, utils)
+lazy val tests = project.in(file("tests")).settings(benchmarkSettings: _*)
+  .dependsOnLocal(core, `core-common`, utils)
 
 lazy val root = project.in(file(".")).aggregate(utils, `core-common`, core, tests)

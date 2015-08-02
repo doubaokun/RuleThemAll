@@ -3,7 +3,6 @@ package sta.model.actions
 import android.content.Context
 import android.media.AudioManager
 import kj.android.common.category
-
 import scalaz.{ @@, Tag }
 
 trait RingerMode

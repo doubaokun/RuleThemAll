@@ -1,13 +1,13 @@
 package sta.services
 
-import kj.android.common.feature
-import sta.model.Model
-
-import scala.annotation.StaticAnnotation
-import scala.concurrent.duration.Duration
 import scala.language.experimental.macros
 import scala.language.{ dynamics, higherKinds }
+
+import kj.android.common.feature
+import scala.annotation.StaticAnnotation
+import scala.concurrent.duration.Duration
 import scala.reflect.macros.blackbox
+import sta.model.Model
 
 class genReactOn extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro ServiceMacrosImpl.genReactOn
@@ -30,16 +30,17 @@ object ServiceMacros {
 }
 
 private class ServiceMacrosImpl(val c: blackbox.Context) {
+
   import c.universe._
 
   def genReactOn(annottees: Expr[Any]*) = {
-    val outputs = annottees.map { tdef ⇒
+    val outputs = annottees.map { tdef =>
       val q"$tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents { $self => ..$tbody }" = tdef.tree.duplicate
       val intents = (for {
-        te ← tbody
-        q"$dmods def handle($darg: Intent): $dtpe = $dbody" ← te
-        q"$expr match { case ..$cases }" ← dbody
-        cq"$intent if $expr => $cbody" ← cases
+        te <- tbody
+        q"$dmods def handle($darg: Intent): $dtpe = $dbody" <- te
+        q"$expr match { case ..$cases }" <- dbody
+        cq"$intent if $expr => $cbody" <- cases
       } yield intent).toSet
       val f = q"protected[sta] def reactOn: Set[String] = $intents"
       q"$tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents { $self => ..${tbody :+ f} }"
@@ -51,15 +52,15 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
   def collect = {
     val tpe = weakTypeOf[ServiceMacros.SF].dealias.typeConstructor
     val services = for {
-      decl ← c.mirror.staticPackage("sta.services").typeSignature.decls
-      inherited ← decl.typeSignature.baseClasses if !(inherited.typeSignature =:= decl.typeSignature) && inherited.asType.toTypeConstructor =:= tpe
+      decl <- c.mirror.staticPackage("sta.services").typeSignature.decls
+      inherited <- decl.typeSignature.baseClasses if !(inherited.typeSignature =:= decl.typeSignature) && inherited.asType.toTypeConstructor =:= tpe
     } yield {
       val manual = decl.annotations.map(_.tree).collectFirst {
-        case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[manual] ⇒ args
+        case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[manual] => args
       }
       val usesFeatures = decl.annotations.map(_.tree).collectFirst {
-        case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[feature] ⇒ args
-      }.getOrElse(List.empty).foldLeft(q"List.empty[String]") { case (acc, f) ⇒ q"$f :: $acc" }
+        case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[feature] => args
+      }.getOrElse(List.empty).foldLeft(q"List.empty[String]") { case (acc, f) => q"$f :: $acc" }
 
       q"""
         sta.services.ServiceMacros.RichResult(

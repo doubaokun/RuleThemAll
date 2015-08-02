@@ -1,5 +1,13 @@
 package sta.model.triggers
 
 package object functions {
-  class Has[To] { type Conversion[From] = From ⇒ To }
+
+}
+
+package functions {
+
+  class Has[To] {
+    type Conversion[From] = From => To
+  }
+
 }

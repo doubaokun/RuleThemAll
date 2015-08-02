@@ -8,4 +8,5 @@ package object store {
   object plain {
     implicit val definitionsStore = PlainDefinitionsStore
   }
+
 }

@@ -1,31 +1,41 @@
 package kj.android.logging
 
 import scala.language.experimental.macros
+
 import scala.reflect.macros.blackbox
 
 object Logger {
   def debug(msg: String)(implicit lt: LogTag): Unit = macro LoggerMacros.debugMsg
+
   def debug(msg: String, cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.debugMsgCause
 
   def error(msg: String)(implicit lt: LogTag): Unit = macro LoggerMacros.errorMsg
+
   def error(msg: String, cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.errorMsgCause
 
   def info(msg: String)(implicit lt: LogTag): Unit = macro LoggerMacros.infoMsg
+
   def info(msg: String, cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.infoMsgCause
 
   def verbose(msg: String)(implicit lt: LogTag): Unit = macro LoggerMacros.verboseMsg
+
   def verbose(msg: String, cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.verboseMsgCause
 
   def warn(msg: String)(implicit lt: LogTag): Unit = macro LoggerMacros.warnMsg
+
   def warn(cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.warnCause
+
   def warn(msg: String, cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.warnMsgCause
 
   def wtf(msg: String)(implicit lt: LogTag): Unit = macro LoggerMacros.wtfMsg
+
   def wtf(cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.wtfCause
+
   def wtf(msg: String, cause: Throwable)(implicit lt: LogTag): Unit = macro LoggerMacros.wtfMsgCause
 }
 
 private class LoggerMacros(val c: blackbox.Context) {
+
   import c.universe._
 
   private def log = q"android.util.Log"

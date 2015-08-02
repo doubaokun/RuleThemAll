@@ -2,7 +2,7 @@ def simple1 {
     when (
         battery (
             plugged ac,
-            level is above 50%
+            level > 50%
         ),
         headset connected
     ) do {
@@ -15,13 +15,13 @@ def simple2 {
         xor (
             battery (
                 or (
-                    plugged ac,
-                    level is above 50%
+                    plugged usb,
+                    level <= 70%
                 )
             ),
-            headset connected
+            headset disconnected
         )
     ) do {
-        set sound profile to vibrate
+        set sound profile to silent
     }
 }

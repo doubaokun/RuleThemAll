@@ -1,24 +1,23 @@
 package sta.parser.triggers
 
-import kj.android.common.UsedFeatures
-import org.parboiled2.Rule1
-import sta.model.system._
-import sta.model.triggers.functions.EqualFunction
-import sta.model.triggers.{ AtomicTrigger, Trigger }
-import kj.android.common.UsedFeatures._
-
 import scala.language.implicitConversions
-import scalaz._
 
-trait HeadsetRules extends TriggerParserPart { this: TriggerParser ⇒
-  protected def prefix: String = implicitly[UsedFeatures[Headset]].category
+import fastparse.noApi._
+import kj.android.common.UsedFeatures
+import sta.model.system._
+import sta.model.triggers.AtomicTrigger
+import sta.parser.WhitespaceSkip
 
-  private implicit def eq: Equal[Headset] = Equal.equalA
+object HeadsetRules extends TriggerParser[Headset] with WhitespaceSkip {
+  import white._
 
-  private def connectivity: Rule1[AtomicTrigger[Headset]] = rule(
-    (endWS("connected") ~ push(AtomicTrigger[Headset](EqualFunction(Headset.Connected)))) |
-      (endWS("disconnected") ~ push(AtomicTrigger[Headset](EqualFunction(Headset.Disconnected))))
+  type M = Headset
+
+  def prefix: String = implicitly[UsedFeatures[Headset]].category
+
+  private def connectivity: P[AtomicTrigger[Headset]] = P(
+    mapParser(Headset.namesToValuesMap) map (v => AtomicTrigger[Headset](_ == v))
   )
 
-  protected def MainT: Rule1[Trigger] = connectivity
+  val Main: P[AtomicTrigger[_ <: Headset]] = connectivity
 }

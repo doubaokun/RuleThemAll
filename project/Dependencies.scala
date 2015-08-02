@@ -1,26 +1,26 @@
 import sbt._
-import android.Dependencies._
+
 
 object Dependencies {
   object versions {
     val app = "0.1"
     val androidSDK = "android-20"
     val androidSupport = "20.0.0"
-    val scala = "2.11.6"
+    val scala = "2.11.7"
     val paradise = "2.1.0-M5"
 
     object lib {
-      val parboiled = "2.1.0"
+      val fastparse = "0.2.1"
       val scalaz = "7.1.1"
       val scodec = "1.7.0"
-      val shapeless = "2.1.0"
+      val shapeless = "2.2.0"
       val spire = "0.9.1"
     }
 
     object tests {
-      val scalacheck = "1.12.2"
-      val scalamock = "3.2.1"
-      val scalatest = "2.2.4"
+      val scalacheck = "1.12.4"
+      val scalatest = "2.2.5"
+      val scalameter = "0.7-SNAPSHOT"
     }
   }
 
@@ -34,9 +34,11 @@ object Dependencies {
 
   val paradise = "org.scalamacros" % "paradise" % versions.paradise cross CrossVersion.full
 
-  val parboiled = "org.parboiled" %% "parboiled" % versions.lib.parboiled
+  val fastparse = "com.lihaoyi" %% "fastparse" % versions.lib.fastparse
 
   val reflect = "org.scala-lang" % "scala-reflect" % versions.scala
+
+  val macrosExtra = "org.scalamacros" %% "resetallattrs" % "1.0.0"
 
   val rapture = Seq(
     "com.propensive" %% "rapture-json" % "1.0.6",
@@ -65,22 +67,25 @@ object Dependencies {
     "org.typelevel" %% "shapeless-scalaz" % "0.3"*/
   )
 
+  val records = Seq(
+    "ch.epfl.lamp" %% "scala-records" % "0.4-SNAPSHOT",
+    "org.cvogt" %% "compossible" % "0.2-SNAPSHOT"
+  )
+
   val spire = "org.spire-math" %% "spire" % versions.lib.spire
 
+  val enumeratum = "com.beachape" %% "enumeratum" % "1.2.3"
+
   val benchmarks = Seq(
-    aar("com.artfulbits" % "meter" % "1.0.1.93")
-      from "http://dl.bintray.com/kucherenko-alex/android/com/artfulbits/library/1.0.1.93/library-1.0.1.93.aar"
+    "com.storm-enroute" %% "scalameter-core" % versions.tests.scalameter
   )
 
   val tests = Seq(
     "org.scalacheck" %% "scalacheck" % versions.tests.scalacheck,
-    "org.scalamock" %% "scalamock-scalatest-support" % versions.tests.scalamock,
     "org.scalatest" %% "scalatest" % versions.tests.scalatest
   )
 
   val robolectricTests = Seq(
-    "org.robolectric" % "android-all" % "5.0.0_r2-robolectric-0",
-    "com.geteit" %% "robotest" % "0.7",
-    "junit" % "junit" % "4.8.2"
+    "com.geteit" %% "robotest" % "0.12"
   )
 }
