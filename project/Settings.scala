@@ -1,12 +1,10 @@
 import Dependencies._
 import android.Keys._
 import android.Plugin._
-import com.typesafe.sbt.SbtScalariform._
 import java.io.FilenameFilter
 import org.scalastyle.sbt.ScalastylePlugin
 import sbt.Keys._
 import sbt._
-import scalariform.formatter.preferences._
 import wartremover._
 
 
@@ -65,13 +63,6 @@ object Settings {
     resolvers ++= repositories,
 
     addCompilerPlugin(paradise)
-  ) ++ scalariformSettings ++ Seq(
-    ScalariformKeys.preferences := ScalariformKeys.preferences.value
-      .setPreference(AlignParameters, true)
-//      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(DoubleIndentClassDeclaration, true)
-      .setPreference(PreserveDanglingCloseParenthesis, true)
-      .setPreference(PlaceScaladocAsterisksBeneathSecondAsterisk, true)
   )
 
   def benchmarkSettings: Seq[Def.Setting[_]] =
@@ -143,8 +134,8 @@ object Settings {
       Wart.TryPartial,
       Wart.Var
       /*,
-      Wart.AsInstanceOf, // FIXME refactor pattern matching
-      Wart.IsInstanceOf, // FIXME refactor pattern matching
+      Wart.AsInstanceOf,
+      Wart.IsInstanceOf,
       Wart.NoNeedForMonad,
       Wart.NonUnitStatements,
       Wart.Throw
