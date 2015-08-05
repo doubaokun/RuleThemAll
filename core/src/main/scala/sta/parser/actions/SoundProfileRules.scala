@@ -12,8 +12,6 @@ object SoundProfileRules extends SetActionParser with WhitespaceSkip {
   protected def ruleObject: String = "sound profile"
 
   protected def ruleAdverb: P[Action] = P(
-    ("normal".! map (_ => ChangeSoundProfile(Tag(AudioManager.RINGER_MODE_NORMAL)))) |
-      ("vibrate".! map (_ => ChangeSoundProfile(Tag(AudioManager.RINGER_MODE_VIBRATE)))) |
-      ("silent".! map (_ => ChangeSoundProfile(Tag(AudioManager.RINGER_MODE_SILENT))))
+    mapParser(ChangeSoundProfile.Mode.namesToValuesMap) map (v => ChangeSoundProfile(v))
   )
 }

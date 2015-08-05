@@ -2,17 +2,15 @@ package sta.parser
 
 import scala.language.implicitConversions
 
+import android.media.AudioManager
 import java.io.InputStream
 import kj.android.common.UsedFeatures._
-import org.scalatest.{ Matchers, WordSpec }
-import scalaz.{ Equal, Tag }
+import org.scalatest.{Matchers, WordSpec}
 import spire.implicits._
-import spire.math.UByte
 import sta.model.Definition
 import sta.model.actions._
 import sta.model.system._
 import sta.model.triggers._
-import sta.model.triggers.functions._
 import sta.tests.PropertyChecks
 
 class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserHelpers with BasicRulesSpec {
@@ -38,7 +36,7 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
         "parsing simple" should {
           val expected = Vector(
             Definition(
-              Tag("simple1"),
+              "simple1",
               AndTrigger(
                 AndTrigger(
                   AtomicTrigger[Battery](_.plugged == Battery.Plugged.withName("ac")),
@@ -47,11 +45,11 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
                 AtomicTrigger[Headset](_ == Headset.withName("connected"))
               ),
               Vector(
-                ChangeSoundProfile(Tag(1))
+                ChangeSoundProfile(ChangeSoundProfile.Mode.Vibrate)
               )
             ),
             Definition(
-              Tag("simple2"),
+              "simple2",
               XorTrigger(
                 OrTrigger(
                   AtomicTrigger[Battery](_.plugged == Battery.Plugged.withName("usb")),
@@ -60,7 +58,7 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
                 AtomicTrigger[Headset](_ == Headset.withName("disconnected"))
               ),
               Vector(
-                ChangeSoundProfile(Tag(0))
+                ChangeSoundProfile(ChangeSoundProfile.Mode.Silent)
               )
             )
           )

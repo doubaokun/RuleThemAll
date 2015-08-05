@@ -24,9 +24,9 @@ class manual(seq: (String, Duration)*) extends StaticAnnotation
 object ServiceMacros {
   type SF = ServiceFragment[Model]
 
-  case class RichResult(actual: SF, manual: Option[Seq[(String, Duration)]], features: Seq[String])
+  case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], features: Seq[String])
 
-  def collect: Seq[RichResult] = macro ServiceMacrosImpl.collect
+  def collect: Seq[RichService] = macro ServiceMacrosImpl.collect
 }
 
 private class ServiceMacrosImpl(val c: blackbox.Context) {
@@ -63,7 +63,7 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
       }.getOrElse(List.empty).foldLeft(q"List.empty[String]") { case (acc, f) => q"$f :: $acc" }
 
       q"""
-        sta.services.ServiceMacros.RichResult(
+        sta.services.ServiceMacros.RichService(
           actual = new ${decl.asType.toType} {},
           manual = $manual,
           features = $usesFeatures

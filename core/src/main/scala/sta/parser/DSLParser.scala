@@ -2,10 +2,10 @@ package sta.parser
 
 import fastparse.core.SyntaxError
 import fastparse.noApi._
-import scalaz._
+import scalaz.\/
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
-import sta.model.{ DefName, Definition => Def }
+import sta.model.{Definition => Def}
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 
@@ -16,7 +16,7 @@ sealed abstract class DSLParser extends WhitespaceSkip with ActionRules with Tri
 
   private def alphaNum = CharIn(('0' to '9') ++ ('a' to 'z') ++ ('A' to 'Z'))
 
-  def Name: P[String @@ DefName] = P(alphaNum.repX(1).! map (s => Tag[String, DefName](s)))
+  def Name: P[String] = P(alphaNum.repX(1).!)
 
   def Trigger: P[Trigger] = P("(" ~ MainT ~ ")")
 

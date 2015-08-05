@@ -18,11 +18,11 @@ class HeadsetServiceSpec extends WordSpec with RobolectricSuite with Matchers {
     val service = new HeadsetService {}
 
     "report connected headset" in {
-      service.handle(prepareIntent(connected = true)) should ===(Headset.Connected :: Nil)
+      service.handle(prepareIntent(connected = true)) should ===(Headset.Connected)
     }
 
     "report disconnected headset" in {
-      service.handle(prepareIntent(connected = false)) should ===(Headset.Disconnected :: Nil)
+      service.handle(prepareIntent(connected = false)) should ===(Headset.Disconnected)
     }
   }
 }

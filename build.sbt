@@ -39,8 +39,10 @@ lazy val core = project.in(file("core")).settings(
     scodec.core
   ) ++ shapeless ++ records
 ).settings(libAndroidSettings: _*).dependsOnLocal(`core-common`, utils).excludeFromLinting(
+    _ / "sta" / "model" / "actions" / **,
+    _ / "sta" / "model" / "system" / **,
     _ / "sta" / "parser" / **,
-    _ / "sta" / "model" / "system" / **
+    _ / "sta" / "services" / "STAService"
   )
 
 lazy val tests = project.in(file("tests")).settings(benchmarkSettings: _*)

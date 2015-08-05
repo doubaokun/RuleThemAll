@@ -107,6 +107,16 @@ trait BasicRules {
 
     P(triple | single)
   }
+
+  def mapParser[T](map: Map[String, T]): P[T] = {
+    def makeRule(kv: (String, T)): P[T] = kv._1.! map (_ => kv._2)
+
+    if (map.isEmpty) Fail
+    else map.tail.foldLeft(makeRule(map.head)) {
+      case (r, kv) =>
+        r | makeRule(kv)
+    }
+  }
 }
 
 object BasicRules {

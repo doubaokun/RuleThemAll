@@ -1,10 +1,7 @@
 package sta.model.triggers
 
-import scala.language.experimental.macros
-
 import kj.android.common.UsedFeatures
 import scala.annotation.tailrec
-import scala.reflect.macros.blackbox
 import shapeless.HMap
 import sta.model._
 import sta.model.triggers.functions.ModelFunction

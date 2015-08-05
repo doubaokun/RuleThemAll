@@ -59,8 +59,7 @@ object STAService {
 
 }
 
-class STAService(store: DefinitionsStore) extends Service with Logging {
-  ctx =>
+class STAService(store: DefinitionsStore) extends Service with Logging { ctx =>
 
   import sta.services.STAService._
 
@@ -72,8 +71,10 @@ class STAService(store: DefinitionsStore) extends Service with Logging {
         case (map, wst) if wst.features.forall(pm.hasSystemFeature) =>
           val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
           map ++ wst.actual.reactOn.map {
-            case intent if manual.isDefinedAt(intent) => Suspended(Manual(intent, manual(intent))) -> wst.actual
-            case intent => Suspended(Automatic(intent)) -> wst.actual
+            case intent if manual.isDefinedAt(intent) =>
+              Suspended(Manual(intent, manual(intent))) -> wst.actual
+            case intent =>
+              Suspended(Automatic(intent)) -> wst.actual
           }
         case (map, _) => map
       }
@@ -114,7 +115,7 @@ class STAService(store: DefinitionsStore) extends Service with Logging {
     }
   }
 
-  def onBind(intent: Intent): IBinder = ??? // FIXME
+  def onBind(intent: Intent): IBinder = null
 
   private val state = Atomic(HMap.empty[ModelKV])
 
@@ -205,7 +206,7 @@ class STAService(store: DefinitionsStore) extends Service with Logging {
             map =>
               store.definitions.foreach { d => // TODO ec
                 Task(d.execute(map)).runAsync(_.foreach(_.fold(
-                  _ => (), // TODO update definition cache (but definition should return it's updated state first)
+                  _ => (),
                   v => {
                     v.leftMap(_.foreach {
                       case (name, th) =>

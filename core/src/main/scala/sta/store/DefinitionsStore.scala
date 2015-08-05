@@ -5,8 +5,6 @@ import java.io.File
 import kj.android.logging.Logging
 import sta.model.Definition
 
-//case class ScriptPath(path: Uri) extends AnyVal
-
 abstract class DefinitionsStore extends Logging {
   private def scriptDir(implicit ctx: Context): File = ctx.getDir("scripts", Context.MODE_PRIVATE)
 
