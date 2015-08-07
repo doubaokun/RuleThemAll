@@ -2,10 +2,9 @@ package sta.parser
 
 import fastparse.core.SyntaxError
 import fastparse.noApi._
-import scalaz.\/
+import sta.model.Rule
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
-import sta.model.Rule
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 
@@ -30,7 +29,11 @@ sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with T
 }
 
 object RulesParser extends RulesParser {
-  def parse(input: String): \/[SyntaxError, Seq[Rule]] = {
-    \/.fromTryCatchThrowable[Seq[Rule], SyntaxError](Root.parse(input).get.value)
+  def parse(input: String): Either[SyntaxError, Seq[Rule]] = {
+    try {
+      Right(Root.parse(input).get.value)
+    } catch {
+      case se: SyntaxError => Left(se)
+    }
   }
 }

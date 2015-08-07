@@ -70,15 +70,15 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
           }
 
           "consists of two definitions" in {
-            actual.foreach(_.size should ===(2))
+            actual.right.foreach(_.size should ===(2))
           }
 
           "yield first definition equal to expected" in {
-            actual.foreach(a => a.head.copy(actions = a.head.actions.toVector) should ===(expected.head))
+            actual.right.foreach(a => a.head.copy(actions = a.head.actions.toVector) should ===(expected.head))
           }
 
           "yield second definition equal to expected" in {
-            actual.foreach(a => a.apply(1).copy(actions = a(1).actions.toVector) should ===(expected(1)))
+            actual.right.foreach(a => a.apply(1).copy(actions = a(1).actions.toVector) should ===(expected(1)))
           }
         }
       }

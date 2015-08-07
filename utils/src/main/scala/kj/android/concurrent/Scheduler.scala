@@ -1,16 +1,12 @@
 package kj.android.concurrent
 
-import java.util.concurrent.{ ScheduledExecutorService, TimeUnit }
+import java.util.concurrent._
 import scala.concurrent.duration.Duration
-import scalaz.\/
-import scalaz.concurrent.Future.Async
-import scalaz.concurrent.{ Strategy, Task }
 
 object Scheduler {
-  def schedule[A](a: => A, initialDelay: Duration, period: Duration)(implicit pool: ScheduledExecutorService = Strategy.DefaultTimeoutScheduler): Task[A] =
-    new Task[A](Async { cb =>
-      pool.scheduleAtFixedRate(new Runnable {
-        def run(): Unit = cb(\/.fromTryCatchNonFatal(a)).run
-      }, initialDelay.toMillis, period.toMillis, TimeUnit.MILLISECONDS)
-    })
+  def schedule(initialDelay: Duration, period: Duration)(body: => Unit)
+    (implicit pool: ScheduledExecutorService = scheduledExecutorService): ScheduledFuture[_] =
+    pool.scheduleAtFixedRate(new Runnable {
+      def run(): Unit = body
+    }, initialDelay.toMillis, period.toMillis, TimeUnit.MILLISECONDS)
 }

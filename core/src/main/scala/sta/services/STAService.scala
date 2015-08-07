@@ -7,12 +7,11 @@ import android.os.{IBinder, Parcelable}
 import android.support.v4.content.WakefulBroadcastReceiver
 import java.io.File
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import kj.android.concurrent.{Atomic, Scheduler}
+import kj.android.concurrent._
 import kj.android.logging.Logging
 import scala.concurrent.duration.Duration
-import scalaz._
-import scalaz.concurrent._
+import scala.util.Failure
+import scala.util.control.NonFatal
 import shapeless.HMap
 import sta.model.{Model, ModelKV}
 import sta.storage.{FileRulesStorage, RulesStorage}
@@ -53,7 +52,7 @@ class STAService extends Service with Logging { ctx =>
 
   import sta.services.STAService._
 
-  private val store: RulesStorage = new FileRulesStorage(this)
+  private val store: RulesStorage = new FileRulesStorage(ctx)
 
   object ServicesMap {
     def apply() = {
@@ -82,27 +81,24 @@ class STAService extends Service with Logging { ctx =>
   }
 
   case class ServicesMap private (services: Map[IntentType, ServiceFragment[Model]]) {
-    private val cancel = new AtomicBoolean(false)
-
     private val tasks: Map[IntentType, Task[Unit]] = services.keysIterator.collect {
       case (m @ Manual(intent, interval)) =>
-        (m, Scheduler.schedule(
-          stateProcessor.onReceive(ctx, registerReceiver(null, new IntentFilter(intent))),
-          Duration(0, TimeUnit.SECONDS),
-          interval
-        ))
+        (m, Task.schedule(Duration(0, TimeUnit.SECONDS), interval) {
+          stateProcessor.onReceive(ctx, registerReceiver(null, new IntentFilter(intent)))
+        })
     }.toMap
 
-    def stopTasks(): Unit = {
-      cancel.set(true)
+    def stopTasks(): Boolean = {
+      tasks.valuesIterator.forall(_.cancel(true))
     }
 
     def runTasks(): Unit = {
       tasks.foreach {
-        case (k, t) => t.runAsyncInterruptibly(_.fold(
-          th => log.error(s"Task $k ended with failure", th),
-          _ => log.debug(s"Task $k ended with success")
-        ), cancel)
+        case (k, t) =>
+          t.run {
+            case Failure(th) => log.error(s"Task $k ended with failure", th)
+            case _ => log.debug(s"Task $k ended with success")
+          }
       }
     }
   }
@@ -114,7 +110,6 @@ class STAService extends Service with Logging { ctx =>
   private val workers = Atomic(ServicesMap())
 
   private val requestProcessor = new BroadcastReceiver {
-    // runs on main thread
     private def onAdd(toAdd: Set[String]): Unit = {
       val filters = Set.newBuilder[String]
       workers.update { worker =>
@@ -166,34 +161,31 @@ class STAService extends Service with Logging { ctx =>
   }
 
   private val stateProcessor = new WakefulBroadcastReceiver {
-    // runs on main thread
     def onReceive(context: Context, intent: Intent): Unit = {
-      implicit val ctx = context
-
       workers.get.services.get(Automatic(intent.getAction)).foreach { service =>
-        \/.fromTryCatchNonFatal(service.handle(intent)).fold(
-          th => log.error("Error has occurred during handling incoming intent", th),
-          model => state.update { map =>
-            import model.companion._
+        try {
+          val model = service.handle(intent)
+          import model.companion._
+          state.update { map =>
             map + (Key -> model)
           }.fold(
-            th =>
-              log.error("Error has occurred during updating state", th),
-            map =>
-              store.rules.foreach { d =>
-                Task(d.execute(map)).runAsync(_.foreach(_.fold(
-                  _ => (),
-                  v => {
-                    v.leftMap(_.foreach {
-                      case (name, th) =>
+              th =>
+                log.error("Error has occurred during updating state", th),
+              map =>
+                store.rules.foreach { d =>
+                  Task(d.execute(map)(ctx)).run(_.foreach(_.fold(
+                    _ => (),
+                    v => {
+                      v.fold(errs => (errs.head :: errs.tail).foreach { case (name, th) =>
                         log.error(s"Error has occurred during running action $name in ${d.name}", th)
-                    })
-                    ()
-                  }
-                )))
-              }
-          )
-        )
+                      }, _ => ())
+                    }
+                  )))
+                }
+            )
+        } catch {
+          case NonFatal(th) => log.error("Error has occurred during handling incoming intent", th)
+        }
       }
     }
   }
@@ -228,7 +220,6 @@ class STAService extends Service with Logging { ctx =>
   }
 
   override def onCreate(): Unit = {
-    // TODO: check loaded triggers
     super.onCreate()
   }
 }

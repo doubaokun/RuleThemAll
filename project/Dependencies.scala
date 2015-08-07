@@ -10,9 +10,8 @@ object Dependencies {
     val paradise = "2.1.0-M5"
 
     object lib {
+      val cats = "0.1.2"
       val fastparse = "0.2.1"
-      val scalaz = "7.1.1"
-      val scodec = "1.7.0"
       val shapeless = "2.2.0"
       val spire = "0.9.1"
     }
@@ -40,37 +39,9 @@ object Dependencies {
 
   val macrosExtra = "org.scalamacros" %% "resetallattrs" % "1.0.0"
 
-  val rapture = Seq(
-    "com.propensive" %% "rapture-json" % "1.0.6",
-    "com.propensive" %% "rapture-json-jawn" % "1.0.6",
-    "com.propensive" %% "rapture-uri" % "1.0.0",
-    "com.propensive" %% "rapture-io" % "0.10.0"
-  )
+  val cats = "org.spire-math" %% "cats"  % versions.lib.cats
 
-  object scalaz {
-    val core = "org.scalaz" %% "scalaz-core" % versions.lib.scalaz
-
-    val concurrent = "org.scalaz" %% "scalaz-concurrent" % versions.lib.scalaz
-
-//    val stream = "org.scalaz.stream" %% "scalaz-stream" % "0.6a"
-  }
-
-  object scodec {
-    val core = "org.scodec" %% "scodec-core" % versions.lib.scodec
-
-//    val stream = "org.scodec" %% "scodec-stream" % "0.4.0"
-  }
-
-  val shapeless = Seq(
-    "com.chuusai" %% "shapeless" % versions.lib.shapeless/*,
-    "org.typelevel" %% "shapeless-spire" % "0.3",
-    "org.typelevel" %% "shapeless-scalaz" % "0.3"*/
-  )
-
-  val records = Seq(
-    "ch.epfl.lamp" %% "scala-records" % "0.4-SNAPSHOT",
-    "org.cvogt" %% "compossible" % "0.2-SNAPSHOT"
-  )
+  val shapeless = "com.chuusai" %% "shapeless" % versions.lib.shapeless
 
   val spire = "org.spire-math" %% "spire" % versions.lib.spire
 

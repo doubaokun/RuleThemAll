@@ -2,7 +2,8 @@ package kj.android.concurrent
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
-import scalaz.\/
+import scala.util.Try
+import scala.util.control.NonFatal
 
 sealed trait Atomic[T] {
   def get: T
@@ -11,16 +12,19 @@ sealed trait Atomic[T] {
 
   def compareAndSet(expect: T, update: T): Boolean
 
-  @inline final def update(f: T => T): \/[Throwable, T] = {
-    @inline
-    @tailrec def set(): T = {
+  @inline final def update(f: T => T): Either[Throwable, T] = {
+    @inline @tailrec def set(): T = {
       val oldValue = get
       val newValue = f(oldValue)
       if (!compareAndSet(oldValue, newValue)) set()
       else newValue
     }
 
-    \/.fromTryCatchNonFatal(concurrent.blocking(set()))
+    try {
+      Right(concurrent.blocking(set()))
+    } catch {
+      case NonFatal(th) => Left(th)
+    }
   }
 }
 

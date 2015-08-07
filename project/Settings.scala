@@ -65,8 +65,26 @@ object Settings {
     addCompilerPlugin(paradise)
   )
 
+  def androidSettings: Seq[Def.Setting[_]] = commonSettings ++ Seq(
+    platformTarget in Android := versions.androidSDK,
+    transitiveAndroidLibs in Android := false,
+    debugIncludesTests in Android := false
+  ) ++ stdProguardSettings
+
+  def appAndroidSettings: Seq[Def.Setting[_]] = androidBuild ++ androidSettings ++
+    robolectricSettings ++ stdLibs ++ lintingSettings
+
+  def libAndroidSettings: Seq[Def.Setting[_]] = androidBuildAar ++ androidSettings ++
+    robolectricSettings ++ stdLibs ++ lintingSettings
+
+  private def sources(in: File): Seq[File] = {
+    if (in.isDirectory) in.listFiles(fileFilters.isScalaFile) ++
+      in.listFiles(fileFilters.isDirectory).flatMap(sources)
+    else Seq.empty
+  }
+
   def benchmarkSettings: Seq[Def.Setting[_]] =
-    androidBuild ++ commonSettings ++ androidSettings ++ Seq(
+    androidBuild ++ androidSettings ++ Seq(
       libraryDependencies ++= benchmarks, //++ tests,
 
       fork in run := true,
@@ -88,18 +106,6 @@ object Settings {
         "-dontwarn com.google.common.collect.MinMaxPriorityQueue"
       )
     )
-
-  def appAndroidSettings: Seq[Def.Setting[_]] = androidBuild ++ commonSettings ++
-    robolectricSettings ++ androidSettings ++ stdLibs ++ lintingSettings
-
-  def libAndroidSettings: Seq[Def.Setting[_]] = androidBuildAar ++ commonSettings ++
-    robolectricSettings ++ androidSettings ++ stdLibs ++ lintingSettings
-
-  private def sources(in: File): Seq[File] = {
-    if (in.isDirectory) in.listFiles(fileFilters.isScalaFile) ++
-      in.listFiles(fileFilters.isDirectory).flatMap(sources)
-    else Seq.empty
-  }
 
   private def lintingSettings: Seq[Def.Setting[_]] = Seq(
     scalacOptions ++= Seq(
@@ -149,8 +155,8 @@ object Settings {
 
   private def stdLibs: Seq[Def.Setting[_]] = Seq(
     libraryDependencies ++= Seq(
-      scalaz.core,
-      scalaz.concurrent
+      cats,
+      shapeless
     ) ++ tests.map(_ % "test")
   )
 
@@ -161,27 +167,20 @@ object Settings {
     javaOptions in Test ++= Seq("-XX:MaxPermSize=2048M", "-XX:+CMSClassUnloadingEnabled")
   )
 
-  private def androidSettings: Seq[Def.Setting[_]] = Seq(
-    platformTarget in Android := versions.androidSDK,
-    transitiveAndroidLibs in Android := false,
-    debugIncludesTests in Android := false
-  ) ++ stdProguardSettings
-
   private def stdProguardSettings = Seq (
     proguardOptions in Android ++= Seq(
       "-keep public class * extends junit.framework.TestCase",
       "-keepclassmembers class * extends junit.framework.TestCase { *; }",
       "-keepattributes Signature",
+      "-dontwarn org.typelevel.discipline.**",
       "-dontwarn scala.collection.**",
-      "-dontwarn scalaz.concurrent.**", // TODO narrow
       "-dontwarn spire.macros.**"
     ),
 
     proguardCache in Android ++= Seq(
+      "cats",
       "fastparse",
       "scala",
-      "scalaz",
-      "scodec",
       "shapeless",
       "spire"
     )

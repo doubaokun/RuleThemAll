@@ -1,9 +1,7 @@
 package sta.parser.actions
 
-import android.media.AudioManager
 import fastparse.noApi._
-import scalaz.Tag
-import sta.model.actions.{ Action, ChangeSoundProfile }
+import sta.model.actions.{Action, ChangeSoundProfile}
 import sta.parser.WhitespaceSkip
 
 object SoundProfileRules extends SetActionParser with WhitespaceSkip {

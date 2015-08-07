@@ -14,20 +14,19 @@ lazy val utils = project.in(file("utils")).settings(
   libraryDependencies ++= Seq(
     reflect
   )
-).settings(libAndroidSettings ++ wartremover.wartremoverSettings: _*)
+).settings(androidBuildAar ++ commonSettings ++ androidSettings: _*)
 
 lazy val `core-common` = project.in(file("core/common")).settings(
   libraryDependencies ++= Seq(
     enumeratum,
-    fastparse,
     macrosExtra,
     reflect,
     spire
-  ) ++ shapeless ++ records,
-  buildConfigGenerator in Android := Seq.empty
+  )/*,
+  buildConfigGenerator in Android := Seq.empty*/
 ).settings(libAndroidSettings: _*).dependsOnLocal(utils).excludeFromLinting(
     _ / "sta" / "common" / "Common",
-    _ / "sta" / "model" / "definition",
+    _ / "sta" / "model" / "Rule",
     _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
     _ / "sta" / "services" / "macros"
   )
@@ -35,9 +34,8 @@ lazy val `core-common` = project.in(file("core/common")).settings(
 lazy val core = project.in(file("core")).settings(
   libraryDependencies ++= Seq(
     `android-support-v4`,
-    fastparse,
-    scodec.core
-  ) ++ shapeless ++ records
+    fastparse
+  )
 ).settings(libAndroidSettings: _*).dependsOnLocal(`core-common`, utils).excludeFromLinting(
     _ / "sta" / "model" / "actions" / **,
     _ / "sta" / "model" / "system" / **,
