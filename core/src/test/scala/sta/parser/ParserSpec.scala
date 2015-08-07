@@ -7,7 +7,7 @@ import java.io.InputStream
 import kj.android.common.UsedFeatures._
 import org.scalatest.{Matchers, WordSpec}
 import spire.implicits._
-import sta.model.Definition
+import sta.model.Rule
 import sta.model.actions._
 import sta.model.system._
 import sta.model.triggers._
@@ -35,7 +35,7 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
       "is script" when {
         "parsing simple" should {
           val expected = Vector(
-            Definition(
+            Rule(
               "simple1",
               AndTrigger(
                 AndTrigger(
@@ -48,7 +48,7 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
                 ChangeSoundProfile(ChangeSoundProfile.Mode.Vibrate)
               )
             ),
-            Definition(
+            Rule(
               "simple2",
               XorTrigger(
                 OrTrigger(
@@ -63,7 +63,7 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
             )
           )
 
-          val actual = DSLParser.parse(getClass.getResourceAsStream("/simple"))
+          val actual = RulesParser.parse(getClass.getResourceAsStream("/simple"))
 
           "yield success" in {
             actual.isRight should ===(true)

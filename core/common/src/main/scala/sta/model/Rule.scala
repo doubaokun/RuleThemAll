@@ -10,7 +10,7 @@ import shapeless.HMap
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
 
-case class Definition(name: String, trigger: Trigger, actions: Seq[Action]) {
+case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Serializable {
   @inline private implicit def executeAction(a: Action): ValidationNel[(String, Throwable), Unit] = try {
     Success(())
   } catch {
@@ -18,7 +18,7 @@ case class Definition(name: String, trigger: Trigger, actions: Seq[Action]) {
   }
 
   // TODO rete
-  def execute(state: HMap[ModelKV])(implicit ctx: Context): \/[Definition, ValidationNel[(String, Throwable), Unit]] = {
+  def execute(state: HMap[ModelKV])(implicit ctx: Context): \/[Rule, ValidationNel[(String, Throwable), Unit]] = {
     if (trigger.satisfiedBy(state)) {
       val f = ((_: Unit, _: Unit) => ()).successNel[(String, Throwable)]
       \/-(

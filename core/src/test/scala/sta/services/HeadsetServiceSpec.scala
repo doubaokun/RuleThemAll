@@ -8,21 +8,21 @@ import sta.model.system._
 @Config(sdk = Array(18), manifest = "core/src/test/AndroidManifest.xml")
 class HeadsetServiceSpec extends WordSpec with RobolectricSuite with Matchers {
 
-  private def prepareIntent(connected: Boolean): Intent = {
+  private def prepareIntent(state: Int): Intent = {
     val intent = new Intent
     intent.setAction(Intent.ACTION_HEADSET_PLUG)
-    intent.putExtra("state", if (connected) 1 else 0)
+    intent.putExtra("state", state)
   }
 
   "HeadsetService" should {
     val service = new HeadsetService {}
 
     "report connected headset" in {
-      service.handle(prepareIntent(connected = true)) should ===(Headset.Connected)
+      service.handle(prepareIntent(Headset.Connected.intValue)) should ===(Headset.Connected)
     }
 
     "report disconnected headset" in {
-      service.handle(prepareIntent(connected = false)) should ===(Headset.Disconnected)
+      service.handle(prepareIntent(Headset.Disconnected.intValue)) should ===(Headset.Disconnected)
     }
   }
 }

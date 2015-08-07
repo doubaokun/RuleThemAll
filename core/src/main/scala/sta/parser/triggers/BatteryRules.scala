@@ -1,7 +1,5 @@
 package sta.parser.triggers
 
-import scala.language.implicitConversions
-
 import fastparse.noApi._
 import kj.android.common.UsedFeatures
 import sta.model.system._
@@ -12,7 +10,7 @@ object BatteryRules extends TriggerParser[BatteryLike] with WhitespaceSkip {
   import Battery._
   import white._
 
-  def prefix: String = implicitly[UsedFeatures[Battery]].category
+  def prefix: String = implicitly[UsedFeatures[BatteryLike]].category
 
   private def powerState: P[AtomicTrigger[PowerState]] = P(
     "power" ~ mapParser(PowerState.namesToValuesMap) map (v =>

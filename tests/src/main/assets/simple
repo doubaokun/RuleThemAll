@@ -4,7 +4,6 @@ def simple {
             plugged ac
         ,   level > 50%
         )
-    ,   headset connected
     ) do {
         set sound profile to vibrate
     }

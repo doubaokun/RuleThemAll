@@ -1,7 +1,5 @@
 package sta.parser.triggers
 
-import scala.language.implicitConversions
-
 import fastparse.noApi._
 import kj.android.common.UsedFeatures
 import sta.model.system._
@@ -10,8 +8,6 @@ import sta.parser.WhitespaceSkip
 
 object HeadsetRules extends TriggerParser[Headset] with WhitespaceSkip {
   import white._
-
-  type M = Headset
 
   def prefix: String = implicitly[UsedFeatures[Headset]].category
 

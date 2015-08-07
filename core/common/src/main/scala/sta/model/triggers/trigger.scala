@@ -40,7 +40,7 @@ object Trigger {
   }
 }
 
-sealed abstract class Trigger {
+sealed abstract class Trigger extends Serializable {
   def satisfiedBy(state: HMap[ModelKV]): Boolean
 
   def uses: Set[String]

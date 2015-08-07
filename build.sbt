@@ -42,6 +42,7 @@ lazy val core = project.in(file("core")).settings(
     _ / "sta" / "model" / "actions" / **,
     _ / "sta" / "model" / "system" / **,
     _ / "sta" / "parser" / **,
+    _ / "sta" / "storage" / "FileRulesStorage",
     _ / "sta" / "services" / "STAService"
   )
 

@@ -2,7 +2,7 @@ package sta.parser.actions
 
 import fastparse.noApi._
 import sta.model.actions.Action
-import sta.parser.{ DSLParser, WhitespaceSkip, BasicRules }
+import sta.parser.{ RulesParser$, WhitespaceSkip, BasicRules }
 
 trait ActionParser extends BasicRules {
   def Main: P[Action]

@@ -1,7 +1,7 @@
 package sta.tests.benchmarks
 
 import android.content.res.AssetManager
-import sta.parser.DSLParser
+import sta.parser.RulesParser
 
 class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
   var content: String = null
@@ -12,6 +12,6 @@ class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
   }
 
   bench("simple", 50) {
-    DSLParser.parse(content)
+    RulesParser.parse(content)
   }
 }

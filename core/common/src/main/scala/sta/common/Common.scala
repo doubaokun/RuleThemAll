@@ -16,13 +16,15 @@ object Common {
   }
 
   class ExpandExtra[T] protected[Common] (private val intent: Intent) extends AnyVal with Dynamic {
-    def selectDynamic(field: String)(implicit logTag: LogTag): T = try {
-      intent.getExtras.get(field).asInstanceOf[T]
+    def get(key: String)(implicit logTag: LogTag): T = try {
+      Option(intent.getExtras.get(key)).getOrElse(throw new NullPointerException).asInstanceOf[T]
     } catch {
       case th: Throwable =>
-        Logger.error(s"Error during getting $field from intent", th)
+        Logger.error(s"Error during getting $key from intent", th)
         throw th
     }
+    
+    def selectDynamic(key: String)(implicit logTag: LogTag): T = get(key)(logTag)
   }
 
 }
