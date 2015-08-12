@@ -47,4 +47,6 @@ lazy val core = project.in(file("core")).settings(
 lazy val tests = project.in(file("tests")).settings(benchmarkSettings: _*)
   .dependsOnLocal(core, `core-common`, utils)
 
-lazy val root = project.in(file(".")).aggregate(utils, `core-common`, core, tests)
+lazy val root = project.in(file(".")).aggregate(utils, `core-common`, core, tests).settings(Seq(
+  parallelExecution in Android := false
+))
