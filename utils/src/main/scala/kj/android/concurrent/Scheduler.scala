@@ -5,7 +5,7 @@ import scala.concurrent.duration.Duration
 
 object Scheduler {
   def schedule(initialDelay: Duration, period: Duration)(body: => Unit)
-    (implicit pool: ScheduledExecutorService = scheduledExecutorService): ScheduledFuture[_] =
+    (implicit pool: ScheduledExecutorService): ScheduledFuture[_] =
     pool.scheduleAtFixedRate(new Runnable {
       def run(): Unit = body
     }, initialDelay.toMillis, period.toMillis, TimeUnit.MILLISECONDS)

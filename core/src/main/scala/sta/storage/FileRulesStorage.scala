@@ -54,7 +54,7 @@ class FileRulesStorage(val ctx: Context) extends RulesStorage {
     }
   }
 
-  def rules: Iterator[Rule] = rawRules.iterator
+  def allRules: Iterator[Rule] = rawRules.iterator
 
   def register(from: File): Set[String] = {
     val rules = parse(from)

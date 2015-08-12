@@ -6,10 +6,9 @@ import android.net.Uri
 import android.os.{IBinder, Parcelable}
 import android.support.v4.content.WakefulBroadcastReceiver
 import java.io.File
-import java.util.concurrent.TimeUnit
 import kj.android.concurrent._
 import kj.android.logging.Logging
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
 import shapeless.HMap
@@ -72,18 +71,18 @@ class STAService extends Service with Logging { ctx =>
       new ServicesMap(services = services)
     }
 
-    def update(map: ServicesMap)(f: ServicesMap => ServicesMap): ServicesMap = {
-      map.stopTasks()
-      val newMap = f(map)
-      newMap.runTasks()
-      newMap
-    }
+//    def update(map: ServicesMap)(f: ServicesMap => ServicesMap): ServicesMap = {
+//      map.stopTasks()
+//      val newMap = f(map)
+//      newMap.runTasks()
+//      newMap
+//    }
   }
 
   case class ServicesMap private (services: Map[IntentType, ServiceFragment[Model]]) {
     private val tasks: Map[IntentType, Task[Unit]] = services.keysIterator.collect {
       case (m @ Manual(intent, interval)) =>
-        (m, Task.schedule(Duration(0, TimeUnit.SECONDS), interval) {
+        (m, Task.schedule(0.seconds, interval) {
           stateProcessor.onReceive(ctx, registerReceiver(null, new IntentFilter(intent)))
         })
     }.toMap
@@ -105,56 +104,60 @@ class STAService extends Service with Logging { ctx =>
 
   def onBind(intent: Intent): IBinder = null
 
-  private val state = Atomic(HMap.empty[ModelKV])
+  private[this] val rawState = Atomic(HMap.empty[ModelKV])
 
-  private val workers = Atomic(ServicesMap())
+  private[this] val rawWorkers = Atomic(ServicesMap())
 
   private val requestProcessor = new BroadcastReceiver {
-    private def onAdd(toAdd: Set[String]): Unit = {
+    private def update(set: Set[String])
+      (f: (Set[String], String => Unit, ServicesMap) => ServicesMap): Unit = {
       val filters = Set.newBuilder[String]
-      workers.update { worker =>
-        val newServices = worker.services.map {
-          case (Suspended(m @ Manual(v, _)), sf) if toAdd.contains(v) =>
-            (m, sf)
-          case (Suspended(a @ Automatic(v)), sf) if toAdd.contains(v) =>
-            filters += v
-            (a, sf)
-          case ( a @ Automatic(v), sf) =>
-            filters += v
-            (a, sf)
-          case other =>
-            other
-        }
-        ServicesMap.update(worker)(_.copy(services = newServices))
-      }
-      registerStateProcessor(filters.result(), unregisterFirst = true)
+      rawWorkers.update { workers =>
+        workers.stopTasks()
+        f(set, filters += _, workers)
+      }.fold(th => {
+
+      }, workers => {
+        workers.runTasks()
+        registerStateProcessor(filters.result(), unregisterFirst = true)
+      })
     }
 
-    private def onRemove(toRemove: Set[String]): Unit = {
-      val filters = Set.newBuilder[String]
-      workers.update { worker =>
-        val newServices = worker.services.map {
-          case (n @ Automatic(v), sf) if toRemove.contains(v) =>
-            (Suspended(n), sf)
-          case (m @ Manual(v, _), sf) if toRemove.contains(v) =>
-            (Suspended(m), sf)
-          case (n @ Automatic(v), sf) =>
-            filters += v
-            (n, sf)
-          case other =>
-            other
-        }
-        ServicesMap.update(worker)(_.copy(services = newServices))
-      }
-      registerStateProcessor(filters.result(), unregisterFirst = true)
+    private def onAdd(toAdd: Set[String], act: String => Unit, services: ServicesMap) = {
+      services.copy(services = services.services.map {
+        case (Suspended(m@Manual(v, _)), sf) if toAdd.contains(v) =>
+          (m, sf)
+        case (Suspended(a@Automatic(v)), sf) if toAdd.contains(v) =>
+          act(v)
+          (a, sf)
+        case (a@Automatic(v), sf) =>
+          act(v)
+          (a, sf)
+        case other =>
+          other
+      })
+    }
+
+    private def onRemove(toRemove: Set[String], act: String => Unit, services: ServicesMap) = {
+      services.copy(services = services.services.map {
+        case (n@Automatic(v), sf) if toRemove.contains(v) =>
+          (Suspended(n), sf)
+        case (m@Manual(v, _), sf) if toRemove.contains(v) =>
+          (Suspended(m), sf)
+        case (n@Automatic(v), sf) =>
+          act(v)
+          (n, sf)
+        case other =>
+          other
+      })
     }
 
     def onReceive(context: Context, intent: Intent): Unit = {
       intent.getAction match {
         case LOAD => intent.extra[Array[Uri]].get(URI).foreach { path =>
-          onAdd(store.register(new File(path.getPath)))
+          update(store.register(new File(path.getPath)))(onAdd)
         }
-        case UNLOAD => onRemove(store.unregister(intent.extra[Array[String]].get(NAME): _*))
+        case UNLOAD => update(store.unregister(intent.extra[Array[String]].get(NAME): _*))(onRemove)
         case other => log.warn(s"Unknown intent received: $other")
       }
     }
@@ -162,25 +165,18 @@ class STAService extends Service with Logging { ctx =>
 
   private val stateProcessor = new WakefulBroadcastReceiver {
     def onReceive(context: Context, intent: Intent): Unit = {
-      workers.get.services.get(Automatic(intent.getAction)).foreach { service =>
+      rawWorkers.get.services.get(Automatic(intent.getAction)).foreach { service =>
         try {
           val model = service.handle(intent)
           import model.companion._
-          state.update { map =>
-            map + (Key -> model)
+          rawState.update { state =>
+            state + (Key -> model)
           }.fold(
               th =>
                 log.error("Error has occurred during updating state", th),
-              map =>
-                store.rules.foreach { d =>
-                  Task(d.execute(map)(ctx)).run(_.foreach(_.fold(
-                    _ => (),
-                    v => {
-                      v.fold(errs => (errs.head :: errs.tail).foreach { case (name, th) =>
-                        log.error(s"Error has occurred during running action $name in ${d.name}", th)
-                      }, _ => ())
-                    }
-                  )))
+              state =>
+                store.rules.foreach { rule =>
+                  Task(rule.execute(state)(ctx, logTag)).run(_ => ())
                 }
             )
         } catch {
@@ -203,7 +199,7 @@ class STAService extends Service with Logging { ctx =>
     requestFilter.addAction(UNLOAD)
     registerReceiver(requestProcessor, requestFilter)
 
-    val w = workers.get
+    val w = rawWorkers.get
     registerStateProcessor(w.services.keysIterator.collect {
       case Automatic(v) => v
     }.toSet, unregisterFirst = false)
@@ -215,11 +211,17 @@ class STAService extends Service with Logging { ctx =>
   override def onDestroy(): Unit = {
     unregisterReceiver(requestProcessor)
     unregisterReceiver(stateProcessor)
-    workers.get.stopTasks()
+    rawWorkers.get.stopTasks()
+
     super.onDestroy()
   }
 
   override def onCreate(): Unit = {
+    val state = rawState.get
+    for (rule <- store.startupRules) {
+      Task(rule.execute(state)(ctx, logTag)).run(_ => ())
+    }
+
     super.onCreate()
   }
 }

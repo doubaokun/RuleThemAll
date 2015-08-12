@@ -4,7 +4,7 @@ import fastparse.core.SyntaxError
 import fastparse.noApi._
 import sta.model.Rule
 import sta.model.actions.Action
-import sta.model.triggers.Trigger
+import sta.model.triggers.{EmptyTrigger, Trigger}
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 
@@ -22,7 +22,10 @@ sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with T
   def Action: P[Seq[Action]] = P("{" ~ MainA.rep(1, sep = newLine | ";") ~ "}")
 
   def Definition: P[Rule] = P(
-    ("def" ~ Name ~ "{" ~ "when" ~ Trigger ~ "do" ~ Action ~ "}") map (v => Rule(v._1, v._2, v._3))
+    ("def" ~ Name ~ {
+      ("{" ~ "when" ~ Trigger ~ "do" ~ Action ~ "}") |
+        ((Pass map (_ => EmptyTrigger)) ~ Action)
+    }) map (v => Rule(v._1, v._2._1, v._2._2))
   )
 
   def Root: P[Seq[Rule]] = P(Start ~ Definition.rep(1) ~ End)

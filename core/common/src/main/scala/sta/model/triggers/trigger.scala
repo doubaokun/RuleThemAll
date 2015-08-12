@@ -46,6 +46,12 @@ sealed abstract class Trigger extends Serializable {
   def uses: Set[String]
 }
 
+object EmptyTrigger extends Trigger {
+  def satisfiedBy(state: HMap[ModelKV]): Boolean = true
+
+  def uses: Set[String] = Set.empty
+}
+
 sealed abstract class LogicOpTrigger extends Trigger {
   def lhs: Trigger
 
