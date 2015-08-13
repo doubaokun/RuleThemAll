@@ -35,7 +35,10 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
 
   def genReactOn(annottees: Expr[Any]*) = {
     val outputs = annottees.map { tdef =>
-      val q"$tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents { $self => ..$tbody }" = tdef.tree.duplicate
+      val q"""
+        $tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents {
+          $self => ..$tbody
+        }""" = tdef.tree.duplicate
       val intents = (for {
         te <- tbody
         q"$dmods def handle($darg: Intent): $dtpe = $dbody" <- te
@@ -43,7 +46,9 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
         cq"$intent if $expr => $cbody" <- cases
       } yield intent).toSet
       val f = q"protected[sta] def reactOn: Set[String] = $intents"
-      q"$tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents { $self => ..${tbody :+ f} }"
+      q"""$tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents {
+            $self => ..${tbody :+ f}
+          }"""
     }
 
     q"{ ..$outputs }"
@@ -53,7 +58,9 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
     val tpe = weakTypeOf[ServiceMacros.SF].dealias.typeConstructor
     val services = for {
       decl <- c.mirror.staticPackage("sta.services").typeSignature.decls
-      inherited <- decl.typeSignature.baseClasses if !(inherited.typeSignature =:= decl.typeSignature) && inherited.asType.toTypeConstructor =:= tpe
+      inherited <- decl.typeSignature.baseClasses if
+        !(inherited.typeSignature =:= decl.typeSignature) &&
+          inherited.asType.toTypeConstructor =:= tpe
     } yield {
       val manual = decl.annotations.map(_.tree).collectFirst {
         case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[manual] => args

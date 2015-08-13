@@ -8,6 +8,7 @@ import android.support.v4.content.WakefulBroadcastReceiver
 import java.io.File
 import kj.android.concurrent._
 import kj.android.logging.Logging
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
@@ -51,36 +52,30 @@ class STAService extends Service with Logging { ctx =>
 
   import sta.services.STAService._
 
-  private val store: RulesStorage = new FileRulesStorage(ctx)
+  private[this] val store: RulesStorage = new FileRulesStorage(ctx)
 
   object ServicesMap {
     def apply() = {
       val pm = getPackageManager
       val collected = ServiceMacros.collect
-      val services = collected.foldLeft(Map.empty[IntentType, ServiceFragment[Model]]) {
-        case (map, wst) if wst.features.forall(pm.hasSystemFeature) =>
-          val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
-          map ++ wst.actual.reactOn.map {
-            case intent if manual.isDefinedAt(intent) =>
-              Suspended(Manual(intent, manual(intent))) -> wst.actual
-            case intent =>
-              Suspended(Automatic(intent)) -> wst.actual
-          }
-        case (map, _) => map
+      val services = mutable.Map.empty[IntentType, List[ServiceFragment[Model]]]
+      for (wst <- collected if wst.features.forall(pm.hasSystemFeature)) {
+        val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
+        wst.actual.reactOn.foreach {
+          case intent if manual.isDefinedAt(intent) =>
+            val tpe = Suspended(Manual(intent, manual(intent)))
+            services += (tpe -> (wst.actual :: services.getOrElse(tpe, Nil)))
+          case intent =>
+            val tpe = Suspended(Automatic(intent))
+            services += (tpe -> (wst.actual :: services.getOrElse(tpe, Nil)))
+        }
       }
-      new ServicesMap(services = services)
+      new ServicesMap(services = services.toMap)
     }
-
-//    def update(map: ServicesMap)(f: ServicesMap => ServicesMap): ServicesMap = {
-//      map.stopTasks()
-//      val newMap = f(map)
-//      newMap.runTasks()
-//      newMap
-//    }
   }
 
-  case class ServicesMap private (services: Map[IntentType, ServiceFragment[Model]]) {
-    private val tasks: Map[IntentType, Task[Unit]] = services.keysIterator.collect {
+  case class ServicesMap private (services: Map[IntentType, List[ServiceFragment[Model]]]) {
+    private[this] val tasks: Map[IntentType, Task[Unit]] = services.keysIterator.collect {
       case (m @ Manual(intent, interval)) =>
         (m, Task.schedule(0.seconds, interval) {
           stateProcessor.onReceive(ctx, registerReceiver(null, new IntentFilter(intent)))
@@ -125,9 +120,9 @@ class STAService extends Service with Logging { ctx =>
 
     private def onAdd(toAdd: Set[String], act: String => Unit, services: ServicesMap) = {
       services.copy(services = services.services.map {
-        case (Suspended(m@Manual(v, _)), sf) if toAdd.contains(v) =>
+        case (Suspended(m @ Manual(v, _)), sf) if toAdd.contains(v) =>
           (m, sf)
-        case (Suspended(a@Automatic(v)), sf) if toAdd.contains(v) =>
+        case (Suspended(a @ Automatic(v)), sf) if toAdd.contains(v) =>
           act(v)
           (a, sf)
         case (a@Automatic(v), sf) =>
@@ -140,11 +135,11 @@ class STAService extends Service with Logging { ctx =>
 
     private def onRemove(toRemove: Set[String], act: String => Unit, services: ServicesMap) = {
       services.copy(services = services.services.map {
-        case (n@Automatic(v), sf) if toRemove.contains(v) =>
+        case (n @ Automatic(v), sf) if toRemove.contains(v) =>
           (Suspended(n), sf)
-        case (m@Manual(v, _), sf) if toRemove.contains(v) =>
+        case (m @ Manual(v, _), sf) if toRemove.contains(v) =>
           (Suspended(m), sf)
-        case (n@Automatic(v), sf) =>
+        case (n @ Automatic(v), sf) =>
           act(v)
           (n, sf)
         case other =>
@@ -165,20 +160,21 @@ class STAService extends Service with Logging { ctx =>
 
   private val stateProcessor = new WakefulBroadcastReceiver {
     def onReceive(context: Context, intent: Intent): Unit = {
-      rawWorkers.get.services.get(Automatic(intent.getAction)).foreach { service =>
+      for (
+        services <- rawWorkers.get.services.get(Automatic(intent.getAction));
+        service <- services
+      ) {
         try {
-          val model = service.handle(intent)
-          import model.companion._
-          rawState.update { state =>
-            state + (Key -> model)
-          }.fold(
-              th =>
-                log.error("Error has occurred during updating state", th),
-              state =>
-                store.rules.foreach { rule =>
-                  Task(rule.execute(state)(ctx, logTag)).run(_ => ())
-                }
+          for(model <- service.handle(intent)) {
+            import model.companion._
+            rawState.update { state =>
+              state + (Key -> model)
+            }.fold(th => log.error("Error has occurred during updating state", th), state =>
+              store.rules.foreach { rule =>
+                Task(rule.execute(state)(ctx, logTag)).run(_ => ())
+              }
             )
+          }
         } catch {
           case NonFatal(th) => log.error("Error has occurred during handling incoming intent", th)
         }

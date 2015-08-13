@@ -1,6 +1,7 @@
 package sta.services
 
 import android.content.Intent
+import android.os.BatteryManager._
 import scala.concurrent.duration._
 import spire.math.UByte
 import sta.model.system._
@@ -15,11 +16,11 @@ abstract class BatteryService extends ServiceFragment[BatteryLike] {
     case Intent.ACTION_BATTERY_LOW => BatteryState.Low
     case Intent.ACTION_BATTERY_OKAY => BatteryState.OK
     case Intent.ACTION_BATTERY_CHANGED =>
-      val level =
-        UByte((intent.extra[Int].level * 100d / intent.extra[Int].scale.toDouble).round.toByte)
-      val present = intent.extra[Boolean].present
-      val plugged = Plugged.fromInt(intent.extra[Int].plugged)
-      val status = Status.fromInt(intent.extra[Int].status)
+      val level = UByte((intent.extra[Int].level * 100d /
+        intent.extra[Int].get(EXTRA_SCALE).toDouble).round.toByte)
+      val present = intent.extra[Boolean].get(EXTRA_PRESENT)
+      val plugged = Plugged.fromInt(intent.extra[Int].get(EXTRA_PLUGGED))
+      val status = Status.fromInt(intent.extra[Int].get(EXTRA_STATUS))
 
       Battery(level, plugged, present, status)
   }

@@ -9,5 +9,5 @@ import sta.model.Model
 package object services extends Common {
   implicit val logTag = LogTag("sta.services")
 
-  implicit def liftModelToList[M <: Model](m: M): List[M] = m :: Nil
+  implicit def liftModel[M <: Model](m: M): Option[M] = Option(m)
 }
