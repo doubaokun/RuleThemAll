@@ -92,21 +92,23 @@ trait BasicRules {
         ("E" ~ "-".? ~ digit.rep(1)).?).?))).! map (Rational(_))
   )
 
-  lazy val String: P[String] = {
+  lazy val SingleLineString: P[String] = {
     val Q = "\""
-    val TQ = "\"\"\""
     val NL = "\n"
-
     def singleChar = P("\\\"".! | "\\\\".! | (!(NL | Q) ~ AnyChar).!)
 
-    def single = P(Q ~ singleChar.rep.! ~ Q)
+    P(Q ~ singleChar.rep.! ~ Q)
+  }
 
+  lazy val MultiLineString: P[String] = {
+    val Q = "\""
+    val TQ = "\"\"\""
     def tripleChar = P((Q.? ~ Q.? ~ !Q ~ AnyChar).!)
 
-    def triple = P(TQ ~ tripleChar.rep.! ~ TQ)
-
-    P(triple | single)
+    P(TQ ~ tripleChar.rep.! ~ TQ)
   }
+
+  lazy val String: P[String] = P(MultiLineString | SingleLineString)
 
   def mapParser[T](map: Map[String, T]): P[T] = {
     def makeRule(kv: (String, T)): P[T] = kv._1.! map (_ => kv._2)
