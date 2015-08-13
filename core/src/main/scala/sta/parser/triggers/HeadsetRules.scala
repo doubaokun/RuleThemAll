@@ -15,5 +15,5 @@ object HeadsetRules extends TriggerParser[Headset] with WhitespaceSkip {
     mapParser(Headset.namesToValuesMap) map (v => AtomicTrigger[Headset](_ == v))
   )
 
-  val Main: P[AtomicTrigger[_ <: Headset]] = connectivity
+  val Rule: P[AtomicTrigger[_ <: Headset]] = connectivity
 }

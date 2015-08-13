@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 
 import fastparse.all._
 import scala.util.Try
-import spire.math.{ Natural => Nat, Rational, SafeLong, UByte, UInt }
+import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
 
 trait BasicRules {
   private def digit = P(CharIn('0' to '9').!)

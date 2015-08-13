@@ -25,16 +25,20 @@ trait TriggerRules extends WhitespaceSkip {
 
     val triggers = {
       def single(trigger: TriggerParser[_ <: Model]) = {
-        def main = trigger.Main
+        def main = trigger.Rule
         def main2 = "(" ~ main ~ "," ~ main ~ ")"
         def main2toN = twoOrMore(main)
 
-        trigger.prefix ~ (("(" ~ (
+        def conditions = ("(" ~ (
           (main.rep(1, sep = ",") map (Trigger(_))) |
-          ("or" ~ main2toN map (ts => Trigger.or(ts))) |
-          ("xor" ~ main2 map (t => XorTrigger(t._1, t._2))) |
-          ("and" ~ main2toN map (ts => Trigger.and(ts)))
-        ) ~ ")") | main)
+            ("or" ~ main2toN map (ts => Trigger.or(ts))) |
+            ("xor" ~ main2 map (t => XorTrigger(t._1, t._2))) |
+            ("and" ~ main2toN map (ts => Trigger.and(ts)))
+          ) ~ ")") | main
+
+        trigger.prefix ~ trigger.Main.fold(conditions)(ap =>
+          ap ~ conditions.? map (t => t._2.fold[Trigger](t._1)(t2 => AndTrigger(t._1, t2)))
+        )
       }
 
       P(parsers.tail.foldLeft(single(parsers.head)) {

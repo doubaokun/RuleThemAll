@@ -45,6 +45,6 @@ object BatteryRules extends TriggerParser[BatteryLike] with WhitespaceSkip {
     "status" ~ mapParser(Status.namesToValuesMap) map (v => AtomicTrigger[Battery](_.status == v))
   )
 
-  val Main: P[AtomicTrigger[_ <: BatteryLike]] =
+  val Rule: P[AtomicTrigger[_ <: BatteryLike]] =
     powerState | batteryState | level | plugged | present | status
 }
