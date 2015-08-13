@@ -67,6 +67,7 @@ object Settings {
 
   def androidSettings: Seq[Def.Setting[_]] = commonSettings ++ Seq(
     platformTarget in Android := versions.androidSDK,
+    dexMaxHeap in Android := "2048m",
     transitiveAndroidLibs in Android := false,
     debugIncludesTests in Android := false
   ) ++ stdProguardSettings
@@ -178,6 +179,7 @@ object Settings {
     ),
 
     proguardCache in Android ++= Seq(
+      "algebra",
       "cats",
       "fastparse",
       "scala",
