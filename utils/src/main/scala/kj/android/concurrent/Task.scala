@@ -17,7 +17,9 @@ object Task {
       private[this] val promise = Promise[T]()
 
       private[this] val task = new FutureTask[Unit](new Runnable {
-        def run(): Unit = promise.tryComplete(Try(body))
+        def run(): Unit = {
+          promise.tryComplete(Try(body))
+        }
       }, null)
 
       def cancel(mayInterruptIfRunning: Boolean): Boolean = task.cancel(mayInterruptIfRunning)
@@ -28,27 +30,25 @@ object Task {
       }
     }
 
-  def schedule[T](initialDelay: Duration, period: Duration)(body: => T)
+  def schedule[T](initialDelay: Duration, delay: Duration)(body: => T)
     (implicit ec: ScheduledExecutionContext = Implicits.scheduledExecutionContext): Task[T] =
     new Task[T] {
-      @volatile private[this] var started = false
+      @volatile private[this] var scheduled: ScheduledFuture[_] = null
 
-      private[this] val promise = Promise[T]()
-
-      private[this] lazy val scheduled: ScheduledFuture[_] = {
-        started = true
-        Scheduler.schedule(initialDelay = initialDelay, period = period) {
-          promise.complete(Try(body))
+      def cancel(mayInterruptIfRunning: Boolean): Boolean = {
+        (scheduled != null) && {
+          val result = scheduled.cancel(mayInterruptIfRunning)
+          scheduled = null
+          result
         }
       }
 
-      def cancel(mayInterruptIfRunning: Boolean): Boolean = {
-        started && scheduled.cancel(mayInterruptIfRunning)
-      }
-
       def run(handler: Try[T] => Unit): Unit = {
-        scheduled
-        promise.future.onComplete(handler)
+        scheduled = Scheduler.schedule(initialDelay = initialDelay, delay = delay) {
+          val promise = Promise[T]()
+          promise.tryComplete(Try(body))
+          promise.future.onComplete(handler)
+        }
       }
     }
 }
