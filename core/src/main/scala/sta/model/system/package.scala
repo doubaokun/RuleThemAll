@@ -1,3 +1,4 @@
 package sta.model
 
-package object system extends BatteryModels with HeadsetModels
+package object system extends BatteryModels with CalendarModels with HeadsetModels
+
