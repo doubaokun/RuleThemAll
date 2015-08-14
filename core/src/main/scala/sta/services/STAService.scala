@@ -67,10 +67,10 @@ class STAService extends Service with Logging { ctx =>
         val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
         wst.actual.reactOn.foreach {
           case intent if manual.isDefinedAt(intent) =>
-            services += ((intent, (Manual(manual(intent)),
+            services += ((intent, (Manual(manual(intent)).suspend(),
               wst.actual) :: services.getOrElse(intent, Nil)))
           case intent =>
-            services += ((intent, (Automatic,
+            services += ((intent, (Automatic.suspend(),
               wst.actual) :: services.getOrElse(intent, Nil)))
         }
       }
