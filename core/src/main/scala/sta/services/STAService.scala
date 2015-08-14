@@ -56,8 +56,6 @@ class STAService extends Service with Logging { ctx =>
 
   import sta.services.STAService._
 
-  private[this] val store: RulesStorage = new FileRulesStorage(ctx)
-
   object ServicesMap {
     def apply() = {
       val pm = getPackageManager
@@ -74,17 +72,17 @@ class STAService extends Service with Logging { ctx =>
               wst.actual) :: services.getOrElse(intent, Nil)))
         }
       }
-      new ServicesMap(services = services.toMap)
+      new ServicesMap(map = services.toMap)
     }
 
     def empty = new ServicesMap(Map.empty)
   }
 
-  case class ServicesMap private[STAService](services: Map[String, List[(IntentType, ServiceFragment[Model])]]) {
+  case class ServicesMap private[STAService](map: Map[String, List[(IntentType, ServiceFragment[Model])]]) {
     @inline final private def updateState(model: Model): Unit = {
       import model.companion._
       rawState.update { state =>
-        state.+(Key, model)(model.companion.ev)
+        state + (Key -> model)
       }.fold(th => log.error("Error has occurred during updating state", th), state =>
         store.rules.foreach { rule =>
           Task(rule.execute(state)(ctx, logTag)).run(_ => ())
@@ -93,19 +91,32 @@ class STAService extends Service with Logging { ctx =>
     }
 
     private[this] val tasks: Map[String, Task[Unit]] = for {
-      (intent, service) <- services
+      (intent, service) <- map
       (Manual(interval), sf) <- service 
     } yield {
-      sf.getClass.getSimpleName -> Task.schedule(0.seconds, interval) {
+      sf.logTag.tag -> Task.schedule(0.seconds, interval) {
         sf(registerReceiver(null, new IntentFilter(intent))).foreach(updateState)
       }
     }
+    
+    private[this] val runnable = {
+      val automatic = mutable.Map.empty[String, List[ServiceFragment[Model]]]
+      for (
+        (intent, service) <- map;
+        (Automatic, sf) <- service
+      ) {
+        automatic += (intent -> (sf :: automatic.getOrElse(intent, Nil)))
+      }
+      automatic
+    }
 
     def run(intent: Intent) = for (
-      service <- services.get(intent.getAction);
-      (Automatic, sf) <- service;
+      services <- runnable.get(intent.getAction);
+      sf <- services;
       model <- sf(intent)
-    ) updateState(model)
+    ) {
+      updateState(model)
+    }
 
     def stopTasks(): Boolean = {
       tasks.valuesIterator.forall(_.cancel(true))
@@ -124,27 +135,29 @@ class STAService extends Service with Logging { ctx =>
 
   def onBind(intent: Intent): IBinder = null
 
+  private[this] val store: RulesStorage = new FileRulesStorage(ctx)
+
   private[this] val rawState = Atomic(HMap.empty[ModelKV])
 
-  private[this] val rawWorkers = Atomic(ServicesMap.empty)
+  private[this] val rawServices = Atomic(ServicesMap.empty)
 
   private val requestProcessor = new BroadcastReceiver {
     private def update(set: Set[String])
       (f: (Set[String], String => Unit, ServicesMap) => ServicesMap): Unit = {
       val filters = Set.newBuilder[String]
-      rawWorkers.update { workers =>
-        workers.stopTasks()
-        f(set, filters += _, workers)
+      rawServices.update { services =>
+        services.stopTasks()
+        f(set, filters += _, services)
       }.fold(th => {
-        log.error("Failed to update workers", th)
-      }, workers => {
-        workers.runTasks()
+        log.error("Failed to update services", th)
+      }, services => {
+        services.runTasks()
         registerStateProcessor(filters.result(), unregisterFirst = true)
       })
     }
 
     private def onAdd(toAdd: Set[String], act: String => Unit, services: ServicesMap) = {
-      services.copy(services = services.services.map {
+      services.copy(map = services.map.map {
         case (v, xs) if toAdd.contains(v)  =>
           if (xs.exists(_._1 == Automatic)) act(v)
           (v, xs.map { case (t, sf) => (t.resume(), sf) })
@@ -155,7 +168,7 @@ class STAService extends Service with Logging { ctx =>
     }
 
     private def onRemove(toRemove: Set[String], act: String => Unit, services: ServicesMap) = {
-      services.copy(services = services.services.map {
+      services.copy(map = services.map.map {
         case (v, xs) if toRemove.contains(v) =>
           (v, xs.map { case (t, sf) => (t.suspend(), sf) })
         case other =>
@@ -176,7 +189,7 @@ class STAService extends Service with Logging { ctx =>
   }
 
   private val stateProcessor = new WakefulBroadcastReceiver {
-    def onReceive(context: Context, intent: Intent): Unit = rawWorkers.get.run(intent)
+    def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(intent)
   }
 
   private def registerStateProcessor(intents: Set[String], unregisterFirst: Boolean): Unit = {
@@ -187,18 +200,18 @@ class STAService extends Service with Logging { ctx =>
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
-    rawWorkers.update(_ => ServicesMap()).fold(th => throw th, _ => ())
+    rawServices.update(_ => ServicesMap()).fold(th => throw th, _ => ())
 
     val requestFilter = new IntentFilter()
     requestFilter.addAction(LOAD)
     requestFilter.addAction(UNLOAD)
     registerReceiver(requestProcessor, requestFilter)
 
-    val workers = rawWorkers.get
-    registerStateProcessor(workers.services.collect {
+    val services = rawServices.get
+    registerStateProcessor(services.map.collect {
       case (v, xs) if xs.exists(_._1 == Automatic)  => v
     }(collection.breakOut), unregisterFirst = false)
-    workers.runTasks()
+    services.runTasks()
 
     val state = rawState.get
     for (rule <- store.startupRules) {
@@ -211,7 +224,7 @@ class STAService extends Service with Logging { ctx =>
   override def onDestroy(): Unit = {
     unregisterReceiver(requestProcessor)
     unregisterReceiver(stateProcessor)
-    rawWorkers.get.stopTasks()
+    rawServices.get.stopTasks()
 
     super.onDestroy()
   }
