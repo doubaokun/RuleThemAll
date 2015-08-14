@@ -1,7 +1,7 @@
 package sta.services
 
 import scala.language.experimental.macros
-import scala.language.{ dynamics, higherKinds }
+import scala.language.{dynamics, existentials, higherKinds}
 
 import kj.android.common.feature
 import scala.annotation.StaticAnnotation
@@ -9,13 +9,9 @@ import scala.concurrent.duration.Duration
 import scala.reflect.macros.blackbox
 import sta.model.Model
 
-class genReactOn extends StaticAnnotation {
-  def macroTransform(annottees: Any*): Any = macro ServiceMacrosImpl.genReactOn
-}
-
 /**
   * Intents that should not be registered with receiver.
-  * Instead, their state should be requested on specified interval.
+  * Instead, their state should be requested every specified interval.
   *
   * @param seq sequence of intent -> duration
   */
@@ -32,27 +28,6 @@ object ServiceMacros {
 private class ServiceMacrosImpl(val c: blackbox.Context) {
 
   import c.universe._
-
-  def genReactOn(annottees: Expr[Any]*) = {
-    val outputs = annottees.map { tdef =>
-      val q"""
-        $tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents {
-          $self => ..$tbody
-        }""" = tdef.tree.duplicate
-      val intents = (for {
-        te <- tbody
-        q"$dmods def handle($darg: Intent): $dtpe = $dbody" <- te
-        q"$expr match { case ..$cases }" <- dbody
-        cq"$intent if $expr => $cbody" <- cases
-      } yield intent).toSet
-      val f = q"protected[sta] def reactOn: Set[String] = $intents"
-      q"""$tmods class $tpname[..$tparams] extends ServiceFragment[..$ttparams] with ..$parents {
-            $self => ..${tbody :+ f}
-          }"""
-    }
-
-    q"{ ..$outputs }"
-  }
 
   def collect = {
     val tpe = weakTypeOf[ServiceMacros.SF].dealias.typeConstructor
@@ -71,7 +46,7 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
 
       q"""
         sta.services.ServiceMacros.RichService(
-          actual = new ${decl.asType.toType} {},
+          actual = (new ${decl.asType.toType}).asInstanceOf[sta.services.ServiceFragment[sta.model.Model]],
           manual = $manual,
           features = $usesFeatures
         )
