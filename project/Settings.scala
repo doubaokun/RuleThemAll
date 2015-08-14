@@ -174,7 +174,6 @@ object Settings {
       "-keepclassmembers class * extends junit.framework.TestCase { *; }",
       "-keepattributes Signature",
       "-dontwarn org.typelevel.discipline.**",
-      "-dontwarn scala.collection.**",
       "-dontwarn spire.macros.**"
     ),
 
