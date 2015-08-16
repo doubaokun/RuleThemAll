@@ -1,6 +1,7 @@
 def simple_sound_off {
     when (
-        headset connected
+        headset connected,
+        wifi on
     ) do {
         set sound profile to silent
     }
@@ -8,7 +9,8 @@ def simple_sound_off {
 
 def simple_sound_on {
     when (
-        headset disconnected
+        headset disconnected,
+        wifi off
     ) do {
         set sound profile to normal
     }

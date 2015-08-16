@@ -8,7 +8,7 @@ import sta.parser.WhitespaceSkip
 
 trait TriggerRules extends WhitespaceSkip {
   private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: Model]]
-  parsers ++= Seq(BatteryRules, HeadsetRules)
+  parsers ++= Seq(BatteryRules, HeadsetRules, WiFiRules)
 
   protected def addTriggerParser(parser: TriggerParser[_ <: Model]): Unit = {
     parsers += parser
@@ -25,11 +25,11 @@ trait TriggerRules extends WhitespaceSkip {
 
     val triggers = {
       def single(trigger: TriggerParser[_ <: Model]) = {
-        def main = trigger.Rule
-        def main2 = "(" ~ main ~ "," ~ main ~ ")"
-        def main2toN = twoOrMore(main)
+        val main = P(trigger.Rule)(trigger.prefix)
+        val main2 = "(" ~ main ~ "," ~ main ~ ")"
+        val main2toN = twoOrMore(main)
 
-        def conditions = ("(" ~ (
+        val conditions = ("(" ~ (
           (main.rep(1, sep = ",") map (Trigger(_))) |
             ("or" ~ main2toN map (ts => Trigger.or(ts))) |
             ("xor" ~ main2 map (t => XorTrigger(t._1, t._2))) |
