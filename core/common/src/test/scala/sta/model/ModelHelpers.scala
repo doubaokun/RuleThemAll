@@ -2,10 +2,10 @@ package sta.model
 
 import scala.language.implicitConversions
 
-import kj.android.common.category
 import org.scalacheck.Gen
 import shapeless.HMap
 import spire.algebra.Order
+import sta.common.category
 import sta.model.triggers.functions._
 
 trait ModelHelpers {
