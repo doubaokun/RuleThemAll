@@ -1,4 +1,4 @@
-package sta.model.system
+package sta.model.triggers
 
 import android.content.Intent
 import android.provider.CalendarContract

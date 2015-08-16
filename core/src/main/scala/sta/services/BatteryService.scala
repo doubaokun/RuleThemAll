@@ -5,7 +5,7 @@ import android.os.BatteryManager._
 import kj.android.common.UsedFeatures
 import scala.concurrent.duration._
 import spire.math.UByte
-import sta.model.system.Implicits._
+import sta.model.triggers.Implicits._
 
 @manual(Intent.ACTION_BATTERY_CHANGED -> 1.minute)
 class BatteryService extends ServiceFragment[BatteryLike] {

@@ -9,7 +9,7 @@ import org.scalatest.{Matchers, WordSpec}
 import spire.implicits._
 import sta.model.Rule
 import sta.model.actions._
-import sta.model.system.Implicits._
+import sta.model.triggers._
 import sta.model.triggers._
 import sta.tests.PropertyChecks
 

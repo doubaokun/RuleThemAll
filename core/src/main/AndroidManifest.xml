@@ -15,9 +15,7 @@
         </receiver>
     </application>
 
-    <!-- actions -->
-
-    <!-- triggers -->
+    <!-- actions and triggers -->
 
     <application />
 </manifest>

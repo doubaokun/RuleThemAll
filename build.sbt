@@ -37,7 +37,7 @@ lazy val core = project.in(file("core")).settings(
   )
 ).settings(libAndroidSettings: _*).dependsOnLocal(`core-common`, utils).excludeFromLinting(
     _ / "sta" / "model" / "actions" / **,
-    _ / "sta" / "model" / "system" / **,
+    _ / "sta" / "model" / "triggers" / **,
     _ / "sta" / "parser" / **,
     _ / "sta" / "storage" / "PlaintextStorage",
     _ / "sta" / "services" / "service"

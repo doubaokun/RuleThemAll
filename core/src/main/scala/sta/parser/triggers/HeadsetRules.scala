@@ -2,8 +2,8 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import kj.android.common.UsedFeatures
-import sta.model.system.Implicits._
 import sta.model.triggers.AtomicTrigger
+import sta.model.triggers.Implicits._
 import sta.parser.WhitespaceSkip
 
 object HeadsetRules extends TriggerParser[Headset] with WhitespaceSkip {

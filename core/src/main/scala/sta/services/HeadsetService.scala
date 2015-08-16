@@ -2,7 +2,7 @@ package sta.services
 
 import android.content.Intent
 import kj.android.common.UsedFeatures
-import sta.model.system.Implicits._
+import sta.model.triggers.Implicits._
 
 class HeadsetService extends ServiceFragment[Headset] {
   final val handle: PF = {

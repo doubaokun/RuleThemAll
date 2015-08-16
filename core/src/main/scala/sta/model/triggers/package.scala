@@ -1,5 +1,5 @@
 package sta.model
 
-package object system {
+package object triggers {
   object Implicits extends BatteryModels with CalendarModels with HeadsetModels
 }
