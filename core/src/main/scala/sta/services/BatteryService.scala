@@ -2,7 +2,7 @@ package sta.services
 
 import android.content.Intent
 import android.os.BatteryManager._
-import kj.android.common.UsedFeatures
+import sta.common.UsedFeatures
 import scala.concurrent.duration._
 import spire.math.UByte
 import sta.model.triggers.Implicits._

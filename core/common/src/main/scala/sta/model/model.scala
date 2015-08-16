@@ -16,7 +16,7 @@ abstract class ModelCompanion[+M <: Model] { root =>
 }
 
 trait ModelEnumEntry extends EnumEntry with Product {
-  override def entryName: String = productPrefix.toLowerCase.replace(' ', '_')
+  override def entryName: String = productPrefix.replaceAll("(\\p{Ll})(\\p{Lu})", "$1_$2").toLowerCase
 }
 
 trait FromIntEntry extends ModelEnumEntry {
@@ -24,7 +24,7 @@ trait FromIntEntry extends ModelEnumEntry {
 }
 
 trait FromInt[T <: FromIntEntry] { this: Enum[T] =>
-  private[this] lazy val intValues: Map[Int, T] = values.map(e => e.intValue -> e)(collection.breakOut)
+  lazy val intValues: Map[Int, T] = values.map(e => e.intValue -> e)(collection.breakOut)
 
   def fromInt(i: Int): T = intValues.getOrElse(
     i, throw new NoSuchElementException(s"$i is not a member of $this")

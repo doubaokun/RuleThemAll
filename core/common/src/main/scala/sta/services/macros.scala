@@ -3,10 +3,10 @@ package sta.services
 import scala.language.experimental.macros
 import scala.language.{dynamics, existentials, higherKinds}
 
-import kj.android.common.feature
 import scala.annotation.StaticAnnotation
 import scala.concurrent.duration.Duration
 import scala.reflect.macros.blackbox
+import sta.common.feature
 import sta.model.Model
 
 /**

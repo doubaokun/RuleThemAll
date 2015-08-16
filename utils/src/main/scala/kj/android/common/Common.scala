@@ -1,9 +1,9 @@
-package sta.common
+package kj.android.common
 
-import scala.language.{ dynamics, implicitConversions }
+import scala.language.implicitConversions
 
 import android.content.Intent
-import kj.android.logging.{ LogTag, Logger }
+import kj.android.logging.{LogTag, Logger}
 
 trait Common {
   implicit def toRichIntent(intent: Intent): Common.RichIntent = new Common.RichIntent(intent)

@@ -1,19 +1,18 @@
 package sta.parser.triggers
 
 import fastparse.noApi._
-import kj.android.common.UsedFeatures
+import sta.common.UsedFeatures
 import sta.model.triggers.AtomicTrigger
 import sta.model.triggers.Implicits._
-import sta.parser.WhitespaceSkip
 
-object HeadsetRules extends TriggerParser[Headset] with WhitespaceSkip {
+object HeadsetRules extends TriggerParser[Headset] {
   import white._
 
   def prefix: String = implicitly[UsedFeatures[Headset]].category
 
-  private def connectivity: P[AtomicTrigger[Headset]] = P(
+  private def connectivity: P[AtomicTrigger[Headset]] = {
     mapParser(Headset.namesToValuesMap) map (v => AtomicTrigger[Headset](_ == v))
-  )
+  }
 
   val Rule: P[AtomicTrigger[_ <: Headset]] = connectivity
 }

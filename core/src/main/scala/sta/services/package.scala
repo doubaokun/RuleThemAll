@@ -1,8 +1,7 @@
 package sta
 
 import scala.language.implicitConversions
-
-import sta.common.Common
+import kj.android.common.Common
 import sta.model.Model
 
 package object services extends Common {

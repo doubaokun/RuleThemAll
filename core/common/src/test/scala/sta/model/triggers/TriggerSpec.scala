@@ -1,12 +1,12 @@
 package sta.model.triggers
 
-import kj.android.common.UsedFeatures
-import kj.android.common.UsedFeatures._
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{Matchers, WordSpec}
 import shapeless.HMap
 import spire.implicits._
+import sta.common.UsedFeatures
+import sta.common.UsedFeatures._
 import sta.model.triggers.functions.ModelFunction
-import sta.model.{ Model, ModelCompanion, ModelHelpers, ModelKV }
+import sta.model.{Model, ModelCompanion, ModelHelpers, ModelKV}
 import sta.tests.PropertyChecks
 
 class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelHelpers {

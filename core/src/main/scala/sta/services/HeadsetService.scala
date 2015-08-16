@@ -1,7 +1,7 @@
 package sta.services
 
 import android.content.Intent
-import kj.android.common.UsedFeatures
+import sta.common.UsedFeatures
 import sta.model.triggers.Implicits._
 
 class HeadsetService extends ServiceFragment[Headset] {

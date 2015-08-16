@@ -3,7 +3,7 @@ package sta.model.triggers
 import android.content.Intent
 import android.provider.CalendarContract
 import enumeratum.Enum
-import kj.android.common.{intent, category}
+import sta.common.{category, intent}
 import sta.model._
 
 trait CalendarModels {

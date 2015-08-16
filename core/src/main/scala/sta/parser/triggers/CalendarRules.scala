@@ -1,36 +1,33 @@
 package sta.parser.triggers
 
 import fastparse.noApi._
-import kj.android.common.UsedFeatures
+import sta.common.UsedFeatures
 import sta.model.triggers.AtomicTrigger
 import sta.model.triggers.Implicits._
-import sta.parser.WhitespaceSkip
 
-object CalendarRules extends TriggerParser[CalendarEvent] with WhitespaceSkip {
+object CalendarRules extends TriggerParser[CalendarEvent] {
   import CalendarEvent._
   import white._
 
   def prefix: String = implicitly[UsedFeatures[CalendarEvent]].category
 
-  override val Main: Option[P[AtomicTrigger[_ <: CalendarEvent]]] = Some(P(
+  override val Main: Option[P[AtomicTrigger[_ <: CalendarEvent]]] = Some(
     mapParser(State.namesToValuesMap) map (v => AtomicTrigger[CalendarEvent](_.state == v))
-  ))
+  )
 
-  private def name: P[AtomicTrigger[CalendarEvent]] = P(
+  private def name: P[AtomicTrigger[CalendarEvent]] = {
     "name" ~ matchStringParser[CalendarEvent](_.name)
-  )
+  }
 
-  private def description: P[AtomicTrigger[CalendarEvent]] = P(
+  private def description: P[AtomicTrigger[CalendarEvent]] = {
     "description" ~ matchStringParser[CalendarEvent](_.description)
-  )
+  }
 
-  private def availability: P[AtomicTrigger[CalendarEvent]] = P(
+  private def availability: P[AtomicTrigger[CalendarEvent]] = {
     "availability" ~ mapParser(Availability.namesToValuesMap) map (v =>
       AtomicTrigger[CalendarEvent](_.availability == v)
     )
-  )
+  }
 
-  val Rule: P[AtomicTrigger[_ <: CalendarEvent]] = P(
-    name | description | availability
-  )
+  val Rule: P[AtomicTrigger[_ <: CalendarEvent]] = name | description | availability
 }

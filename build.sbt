@@ -24,7 +24,7 @@ lazy val `core-common` = project.in(file("core/common")).settings(
     spire
   )
 ).settings(libAndroidSettings: _*).dependsOnLocal(utils).excludeFromLinting(
-    _ / "sta" / "common" / "Common",
+    _ / "sta" / "common" / "usedFeatures",
     _ / "sta" / "model" / "Rule",
     _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
     _ / "sta" / "services" / "macros"

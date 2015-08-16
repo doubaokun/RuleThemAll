@@ -1,8 +1,8 @@
 package sta.model.triggers
 
-import kj.android.common.UsedFeatures
 import scala.annotation.tailrec
 import shapeless.HMap
+import sta.common.UsedFeatures
 import sta.model._
 import sta.model.triggers.functions.ModelFunction
 

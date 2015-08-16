@@ -88,7 +88,7 @@ class STAService extends Service with Logging {
       (Manual(interval), sf) <- service 
     } yield {
       sf.logTag.tag -> Task.schedule(0.seconds, interval) {
-        sf(registerReceiver(null, new IntentFilter(intent))).foreach(updateState)
+        sf(ctx, registerReceiver(null, new IntentFilter(intent))).foreach(updateState)
       }
     }
     
@@ -103,10 +103,10 @@ class STAService extends Service with Logging {
       automatic
     }
 
-    def run(intent: Intent) = for (
+    def run(context: Context, intent: Intent) = for (
       services <- runnable.get(intent.getAction);
       sf <- services;
-      model <- sf(intent)
+      model <- sf(context, intent)
     ) {
       updateState(model)
     }
@@ -212,7 +212,7 @@ class STAService extends Service with Logging {
   })
 
   private val stateProcessor = new WakefulBroadcastReceiver {
-    def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(intent)
+    def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(context, intent)
   }
 
   private def registerStateProcessor(intents: Set[String], unregisterFirst: Boolean): Unit = {
