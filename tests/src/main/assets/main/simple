@@ -1,0 +1,15 @@
+def simple_sound_off {
+    when (
+        headset connected
+    ) do {
+        set sound profile to silent
+    }
+}
+
+def simple_sound_on {
+    when (
+        headset disconnected
+    ) do {
+        set sound profile to normal
+    }
+}

@@ -1,7 +1,8 @@
 package sta.services
 
 import android.content.Intent
-import sta.model.system._
+import kj.android.common.UsedFeatures
+import sta.model.system.Implicits._
 
 // TODO
 class CalendarService extends ServiceFragment[CalendarEvent] {
@@ -11,7 +12,5 @@ class CalendarService extends ServiceFragment[CalendarEvent] {
         None
   }
 
-  protected[sta] def reactOn: Set[String] = Set(
-    Intent.ACTION_PROVIDER_CHANGED
-  )
+  def reactOn: Set[String] = implicitly[UsedFeatures[CalendarEvent]].intents
 }

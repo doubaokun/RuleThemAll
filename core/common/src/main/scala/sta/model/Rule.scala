@@ -8,20 +8,22 @@ import cats.data.Validated._
 import cats.data.{NonEmptyList => NEL, Validated}
 import cats.std.all._
 import cats.syntax.all._
+import kj.android.common.{Notify, AppInfo}
 import kj.android.logging._
 import scala.util.control.NonFatal
 import shapeless.HMap
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
 
-case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Serializable {
+case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
   type Result = Validated[FailNEL, Success]
 
-  @inline private implicit def executeAction(a: Action): Result = try {
-    Validated.valid(())
+  @inline private def executeAction(a: Action)(implicit ctx: Context): Result = try {
+    log.info(s"Executing action ${a.name}")
+    Validated.valid(a.execute())
   } catch {
     case NonFatal(t) => Validated.invalidNel(a.name -> t)
   }
@@ -39,14 +41,15 @@ case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Se
     } else Left(this)
   }
 
-  def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag): Unit = {
+  def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
     tryExecute(state).fold(
       _ => (),
-      v => {
-        v.fold(errs => (errs.head :: errs.tail).foreach { case (action, th) =>
+      v => v.fold(errs => {
+        (errs.head :: errs.tail).foreach { case (action, th) =>
           Logger.error(s"Error has occurred during running action $action in $name", th)
-        }, _ => ())
-      }
+        }
+        Notify(s"Failed to execute $name", Some(name))
+      }, _ => Notify(s"Rule $name executed successfully"))
     )
   }
 

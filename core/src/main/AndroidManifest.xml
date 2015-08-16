@@ -4,10 +4,20 @@
 
     <uses-sdk android:minSdkVersion="18" android:targetSdkVersion="21" android:maxSdkVersion="21"/>
 
+    <!-- launch at boot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!--<uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />-->
-    <!--<uses-permission android:name="android.permission.READ_LOGS" />-->
-
-    <application>
+    <application android:installLocation="internalOnly">
+        <service android:name="sta.services.STAService" />
+        <receiver android:name="sta.services.BootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
+
+    <!-- actions -->
+
+    <!-- triggers -->
+
+    <application />
 </manifest>

@@ -7,14 +7,16 @@ import scala.reflect.macros.blackbox
 
 class feature(features: String*) extends StaticAnnotation
 
-class category(category: String) extends StaticAnnotation
+class intent(intent: String*) extends StaticAnnotation
 
-class tags(tags: String*) extends StaticAnnotation
+class category(category: String) extends StaticAnnotation
 
 trait UsedFeatures[T] {
   def category: String
 
   def features: Set[String]
+
+  def intents: Set[String]
 }
 
 object UsedFeatures {
@@ -37,11 +39,16 @@ private class UsedFeaturesImpl(val c: blackbox.Context) extends MacrosHelpers {
     val features = annotations.map(_.tree).collectFirst {
       case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[feature] => args
     }.getOrElse(List.empty).foldLeft(q"Set.empty[String]") { case (acc, f) => q"$acc + $f" }
+    val intents = annotations.map(_.tree).collectFirst {
+      case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[intent] => args
+    }.getOrElse(List.empty).foldLeft(q"Set.empty[String]") { case (acc, f) => q"$acc + $f" }
 
     q"""new kj.android.common.UsedFeatures[$tpe] {
       def category: String = $category
 
       def features: Set[String] = $features
+
+      def intents: Set[String] = $intents
     }"""
   }
 }

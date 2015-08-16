@@ -24,7 +24,7 @@ trait FromIntEntry extends ModelEnumEntry {
 }
 
 trait FromInt[T <: FromIntEntry] { this: Enum[T] =>
-  private lazy val intValues: Map[Int, T] = values.map(e => e.intValue -> e)(collection.breakOut)
+  private[this] lazy val intValues: Map[Int, T] = values.map(e => e.intValue -> e)(collection.breakOut)
 
   def fromInt(i: Int): T = intValues.getOrElse(
     i, throw new NoSuchElementException(s"$i is not a member of $this")

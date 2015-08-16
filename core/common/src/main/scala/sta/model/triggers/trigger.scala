@@ -40,7 +40,7 @@ object Trigger {
   }
 }
 
-sealed abstract class Trigger extends Serializable {
+sealed abstract class Trigger {
   def satisfiedBy(state: HMap[ModelKV]): Boolean
 
   def uses: Set[String]
@@ -85,5 +85,5 @@ case class AtomicTrigger[M <: Model: ModelCompanion: UsedFeatures](function: Mod
     state.get(Key).exists(function)
   }
 
-  def uses: Set[String] = Set(implicitly[UsedFeatures[M]].category)
+  def uses: Set[String] = implicitly[UsedFeatures[M]].intents
 }

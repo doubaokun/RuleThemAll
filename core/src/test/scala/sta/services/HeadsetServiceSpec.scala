@@ -3,7 +3,7 @@ package sta.services
 import android.content.Intent
 import org.robolectric.annotation.Config
 import org.scalatest.{ Matchers, RobolectricSuite, WordSpec }
-import sta.model.system._
+import sta.model.system.Implicits._
 
 @Config(sdk = Array(18), manifest = "core/src/test/AndroidManifest.xml")
 class HeadsetServiceSpec extends WordSpec with RobolectricSuite with Matchers {

@@ -22,8 +22,7 @@ lazy val `core-common` = project.in(file("core/common")).settings(
     macrosExtra,
     reflect,
     spire
-  )/*,
-  buildConfigGenerator in Android := Seq.empty*/
+  )
 ).settings(libAndroidSettings: _*).dependsOnLocal(utils).excludeFromLinting(
     _ / "sta" / "common" / "Common",
     _ / "sta" / "model" / "Rule",
@@ -40,12 +39,13 @@ lazy val core = project.in(file("core")).settings(
     _ / "sta" / "model" / "actions" / **,
     _ / "sta" / "model" / "system" / **,
     _ / "sta" / "parser" / **,
-    _ / "sta" / "storage" / "FileRulesStorage",
-    _ / "sta" / "services" / "STAService"
+    _ / "sta" / "storage" / "PlaintextStorage",
+    _ / "sta" / "services" / "service"
   )
 
 lazy val tests = project.in(file("tests")).settings(benchmarkSettings: _*)
   .dependsOnLocal(core, `core-common`, utils)
+
 
 lazy val root = project.in(file(".")).aggregate(utils, `core-common`, core, tests).settings(Seq(
   parallelExecution in Android := false

@@ -6,5 +6,5 @@ trait Logging {
     new LogTag(name.substring(0, math.min(name.length, 23)))
   }
 
-  protected def log = Logger
+  @inline protected def log = Logger
 }

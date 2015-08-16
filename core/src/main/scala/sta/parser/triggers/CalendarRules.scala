@@ -2,7 +2,7 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import kj.android.common.UsedFeatures
-import sta.model.system._
+import sta.model.system.Implicits._
 import sta.model.triggers.AtomicTrigger
 import sta.parser.WhitespaceSkip
 

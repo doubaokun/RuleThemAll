@@ -7,13 +7,16 @@
     <!-- ScalaMeter -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <application>
-        <activity android:name=".BenchmarkActivity" />
+    <application android:label="@string/app_name" android:icon="@drawable/update_icon">
+        <activity android:name=".BenchmarkActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+            </intent-filter>
+        </activity>
         <activity android:name=".TestActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
             </intent-filter>
         </activity>
-        <service android:name="sta.services.STAService" />
     </application>
 </manifest>

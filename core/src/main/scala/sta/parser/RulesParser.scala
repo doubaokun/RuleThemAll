@@ -15,7 +15,7 @@ sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with T
 
   private def alphaNum = CharIn(('0' to '9') ++ ('a' to 'z') ++ ('A' to 'Z'))
 
-  def Name: P[String] = P(alphaNum.repX(1).!)
+  def Name: P[String] = P((alphaNum ~ ("_" ~ alphaNum).?).repX(1).!)
 
   def Trigger: P[Trigger] = P("(" ~ MainT ~ ")")
 
@@ -29,6 +29,10 @@ sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with T
   )
 
   def Root: P[Seq[Rule]] = P(Start ~ Definition.rep(1) ~ End)
+  
+  def TracedRoot: P[Seq[(Rule, Int)]] = P(Start ~ (Definition ~ Index).rep(1) ~ End)
+  
+  def Single: P[Rule] = P(Start ~ Definition ~ End)
 }
 
 object RulesParser extends RulesParser {
@@ -39,4 +43,14 @@ object RulesParser extends RulesParser {
       case se: SyntaxError => Left(se)
     }
   }
+  
+  def tracedParse(input: String): Either[SyntaxError, Seq[(Rule, Int)]] = {
+    try {
+      Right(TracedRoot.parse(input).get.value)
+    } catch {
+      case se: SyntaxError => Left(se)
+    }
+  }
+
+  protected[sta] def parseSingle(input: String): Rule = Single.parse(input).get.value
 }

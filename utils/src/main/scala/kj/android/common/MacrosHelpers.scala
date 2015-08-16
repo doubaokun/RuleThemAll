@@ -3,13 +3,24 @@ package kj.android.common
 import scala.reflect.macros.blackbox
 
 trait MacrosHelpers {
+  // TODO traverse all sealed descendants
   protected def allAnnotationsFor(ctx: blackbox.Context)(tpe: ctx.universe.Type): List[ctx.universe.Annotation] = {
     import ctx.universe._
 
     val builder = List.newBuilder[Annotation]
-    builder ++= tpe.baseClasses.flatMap { sym =>
-      if (sym.companion != NoSymbol) sym.annotations ++ sym.companion.annotations
-      else sym.annotations
+    tpe.baseClasses.foreach { sym =>
+      if (sym.companion != NoSymbol) {
+        builder ++= sym.annotations
+        builder ++= sym.companion.annotations
+      } else {
+        builder ++= sym.annotations
+      }
+    }
+    if (tpe.typeSymbol.isClass) {
+      for (
+        child <- tpe.typeSymbol.asClass.knownDirectSubclasses;
+        annotation <- child.annotations
+      ) builder += annotation
     }
     builder.result()
   }

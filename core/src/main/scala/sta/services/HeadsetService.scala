@@ -1,7 +1,8 @@
 package sta.services
 
 import android.content.Intent
-import sta.model.system.Headset
+import kj.android.common.UsedFeatures
+import sta.model.system.Implicits._
 
 class HeadsetService extends ServiceFragment[Headset] {
   final val handle: PF = {
@@ -9,7 +10,5 @@ class HeadsetService extends ServiceFragment[Headset] {
       Headset.fromInt(intent.extra[Int].get("state"))
   }
 
-  protected[sta] def reactOn: Set[String] = Set(
-    Intent.ACTION_HEADSET_PLUG
-  )
+  def reactOn: Set[String] = implicitly[UsedFeatures[Headset]].intents
 }

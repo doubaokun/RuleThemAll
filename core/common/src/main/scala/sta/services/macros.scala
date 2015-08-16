@@ -40,6 +40,7 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
       val manual = decl.annotations.map(_.tree).collectFirst {
         case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[manual] => args
       }
+      // FIXME partially overlaps with UsedFeatures
       val usesFeatures = decl.annotations.map(_.tree).collectFirst {
         case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[feature] => args
       }.getOrElse(List.empty).foldLeft(q"List.empty[String]") { case (acc, f) => q"$f :: $acc" }

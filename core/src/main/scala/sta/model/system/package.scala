@@ -1,4 +1,5 @@
 package sta.model
 
-package object system extends BatteryModels with CalendarModels with HeadsetModels
-
+package object system {
+  object Implicits extends BatteryModels with CalendarModels with HeadsetModels
+}
