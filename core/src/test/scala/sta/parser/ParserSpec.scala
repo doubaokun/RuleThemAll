@@ -2,14 +2,13 @@ package sta.parser
 
 import scala.language.implicitConversions
 
-import android.media.AudioManager
 import java.io.InputStream
 import kj.android.common.UsedFeatures._
 import org.scalatest.{Matchers, WordSpec}
 import spire.implicits._
 import sta.model.Rule
 import sta.model.actions._
-import sta.model.triggers._
+import sta.model.triggers.Implicits._
 import sta.model.triggers._
 import sta.tests.PropertyChecks
 
