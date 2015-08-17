@@ -1,7 +1,6 @@
 package kj.android.common
 
 import scala.language.implicitConversions
-
 import android.content.Intent
 import kj.android.logging.{LogTag, Logger}
 
@@ -20,7 +19,7 @@ object Common {
       Option(intent.getExtras.get(key)).getOrElse(throw new NullPointerException).asInstanceOf[T]
     } catch {
       case th: Throwable =>
-        Logger.error(s"Error during getting $key from intent", th)
+        android.util.Log.e(logTag.tag, s"Error during getting $key from intent", th) // TODO
         throw th
     }
   }

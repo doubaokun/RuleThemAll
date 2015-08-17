@@ -2,7 +2,6 @@ package sta.services
 
 import android.content.Intent
 import android.os.BatteryManager._
-import sta.common.UsedFeatures
 import scala.concurrent.duration._
 import spire.math.UByte
 import sta.model.triggers.Implicits._
@@ -29,6 +28,4 @@ class BatteryService extends ServiceFragment[BatteryLike] {
 
       Battery(level, plugged, present, status)
   }
-
-  def reactOn: Set[String] = implicitly[UsedFeatures[BatteryLike]].intents
 }

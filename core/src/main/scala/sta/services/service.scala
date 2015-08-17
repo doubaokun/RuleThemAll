@@ -131,9 +131,9 @@ class STAService extends Service with Logging {
       val pm = getPackageManager
       val collected = ServiceMacros.collect
       val services = mutable.Map.empty[String, SF]
-      for (wst <- collected if wst.features.forall(pm.hasSystemFeature)) {
+      for (wst <- collected if wst.features.features.forall(pm.hasSystemFeature)) {
         val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
-        wst.actual.reactOn.foreach {
+        wst.features.intents.foreach {
           case intent if manual.isDefinedAt(intent) =>
             services += ((intent, (Manual(manual(intent)).suspend(),
               wst.actual) :: services.getOrElse(intent, Nil)))

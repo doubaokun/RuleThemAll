@@ -1,7 +1,6 @@
 package sta.services
 
 import android.content.Intent
-import sta.common.UsedFeatures
 import sta.model.triggers.Implicits._
 
 class HeadsetService extends ServiceFragment[Headset] {
@@ -9,6 +8,4 @@ class HeadsetService extends ServiceFragment[Headset] {
     case intent if intent.getAction == Intent.ACTION_HEADSET_PLUG =>
       Headset.fromInt(intent.extra[Int].get("state"))
   }
-
-  def reactOn: Set[String] = implicitly[UsedFeatures[Headset]].intents
 }

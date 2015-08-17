@@ -1,8 +1,6 @@
 package sta.parser
 
-import scala.language.higherKinds
-import scala.language.implicitConversions
-
+import scala.language.{higherKinds, implicitConversions}
 import fastparse.all._
 import scala.util.Try
 import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}

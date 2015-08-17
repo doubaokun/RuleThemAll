@@ -1,12 +1,11 @@
 package sta.parser.triggers
 
 import scala.language.implicitConversions
-
 import fastparse.all._
 import sta.common.UsedFeatures
 import sta.model.triggers.AtomicTrigger
 import sta.model.{Model, ModelCompanion}
-import sta.parser.{WhitespaceSkip, BasicRules}
+import sta.parser.{BasicRules, WhitespaceSkip}
 
 trait TriggerParser[M <: Model] extends BasicRules with WhitespaceSkip {
   def matchStringParser[T <: Model : ModelCompanion: UsedFeatures](extractor: T => String): P[AtomicTrigger[T]] = {

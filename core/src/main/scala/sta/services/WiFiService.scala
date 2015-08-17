@@ -1,9 +1,7 @@
 package sta.services
 
-import android.content.{Context, Intent}
 import android.net.NetworkInfo
 import android.net.wifi.{WifiInfo, WifiManager}
-import sta.common.UsedFeatures
 import sta.model.triggers.Implicits._
 
 class WiFiService extends ServiceFragment[WiFi] {
@@ -18,6 +16,4 @@ class WiFiService extends ServiceFragment[WiFi] {
       intent.extra[NetworkInfo].get(WifiManager.EXTRA_NETWORK_INFO).getState == NetworkInfo.State.DISCONNECTED =>
       WiFiConnection(None)
   }
-
-  def reactOn: Set[String] = implicitly[UsedFeatures[WiFi]].intents
 }

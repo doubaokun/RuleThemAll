@@ -1,7 +1,6 @@
 package kj.android.logging
 
 import scala.language.experimental.macros
-
 import scala.reflect.macros.blackbox
 
 object Logger {
@@ -38,7 +37,7 @@ private class LoggerMacros(val c: blackbox.Context) {
 
   import c.universe._
 
-  private def log = q"android.util.Log"
+  private def log = typeOf[android.util.Log].companion
 
   def debugMsg(msg: Expr[String])(lt: Expr[LogTag]) =
     q"if ($log.isLoggable($lt.tag, $log.DEBUG)) $log.d($lt.tag, $msg)"

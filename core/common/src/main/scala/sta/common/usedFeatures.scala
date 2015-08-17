@@ -42,22 +42,21 @@ private class UsedFeaturesImpl(val c: blackbox.Context) {
 
   def usedFeatures[T: WeakTypeTag] = {
     val tpe = weakTypeOf[T]
-    val annotations = allParentAnnotationsFor(tpe)
 
-    val category = annotations.map(_.tree).collectFirst {
+    val category = allParentAnnotationsFor(tpe).map(_.tree).collectFirst {
       case q"""new $parent($arg)""" if parent.tpe =:= weakTypeOf[category] => arg
     }.getOrElse(c.abort(
       c.enclosingPosition,
       s"Cannot generate UsedFeatures for $tpe: no category defined."
     ))
-    val features = annotations.map(_.tree).collectFirst {
+    val features = allChildrenAnnotationsFor(tpe).map(_.tree).collect {
       case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[feature] => args
-    }.getOrElse(List.empty).foldLeft(q"Set.empty[String]") { case (acc, f) => q"$acc + $f" }
+    }.flatten.foldLeft(q"Set.empty[String]") { case (acc, f) => q"$acc + $f" }
     val intents = allChildrenAnnotationsFor(tpe).map(_.tree).collect {
       case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[intent] => args
     }.flatten.foldLeft(q"Set.empty[String]") { case (acc, f) => q"$acc + $f" }
 
-    q"""new sta.common.UsedFeatures[$tpe] {
+    q"""new ${appliedType(typeOf[UsedFeatures[_]].typeConstructor, tpe)} {
       def category: String = $category
 
       def features: Set[String] = $features

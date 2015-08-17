@@ -1,7 +1,6 @@
 package sta.model
 
 import scala.language.implicitConversions
-
 import org.scalacheck.Gen
 import shapeless.HMap
 import spire.algebra.Order
@@ -60,8 +59,7 @@ trait ModelHelpers {
 
     implicit def stateGen[T]: Gen[HMap[ModelKV]] = {
       testGen.map { m =>
-        import m.companion
-        HMap[ModelKV](companion.Key -> m.asInstanceOf[Model])(companion.ev)
+        HMap[ModelKV](m.companion.Key -> m.asInstanceOf[Model])(m.companion.ev)
       }
     }
   }

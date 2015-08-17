@@ -1,11 +1,10 @@
 package sta.parser
 
 import scala.language.implicitConversions
-
 import java.io.InputStream
-import sta.common.UsedFeatures._
 import org.scalatest.{Matchers, WordSpec}
 import spire.implicits._
+import sta.common.UsedFeatures._
 import sta.model.Rule
 import sta.model.actions._
 import sta.model.triggers.Implicits._

@@ -1,7 +1,6 @@
 package sta.model
 
 import scala.language.implicitConversions
-
 import android.content.Context
 import cats._
 import cats.data.Validated._

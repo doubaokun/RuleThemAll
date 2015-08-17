@@ -60,7 +60,7 @@ class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelH
     }
   }
 
-  "An AtomicTrigger" should {
+  "AtomicTrigger" should {
     "yield true if ModelFunction returns true" in {
       forAll(modelFunctionGen[Int], stateGen[Int]) { (mf, state) =>
         checkAtomicTrigger(mf, state)(identity)
@@ -82,7 +82,7 @@ class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelH
     }
   }
 
-  "A LogicOpTrigger" when {
+  "LogicOpTrigger" when {
     "is an AndTrigger" should {
       "yield true if both triggers are satisfied" in {
         forAll(modelFunctionGen[String], stateGen[String],

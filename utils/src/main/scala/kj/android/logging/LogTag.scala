@@ -1,28 +1,28 @@
 package kj.android.logging
 
 import scala.language.experimental.macros
-
-import scala.annotation.compileTimeOnly
 import scala.reflect.macros.blackbox
 
-/**
-  * Calling LogTag constructor directly should be avoided.
-  * You should use apply method in companion object instead
+/** LogTag for the [[android.util.Log)]].
+  *
+  * Note that you should avoid calling constructor directly and use companion `apply` method instead.
   */
 class LogTag(val tag: String) extends AnyVal {
   override def toString: String = tag
 }
 
 object LogTag {
-  def apply(tag: String): LogTag = macro safeApply
+  def apply(tag: String): LogTag = macro LogTagImpl.makeInstance
+}
 
-  @compileTimeOnly("safeApply cannot be called outside companion apply method")
-  def safeApply(c: blackbox.Context)(tag: c.Expr[String]) = {
-    import c.universe._
+private class LogTagImpl(val c: blackbox.Context) {
+  import c.universe._
+
+  def makeInstance(tag: c.Expr[String]) = {
     tag.tree match {
-      case q"${ t: String }" if t.length > 23 => q"new LogTag(${t.substring(0, 23)})"
-      case q"${ t: String }" => q"new LogTag($t)"
-      case _ => q"${tag.value.substring(0, scala.math.min(tag.value.length, 23))}"
+      case q"${t: String}" if t.length > 23 => q"new ${typeOf[LogTag]}(${t.substring(0, 23)})"
+      case q"${t: String}" => q"new ${typeOf[LogTag]}($t)"
+      case _ => q"$tag.substring(0, scala.math.min($tag.length, 23))"
     }
   }
 }

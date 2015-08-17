@@ -13,6 +13,4 @@ abstract class ServiceFragment[M <: Model] extends Logging {
   }
 
   def handle: PF
-
-  def reactOn: Set[String]
 }
