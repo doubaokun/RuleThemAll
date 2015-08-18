@@ -24,6 +24,6 @@ package object concurrent {
     }
 
     implicit val stdExecutionContext: ExecutionContext =
-      scala.concurrent.ExecutionContext.Implicits.global
+      ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
   }
 }

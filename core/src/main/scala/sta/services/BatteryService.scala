@@ -20,11 +20,11 @@ class BatteryService extends ServiceFragment[BatteryLike] {
     case intent if intent.getAction == Intent.ACTION_BATTERY_OKAY =>
       BatteryState.OK
     case intent if intent.getAction == Intent.ACTION_BATTERY_CHANGED =>
-      val level = UByte((intent.extra[Int].get(EXTRA_LEVEL) * 100d /
-        intent.extra[Int].get(EXTRA_SCALE).toDouble).round.toByte)
-      val present = intent.extra[Boolean].get(EXTRA_PRESENT)
-      val plugged = Plugged.fromInt(intent.extra[Int].get(EXTRA_PLUGGED))
-      val status = Status.fromInt(intent.extra[Int].get(EXTRA_STATUS))
+      val level = UByte((intent.extra[Int](EXTRA_LEVEL) * 100d /
+        intent.extra[Int](EXTRA_SCALE).toDouble).round.toByte)
+      val present = intent.extra[Boolean](EXTRA_PRESENT)
+      val plugged = Plugged.fromInt(intent.extra[Int](EXTRA_PLUGGED))
+      val status = Status.fromInt(intent.extra[Int](EXTRA_STATUS))
 
       Battery(level, plugged, present, status)
   }

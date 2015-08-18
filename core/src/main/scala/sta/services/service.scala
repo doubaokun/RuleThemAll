@@ -1,12 +1,12 @@
 package sta.services
 
-import android.app.Service
+import android.app.{PendingIntent, Service}
 import android.content.{BroadcastReceiver, Context, Intent, IntentFilter}
 import android.net.Uri
 import android.os._
 import android.support.v4.content.WakefulBroadcastReceiver
 import java.io.File
-import kj.android.common.AppInfo
+import kj.android.common.{Notify, AppInfo}
 import kj.android.concurrent._
 import kj.android.logging.Logging
 import scala.collection.mutable
@@ -18,12 +18,18 @@ import sta.storage.PlaintextStorage
 
 class BootReceiver extends BroadcastReceiver with Logging {
   def onReceive(context: Context, intent: Intent): Unit = intent.getAction match {
-    case Intent.ACTION_BOOT_COMPLETED => context.startService(new Intent(context, classOf[STAService]))
-    case other => log.warn(s"Unknown message received: $other")
+    case Intent.ACTION_BOOT_COMPLETED =>
+      val clazz = classOf[STAService]
+      log.info(s"Starting ${clazz.getSimpleName}")
+      context.startService(new Intent(context, clazz))
+    case other =>
+      log.warn(s"Unknown message received: $other")
   }
 }
 
 object STAService {
+  val ACTION = "action"
+
   val URI = "path"
   val LOAD = 1
 
@@ -77,7 +83,7 @@ class STAService extends Service with Logging {
       rawState.update { state =>
         state + (Key -> model)
       }.fold(th => log.error("Error has occurred during updating state", th), state => {
-        store.rules.foreach { rule =>
+        storage.rules.foreach { rule =>
           Task(rule.execute(state)).run(_ => ())
         }
       })
@@ -131,14 +137,15 @@ class STAService extends Service with Logging {
       val pm = getPackageManager
       val collected = ServiceMacros.collect
       val services = mutable.Map.empty[String, SF]
+      val rules = storage.rules.flatMap(_.uses).toSet
       for (wst <- collected if wst.features.features.forall(pm.hasSystemFeature)) {
         val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
         wst.features.intents.foreach {
           case intent if manual.isDefinedAt(intent) =>
-            services += ((intent, (Manual(manual(intent)).suspend(),
-              wst.actual) :: services.getOrElse(intent, Nil)))
+            services += ((intent, (if (!rules.contains(intent)) Manual(manual(intent)).suspend()
+              else Manual(manual(intent)), wst.actual) :: services.getOrElse(intent, Nil)))
           case intent =>
-            services += ((intent, (Automatic.suspend(),
+            services += ((intent, (if (!rules.contains(intent)) Automatic.suspend() else Automatic,
               wst.actual) :: services.getOrElse(intent, Nil)))
         }
       }
@@ -153,13 +160,13 @@ class STAService extends Service with Logging {
     smallIcon = ctx.getApplicationInfo.icon
   )
 
-  private[this] lazy val store = new PlaintextStorage
+  private[this] lazy val storage = new PlaintextStorage
 
   private[this] lazy val rawServices = Atomic(ServicesMap())
 
   private[this] val rawState = Atomic(HMap.empty[ModelKV])
 
-  private val requestProcessor = new Messenger(new Handler {
+  private[this] val requestProcessor = new Messenger(new Handler {
     private def update(f: (String => Unit, (String, SF)) => (String, SF)): Unit = {
       val filters = Set.newBuilder[String]
       rawServices.update { services =>
@@ -200,18 +207,18 @@ class STAService extends Service with Logging {
     override def handleMessage(msg: Message): Unit = {
       msg.what match {
         case LOAD => msg.getData.getStringArray(URI).foreach { path =>
-          val (toAdd, toRemove) = store.register(new File(path))
+          val (toAdd, toRemove) = storage.register(new File(path))
           if (toAdd.nonEmpty || toRemove.nonEmpty) update(onAdd(toAdd, toRemove))
         }
         case UNLOAD =>
-          val toRemove = store.unregister(msg.getData.getStringArray(NAME): _*)
+          val toRemove = storage.unregister(msg.getData.getStringArray(NAME): _*)
           if (toRemove.nonEmpty) update(onRemove(toRemove))
         case other => log.warn(s"Unknown message received: $other")
       }
     }
   })
 
-  private val stateProcessor = new WakefulBroadcastReceiver {
+  private[this] val stateProcessor = new WakefulBroadcastReceiver {
     def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(context, intent)
   }
 
@@ -224,8 +231,9 @@ class STAService extends Service with Logging {
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
     appInfo
-    store
-
+    storage
+    startForeground(1, Notify.build(s"Monitoring",
+      intent.extra[PendingIntent].get(STAService.ACTION)))
     val services = rawServices.get
     registerStateProcessor(services.map.collect {
       case (v, xs) if xs.exists(_._1 == Automatic)  => v
@@ -233,17 +241,16 @@ class STAService extends Service with Logging {
     services.runTasks()
 
     val state = rawState.get
-    for (rule <- store.startupRules) {
+    for (rule <- storage.startupRules) {
       Task(rule.execute(state)).run(_ => ())
     }
 
-    super.onStartCommand(intent, flags, startId)
+    Service.START_STICKY
   }
 
   override def onDestroy(): Unit = {
+    stopForeground(true)
     unregisterReceiver(stateProcessor)
     rawServices.get.stopTasks()
-
-    super.onDestroy()
   }
 }

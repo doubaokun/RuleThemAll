@@ -9,8 +9,6 @@ import sta.model.Rule
 import sta.parser.RulesParser
 
 class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends RulesStorage {
-  val Tag = "PlaintextStorage"
-
   private[this] val rulesDir: File = ctx.getDir("rules", Context.MODE_PRIVATE)
 
   private[this] val rawRules = {
@@ -22,7 +20,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       val rule = RulesParser.parseSingle(io.Source.fromFile(file).mkString)
       map += (rule.hashCode() -> rule)
     }
-    Notify(s"${files.length} rules loaded", Some(Tag))
+    Notify(s"${files.length} rules loaded", Some(logTag.tag))
     map
   }
 
@@ -62,9 +60,11 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     rules
   }
 
-  def allRules: Iterator[Rule] = rawRules.valuesIterator
+  def allRules: Iterator[Rule] = synchronized {
+    rawRules.valuesIterator
+  }
 
-  def register(from: File): (Set[String], Set[String]) = {
+  def register(from: File): (Set[String], Set[String]) = synchronized {
     val rules = parse(from)
     val added = Set.newBuilder[String]
     val removed = Set.newBuilder[String]
@@ -99,11 +99,11 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     rawRules ++= rules.map(r => r.hashCode() -> r)
     val currSize = rawRules.size
     Notify(s"${currSize - prevSize} rules inserted, " +
-      s"${prevSize + rules.length - currSize} rules updated", Some(Tag))
+      s"${prevSize + rules.length - currSize} rules updated", Some(logTag.tag))
     (added.result(), removed.result() -- added.result())
   }
 
-  def unregister(names: String*): Set[String] = {
+  def unregister(names: String*): Set[String] = synchronized {
     val removed = Set.newBuilder[String]
     names.foreach { name =>
       val file = new File(rulesDir, s"$name.rule")
@@ -125,7 +125,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       }
     }
 
-    Notify(s"${names.length} rules removed", Some(Tag))
+    Notify(s"${names.length} rules removed", Some(logTag.tag))
     removed.result()
   }
 }

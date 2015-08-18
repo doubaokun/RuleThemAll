@@ -10,7 +10,7 @@ import kj.android.logging.Logging
 import sta.services.STAService
 
 class TestActivity extends Activity with Logging {
-  private[this] var messenger: Option[Messenger] = None
+  @volatile private[this] var messenger: Option[Messenger] = None
 
   private lazy val files = {
     val assets = getResources.getAssets
@@ -41,13 +41,9 @@ class TestActivity extends Activity with Logging {
 
   override def onCreate(savedInstanceState: Bundle): Unit = {
     super.onCreate(savedInstanceState)
-    if (getRequestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
-      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
-    else
-      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
 
     startService(new Intent(this, classOf[STAService]))
-    bindService(new Intent(this, classOf[STAService]), connection, Context.BIND_AUTO_CREATE)
+    bindService(new Intent(this, classOf[STAService]), connection, 0)
   }
 
   override def onDestroy(): Unit = {

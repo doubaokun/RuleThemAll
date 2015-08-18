@@ -7,13 +7,13 @@ import sta.model.triggers.Implicits._
 class WiFiService extends ServiceFragment[WiFi] {
   final val handle: PF = {
     case intent if intent.getAction == WifiManager.WIFI_STATE_CHANGED_ACTION =>
-      WiFiState.intValues.get(intent.extra[Int].get(WifiManager.EXTRA_WIFI_STATE))
+      WiFiState.intValues.get(intent.extra[Int](WifiManager.EXTRA_WIFI_STATE))
     case intent if intent.getAction == WifiManager.NETWORK_STATE_CHANGED_ACTION &&
-      intent.extra[NetworkInfo].get(WifiManager.EXTRA_NETWORK_INFO).getState == NetworkInfo.State.CONNECTED =>
-      WiFiConnection(Option(intent.extra[WifiInfo].get(WifiManager.EXTRA_WIFI_INFO)
+      intent.extra[NetworkInfo](WifiManager.EXTRA_NETWORK_INFO).getState == NetworkInfo.State.CONNECTED =>
+      WiFiConnection(Option(intent.extra[WifiInfo](WifiManager.EXTRA_WIFI_INFO)
         .getSSID.stripPrefix("\"").stripSuffix("\"")))
     case intent if intent.getAction == WifiManager.NETWORK_STATE_CHANGED_ACTION &&
-      intent.extra[NetworkInfo].get(WifiManager.EXTRA_NETWORK_INFO).getState == NetworkInfo.State.DISCONNECTED =>
+      intent.extra[NetworkInfo](WifiManager.EXTRA_NETWORK_INFO).getState == NetworkInfo.State.DISCONNECTED =>
       WiFiConnection(None)
   }
 }

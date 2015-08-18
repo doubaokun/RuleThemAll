@@ -15,12 +15,20 @@ object Common {
   }
 
   class ExpandExtra[T] protected[Common] (private val intent: Intent) extends AnyVal {
-    def get(key: String)(implicit logTag: LogTag): T = try {
+    def apply(key: String)(implicit logTag: LogTag): T = try {
       Option(intent.getExtras.get(key)).getOrElse(throw new NullPointerException).asInstanceOf[T]
     } catch {
       case th: Throwable =>
         android.util.Log.e(logTag.tag, s"Error during getting $key from intent", th) // TODO
         throw th
+    }
+    
+    def get(key: String)(implicit logTag: LogTag): Option[T] = try {
+      Option(intent.getSerializableExtra(key)).asInstanceOf[Option[T]]
+    } catch {
+      case th: Throwable =>
+        android.util.Log.e(logTag.tag, s"Error during getting $key from intent", th) // TODO
+        None
     }
   }
 
