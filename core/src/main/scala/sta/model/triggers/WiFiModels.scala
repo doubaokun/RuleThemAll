@@ -23,6 +23,9 @@ trait WiFiModels {
   }
 
   @intent(WifiManager.NETWORK_STATE_CHANGED_ACTION)
-  case class WiFiConnection(ssid: Option[String]) extends WiFi(WiFiConnection)
-  implicit object WiFiConnection extends ModelCompanion[WiFiConnection]
+  sealed abstract class WiFiConnection extends WiFi(WiFiConnection)
+  implicit object WiFiConnection extends ModelCompanion[WiFiConnection] {
+    case object Disconnected extends WiFiConnection
+    case class Connected(ssid: String, bssid: String) extends WiFiConnection
+  }
 }

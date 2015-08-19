@@ -2,6 +2,7 @@ package sta.parser
 
 import scala.language.{higherKinds, implicitConversions}
 import fastparse.all._
+import scala.annotation.tailrec
 import scala.util.Try
 import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
 
@@ -107,6 +108,10 @@ trait BasicRules {
   }
 
   lazy val String: P[String] = P(MultiLineString | SingleLineString)
+
+  lazy val MacAddress: P[String] =
+    P((hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~
+      hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit).!)
 
   def mapParser[T](map: Map[String, T]): P[T] = {
     def makeRule(kv: (String, T)): P[T] = kv._1.! map (_ => kv._2)
