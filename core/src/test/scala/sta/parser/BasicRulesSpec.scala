@@ -6,8 +6,7 @@ import org.scalatest.{ Matchers, WordSpec }
 import spire.math._
 import sta.tests.PropertyChecks
 
-trait BasicRulesSpec {
-  this: WordSpec with PropertyChecks with Matchers with ParserHelpers =>
+trait BasicRulesSpec { this: WordSpec with PropertyChecks with Matchers with ParserHelpers =>
 
   private object BasicParser extends BasicRules
 
@@ -229,6 +228,35 @@ trait BasicRulesSpec {
       "yield string for multi-line string with '\\r\\n'" in {
         forAll(Gen.nonEmptyListOf(Gen.alphaStr).map(_.mkString("\r\n"))) { s =>
           BasicParser.String.parse("\"\"\"" + s + "\"\"\"").get.value should ===(s)
+        }
+      }
+    }
+  }
+
+  def usingMacAddressRule(): Unit = {
+    "using mac address rule" should {
+      "yield proper mac address string" in {
+        forAll(Gen.hexString(12)) { s =>
+          val mac = s.grouped(2).mkString(":")
+          BasicParser.MacAddress.parse(mac).get.value should ===(mac)
+        }
+      }
+
+      "throw error on to small or to long literal" in {
+        forAll(Gen.hexString.suchThat(_.length != 12)) { s =>
+          val mac = s.grouped(2).mkString(":")
+          intercept[SyntaxError] {
+            BasicParser.MacAddress.parse(mac).get.value
+          }
+        }
+      }
+
+      "throw error on out of a range literal" in {
+        forAll(Gen.alphaStr.suchThat(_.exists(_.toLower > 'f'))) { s =>
+          val mac = s.grouped(2).mkString(":")
+          intercept[SyntaxError] {
+            BasicParser.MacAddress.parse(mac).get.value
+          }
         }
       }
     }

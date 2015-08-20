@@ -28,6 +28,7 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
         usingDecimalRule()
 
         usingStringRule()
+        usingMacAddressRule()
       }
 
       "is script" when {

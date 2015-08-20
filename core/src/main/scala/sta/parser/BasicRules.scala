@@ -111,7 +111,7 @@ trait BasicRules {
 
   lazy val MacAddress: P[String] =
     P((hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~
-      hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit).!)
+      hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ !(hexDigit | ":")).!)
 
   def mapParser[T](map: Map[String, T]): P[T] = {
     def makeRule(kv: (String, T)): P[T] = kv._1.! map (_ => kv._2)

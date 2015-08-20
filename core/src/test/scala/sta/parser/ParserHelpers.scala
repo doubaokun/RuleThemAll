@@ -25,6 +25,12 @@ trait ParserHelpers {
       Gen.oneOf(r, r.map('-' + _))
     }
 
+    def hexString = nonEmptyListOf(hexChar).map(_.mkString)
+
+    def hexString(n: Int) = listOfN(n, hexChar).map(_.mkString)
+
+    def hexChar = Gen.frequency(2 -> Gen.oneOf('0' to '9'), 1 -> Gen.oneOf('a' to 'f'), 1 -> Gen.oneOf('A' to 'F'))
+
     def nonEmptyNumStr = nonEmptyListOf(numChar).map(_.mkString).suchThat(_.forall(_.isDigit))
 
     def nDigitNumStr(n: Int) = listOfN(n, numChar).map(_.mkString).suchThat(_.forall(_.isDigit))
