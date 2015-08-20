@@ -8,7 +8,7 @@ import sta.model.triggers.Implicits._
 object HeadsetRules extends TriggerParser[Headset] {
   import white._
 
-  def prefix: String = implicitly[UsedFeatures[Headset]].category
+  def Prefix: String = implicitly[UsedFeatures[Headset]].category
 
   private def connectivity: P[AtomicTrigger[Headset]] = {
     mapParser(Headset.namesToValuesMap) map (v => AtomicTrigger[Headset](_ == v))

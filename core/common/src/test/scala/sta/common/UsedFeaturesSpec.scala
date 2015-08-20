@@ -1,8 +1,10 @@
 package sta.common
 
-import org.scalatest.{Matchers, WordSpec}
+import org.robolectric.annotation.Config
+import org.scalatest.{RobolectricSuite, Matchers, WordSpec}
 
-class UsedFeaturesSpec extends WordSpec with Matchers {
+@Config(sdk = Array(21), manifest = Config.NONE)
+class UsedFeaturesSpec extends WordSpec with RobolectricSuite with Matchers {
   def usedFeatures[T: UsedFeatures] = implicitly[UsedFeatures[T]]
 
   @category("base")
@@ -11,19 +13,19 @@ class UsedFeaturesSpec extends WordSpec with Matchers {
   case class Impl1() extends Base
 
   @feature("a", "b")
-  @intent("A", "B")
+  @action("A")
   object Impl2 extends Base
 
   @category("baseImpl")
   @feature("c")
-  @intent("C")
+  @action("B")
   sealed abstract class BaseImpl extends Base
 
   @category("impl3")
   class Impl3 extends BaseImpl
 
   @feature("d")
-  @intent("D")
+  @action("C")
   case object Impl4 extends BaseImpl
 
   "UsedFeatures" when {
@@ -47,10 +49,10 @@ class UsedFeaturesSpec extends WordSpec with Matchers {
 
     "dealing with intents" should {
       "collect all from direct children" in {
-        usedFeatures[Base].intents should ===(Set("A", "B", "C"))
-        usedFeatures[Impl2.type].intents should ===(Set("A", "B"))
-        usedFeatures[BaseImpl].intents should ===(Set("C", "D"))
-        usedFeatures[Impl4.type].intents should ===(Set("D"))
+        usedFeatures[Base].intents.map(_.getAction) should ===(Set("A", "B"))
+        usedFeatures[Impl2.type].intents.map(_.getAction) should ===(Set("A"))
+        usedFeatures[BaseImpl].intents.map(_.getAction) should ===(Set("B", "C"))
+        usedFeatures[Impl4.type].intents.map(_.getAction) should ===(Set("C"))
       }
     }
   }

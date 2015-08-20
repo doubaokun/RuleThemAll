@@ -23,7 +23,7 @@ sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with T
 
   def Definition: P[Rule] = P(
     ("def" ~ Name ~ {
-      ("{" ~ "when" ~ Trigger ~ "do" ~ Action ~ "}") |
+      ("{" ~ "when" ~! Trigger ~ "do" ~! Action ~ "}") |
         ((Pass map (_ => EmptyTrigger)) ~ Action)
     }) map (v => Rule(v._1, v._2._1, v._2._2))
   )

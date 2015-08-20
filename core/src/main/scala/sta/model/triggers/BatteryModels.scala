@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.BatteryManager
 import enumeratum.Enum
 import spire.math.UByte
-import sta.common.{category, intent}
+import sta.common.{category, action}
 import sta.model._
 
 trait BatteryModels {
@@ -12,25 +12,23 @@ trait BatteryModels {
   @category("battery")
   sealed abstract class BatteryLike(companion: ModelCompanion[BatteryLike]) extends Model(companion)
 
-  @intent(Intent.ACTION_POWER_CONNECTED, Intent.ACTION_POWER_DISCONNECTED)
   sealed abstract class PowerState extends BatteryLike(PowerState) with ModelEnumEntry
   implicit object PowerState extends ModelCompanion[PowerState] with Enum[PowerState] {
     lazy val values = findValues
 
-    case object Connected extends PowerState
-    case object Disconnected extends PowerState
+    @action(Intent.ACTION_POWER_CONNECTED) case object Connected extends PowerState
+    @action(Intent.ACTION_POWER_DISCONNECTED) case object Disconnected extends PowerState
   }
 
-  @intent(Intent.ACTION_BATTERY_LOW, Intent.ACTION_BATTERY_OKAY)
   sealed abstract class BatteryState extends BatteryLike(BatteryState) with ModelEnumEntry
   implicit object BatteryState extends ModelCompanion[BatteryState] with Enum[BatteryState] {
     lazy val values = findValues
 
-    case object Low extends BatteryState
-    case object OK extends BatteryState
+    @action(Intent.ACTION_BATTERY_LOW) case object Low extends BatteryState
+    @action(Intent.ACTION_BATTERY_OKAY) case object OK extends BatteryState
   }
 
-  @intent(Intent.ACTION_BATTERY_CHANGED)
+  @action(Intent.ACTION_BATTERY_CHANGED)
   case class Battery(level: UByte, plugged: Battery.Plugged,
                      present: Boolean, status: Battery.Status) extends BatteryLike(Battery)
   implicit object Battery extends ModelCompanion[Battery] {

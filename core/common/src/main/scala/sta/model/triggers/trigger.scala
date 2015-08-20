@@ -1,5 +1,7 @@
 package sta.model.triggers
 
+import android.content.Intent
+import android.content.Intent.FilterComparison
 import scala.annotation.tailrec
 import shapeless.HMap
 import sta.common.UsedFeatures
@@ -43,13 +45,13 @@ object Trigger {
 sealed abstract class Trigger {
   def satisfiedBy(state: HMap[ModelKV]): Boolean
 
-  def uses: Set[String]
+  def uses: Set[FilterComparison]
 }
 
 object EmptyTrigger extends Trigger {
   def satisfiedBy(state: HMap[ModelKV]): Boolean = true
 
-  def uses: Set[String] = Set.empty
+  def uses: Set[FilterComparison] = Set.empty
 }
 
 sealed abstract class LogicOpTrigger extends Trigger {
@@ -57,7 +59,7 @@ sealed abstract class LogicOpTrigger extends Trigger {
 
   def rhs: Trigger
 
-  def uses: Set[String] = lhs.uses ++ rhs.uses
+  def uses: Set[FilterComparison] = lhs.uses ++ rhs.uses
 }
 
 case class AndTrigger(lhs: Trigger, rhs: Trigger) extends LogicOpTrigger {
@@ -85,5 +87,5 @@ case class AtomicTrigger[M <: Model: ModelCompanion: UsedFeatures](function: Mod
     state.get(Key).exists(function)
   }
 
-  def uses: Set[String] = implicitly[UsedFeatures[M]].intents
+  def uses: Set[FilterComparison] = implicitly[UsedFeatures[M]].intents.map(new FilterComparison(_))
 }

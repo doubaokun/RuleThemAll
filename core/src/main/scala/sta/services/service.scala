@@ -1,12 +1,13 @@
 package sta.services
 
 import android.app.{PendingIntent, Service}
-import android.content.{BroadcastReceiver, Context, Intent, IntentFilter}
+import android.content.Intent.FilterComparison
+import android.content.{BroadcastReceiver, Context, Intent}
 import android.net.Uri
 import android.os._
 import android.support.v4.content.WakefulBroadcastReceiver
 import java.io.File
-import kj.android.common.{Notify, AppInfo}
+import kj.android.common.{AppInfo, Notify}
 import kj.android.concurrent._
 import kj.android.logging.Logging
 import scala.collection.mutable
@@ -77,7 +78,7 @@ class STAService extends Service with Logging {
 
   type SF = List[(IntentType, ServiceFragment[Model])]
 
-  case class ServicesMap private[STAService](map: Map[String, SF]) {
+  class ServicesMap private[STAService](rawMap: Map[Int, (Intent, SF)]) {
     @inline final private def updateState(model: Model): Unit = {
       import model.companion._
       rawState.update { state =>
@@ -90,27 +91,36 @@ class STAService extends Service with Logging {
     }
 
     private[this] val tasks: Map[String, Task[Unit]] = for {
-      (intent, service) <- map
+      (_, (intent, service)) <- rawMap
       (Manual(interval), sf) <- service 
     } yield {
       sf.logTag.tag -> Task.schedule(0.seconds, interval) {
-        sf(ctx, registerReceiver(null, new IntentFilter(intent))).foreach(updateState)
+        sf(ctx, registerReceiver(null, intent)).foreach(updateState)
       }
     }
     
     private[this] val runnable = {
-      val automatic = mutable.Map.empty[String, List[ServiceFragment[Model]]]
+      val automatic = mutable.Map.empty[Int, List[ServiceFragment[Model]]]
       for (
-        (intent, service) <- map;
+        (hash, (intent, service)) <- rawMap;
         (Automatic, sf) <- service
       ) {
-        automatic += (intent -> (sf :: automatic.getOrElse(intent, Nil)))
+        automatic += (hash -> (sf :: automatic.getOrElse(hash, Nil)))
       }
       automatic
     }
 
+    def iterator: Iterator[(Intent, SF)] = rawMap.valuesIterator
+    
+    def map(f: ((Intent, SF)) => (Intent, SF)): ServicesMap = {
+      new ServicesMap(rawMap.map { case (k, v) =>
+        val nv = f(v)
+        nv._1.filterHashCode() -> nv
+      })
+    }
+
     def run(context: Context, intent: Intent) = for (
-      services <- runnable.get(intent.getAction);
+      services <- runnable.get(intent.filterHashCode());
       sf <- services;
       model <- sf(context, intent)
     ) {
@@ -136,20 +146,22 @@ class STAService extends Service with Logging {
     def apply() = {
       val pm = getPackageManager
       val collected = ServiceMacros.collect
-      val services = mutable.Map.empty[String, SF]
+      val services = mutable.Map.empty[Intent, SF]
       val rules = storage.rules.flatMap(_.uses).toSet
       for (wst <- collected if wst.features.features.forall(pm.hasSystemFeature)) {
         val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
         wst.features.intents.foreach {
-          case intent if manual.isDefinedAt(intent) =>
-            services += ((intent, (if (!rules.contains(intent)) Manual(manual(intent)).suspend()
-              else Manual(manual(intent)), wst.actual) :: services.getOrElse(intent, Nil)))
+          case intent if manual.isDefinedAt(intent.getAction) =>
+            val fc = new FilterComparison(intent)
+            services += ((intent, (if (!rules.contains(fc)) Manual(manual(intent.getAction)).suspend()
+              else Manual(manual(intent.getAction)), wst.actual) :: services.getOrElse(intent, Nil)))
           case intent =>
-            services += ((intent, (if (!rules.contains(intent)) Automatic.suspend() else Automatic,
+            val fc = new FilterComparison(intent)
+            services += ((intent, (if (!rules.contains(fc)) Automatic.suspend() else Automatic,
               wst.actual) :: services.getOrElse(intent, Nil)))
         }
       }
-      new ServicesMap(map = services.toMap)
+      new ServicesMap(rawMap = services.map { case (k, v) => (k.filterHashCode(), (k, v)) }(collection.breakOut))
     }
   }
 
@@ -167,26 +179,27 @@ class STAService extends Service with Logging {
   private[this] val rawState = Atomic(HMap.empty[ModelKV])
 
   private[this] val requestProcessor = new Messenger(new Handler {
-    private def update(f: (String => Unit, (String, SF)) => (String, SF)): Unit = {
-      val filters = Set.newBuilder[String]
+    private def update(f: (Intent => Unit, (Intent, SF)) => (Intent, SF)): Unit = {
+      val intents = Seq.newBuilder[Intent]
       rawServices.update { services =>
         services.stopTasks()
-        services.copy(map = services.map.map(f(filters += _, _)))
+        services.map(f(intents += _, _))
       }.fold(th => {
         log.error("Failed to update services", th)
       }, services => {
         services.runTasks()
-        registerStateProcessor(filters.result(), unregisterFirst = true)
+        registerStateProcessor(intents.result(), unregisterFirst = true)
       })
     }
 
-    private def onAdd(toAdd: Set[String], toRemove: Set[String])(act: String => Unit, kv: (String, SF)) = {
+    private def onAdd(toAdd: Set[Int], toRemove: Set[Int])(act: Intent => Unit, kv: (Intent, SF)) = {
+      val hash = kv._1.filterHashCode()
       kv match {
-        case (v, xs) if toAdd.contains(v)  =>
+        case (v, xs) if toAdd.contains(hash)  =>
           val mapped = xs.map { case (t, sf) => (t.resume(), sf) }
           if (mapped.exists(_._1 == Automatic)) act(v)
           (v, mapped)
-        case (v, xs) if toRemove.contains(v) =>
+        case (v, xs) if toRemove.contains(hash) =>
           (v, xs.map { case (t, sf) => (t.suspend(), sf) })
         case other =>
           if (other._2.exists(_._1 == Automatic)) act(other._1)
@@ -194,9 +207,9 @@ class STAService extends Service with Logging {
       }
     }
 
-    private def onRemove(toRemove: Set[String])(act: String => Unit, kv: (String, SF)) = {
+    private def onRemove(toRemove: Set[Int])(act: Intent => Unit, kv: (Intent, SF)) = {
       kv match {
-        case (v, xs) if toRemove.contains(v) =>
+        case (v, xs) if toRemove.contains(v.filterHashCode()) =>
           (v, xs.map { case (t, sf) => (t.suspend(), sf) })
         case other =>
           if (other._2.exists(_._1 == Automatic)) act(other._1)
@@ -222,11 +235,9 @@ class STAService extends Service with Logging {
     def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(context, intent)
   }
 
-  private def registerStateProcessor(intents: Set[String], unregisterFirst: Boolean): Unit = {
+  private def registerStateProcessor(intents: Seq[Intent], unregisterFirst: Boolean): Unit = {
     if (unregisterFirst) unregisterReceiver(stateProcessor)
-    val stateFilter = new IntentFilter()
-    intents.foreach(stateFilter.addAction)
-    registerReceiver(stateProcessor, stateFilter)
+    intents.foreach(registerReceiver(stateProcessor, _))
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
@@ -235,9 +246,9 @@ class STAService extends Service with Logging {
     startForeground(1, Notify.build(s"Monitoring",
       intent.extra[PendingIntent].get(STAService.ACTION)))
     val services = rawServices.get
-    registerStateProcessor(services.map.collect {
+    registerStateProcessor(services.iterator.collect {
       case (v, xs) if xs.exists(_._1 == Automatic)  => v
-    }(collection.breakOut), unregisterFirst = false)
+    }.toSeq, unregisterFirst = false)
     services.runTasks()
 
     val state = rawState.get

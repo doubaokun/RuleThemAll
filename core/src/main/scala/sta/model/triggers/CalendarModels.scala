@@ -3,13 +3,14 @@ package sta.model.triggers
 import android.content.Intent
 import android.provider.CalendarContract
 import enumeratum.Enum
-import sta.common.{category, intent}
+import sta.common.{data, category, action}
 import sta.model._
 
 trait CalendarModels {
 
-  @category("calendar_event")
-  @intent(Intent.ACTION_PROVIDER_CHANGED)
+  @category("calendar event")
+  @action(Intent.ACTION_PROVIDER_CHANGED)
+  @data("content://com.android.calendar")
   case class CalendarEvent(state: CalendarEvent.State, name: String,
     description: String, availability: CalendarEvent.Availability) extends Model(CalendarEvent)
 

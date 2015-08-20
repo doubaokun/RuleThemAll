@@ -2,6 +2,7 @@ package sta.model
 
 import scala.language.implicitConversions
 import android.content.Context
+import android.content.Intent.FilterComparison
 import cats._
 import cats.data.Validated._
 import cats.data.{NonEmptyList => NEL, Validated}
@@ -52,7 +53,7 @@ case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Lo
     )
   }
 
-  def uses: Set[String] = trigger.uses
+  def uses: Set[FilterComparison] = trigger.uses
 
   override def hashCode(): Int = name.hashCode
 }

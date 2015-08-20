@@ -12,9 +12,19 @@ abstract class RulesStorage extends Logging {
 
   def info: AppInfo
 
-  def unregister(names: String*): Set[String]
+  /** Unregisters rules.
+   *
+   *  @param names rules to unregister
+   *  @return set of removed intent hash codes
+   */
+  def unregister(names: String*): Set[Int]
 
-  def register(from: File): (Set[String], Set[String])
+  /** Register rules
+   *
+   *  @param from path to rules
+   *  @return tuple (set of added intent hash codes, set of removed intent hash codes)
+   */
+  def register(from: File): (Set[Int], Set[Int])
 
   def allRules: Iterator[Rule]
 

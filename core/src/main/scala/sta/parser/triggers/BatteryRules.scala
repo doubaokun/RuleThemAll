@@ -9,7 +9,7 @@ object BatteryRules extends TriggerParser[BatteryLike] {
   import Battery._
   import white._
 
-  def prefix: String = implicitly[UsedFeatures[BatteryLike]].category
+  def Prefix: String = implicitly[UsedFeatures[BatteryLike]].category
 
   private def powerState: P[AtomicTrigger[PowerState]] = {
     "power" ~ mapParser(PowerState.namesToValuesMap) map (v =>

@@ -8,7 +8,7 @@ import sta.model.triggers.Implicits._
 object WiFiRules extends TriggerParser[WiFi] {
   import white._
 
-  def prefix: String = implicitly[UsedFeatures[WiFi]].category
+  def Prefix: String = implicitly[UsedFeatures[WiFi]].category
 
   def state: P[AtomicTrigger[WiFiState]] = {
     mapParser(WiFiState.namesToValuesMap) map (v => AtomicTrigger[WiFiState](_ == v))

@@ -9,9 +9,9 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
   import CalendarEvent._
   import white._
 
-  def prefix: String = implicitly[UsedFeatures[CalendarEvent]].category
+  def Prefix: String = implicitly[UsedFeatures[CalendarEvent]].category
 
-  override val Main: Option[P[AtomicTrigger[_ <: CalendarEvent]]] = Some(
+  override val Suffix: Option[P[AtomicTrigger[_ <: CalendarEvent]]] = Some(
     mapParser(State.namesToValuesMap) map (v => AtomicTrigger[CalendarEvent](_.state == v))
   )
 

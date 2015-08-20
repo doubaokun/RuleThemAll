@@ -9,7 +9,7 @@ import sta.model.triggers.Implicits._
 object BluetoothRules extends TriggerParser[Bluetooth] {
   import white._
 
-  def prefix: String = implicitly[UsedFeatures[Bluetooth]].category
+  def Prefix: String = implicitly[UsedFeatures[Bluetooth]].category
 
   def state: P[AtomicTrigger[BluetoothState]] = {
     mapParser(BluetoothState.namesToValuesMap) map (v => AtomicTrigger[BluetoothState](_ == v))

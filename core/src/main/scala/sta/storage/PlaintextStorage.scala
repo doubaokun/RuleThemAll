@@ -1,7 +1,6 @@
 package sta.storage
 
 import android.content.Context
-import android.widget.Toast
 import java.io._
 import kj.android.common.{AppInfo, Notify}
 import scala.collection.mutable
@@ -25,12 +24,13 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
   }
 
   private[this] val rawUses = {
-    val map = mutable.Map.empty[String, Int]
+    val map = mutable.Map.empty[Int, Int]
     for (
       rule <- rawRules.valuesIterator;
       use <- rule.uses
     ) {
-      map += (use -> (map.getOrElse(use, 0) + 1))
+      val hash = use.hashCode()
+      map += (hash -> (map.getOrElse(hash, 0) + 1))
     }
     map
   }
@@ -64,35 +64,36 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     rawRules.valuesIterator
   }
 
-  def register(from: File): (Set[String], Set[String]) = synchronized {
+  def register(from: File): (Set[Int], Set[Int]) = synchronized {
     val rules = parse(from)
-    val added = Set.newBuilder[String]
-    val removed = Set.newBuilder[String]
+    val added = Set.newBuilder[Int]
+    val removed = Set.newBuilder[Int]
 
     // remove old uses
     for (
       rule <- rules;
       oldRule <- rawRules.get(rule.hashCode());
       use <- oldRule.uses;
-      count <- rawUses.get(use)
+      count <- rawUses.get(use.hashCode())
     ) {
       count match {
         case 1 =>
-          removed += use
-          rawUses -= use
+          removed += use.hashCode()
+          rawUses -= use.hashCode()
         case _ =>
-          rawUses += (use -> (count - 1))
+          rawUses += (use.hashCode() -> (count - 1))
       }
     }
+
     // add new uses
     for (
       rule <- rules;
       use <- rule.uses
     ) {
-      rawUses.get(use).fold[Unit] {
-        added += use
-        rawUses += (use -> 1)
-      }(count => rawUses += (use -> (count + 1)))
+      rawUses.get(use.hashCode()).fold[Unit] {
+        added += use.hashCode()
+        rawUses += (use.hashCode() -> 1)
+      }(count => rawUses += (use.hashCode() -> (count + 1)))
     }
 
     val prevSize = rawRules.size
@@ -103,8 +104,8 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     (added.result(), removed.result() -- added.result())
   }
 
-  def unregister(names: String*): Set[String] = synchronized {
-    val removed = Set.newBuilder[String]
+  def unregister(names: String*): Set[Int] = synchronized {
+    val removed = Set.newBuilder[Int]
     names.foreach { name =>
       val file = new File(rulesDir, s"$name.rule")
       val rule = RulesParser.parseSingle(io.Source.fromFile(file).mkString)
@@ -113,14 +114,14 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       file.delete()
       for (
         use <- rule.uses;
-        count <- rawUses.get(use)
+        count <- rawUses.get(use.hashCode())
       ) {
         count match {
           case 1 =>
-            removed += use
-            rawUses -= use
+            removed += use.hashCode()
+            rawUses -= use.hashCode()
           case _ =>
-            rawUses += (use -> (count - 1))
+            rawUses += (use.hashCode() -> (count - 1))
         }
       }
     }
