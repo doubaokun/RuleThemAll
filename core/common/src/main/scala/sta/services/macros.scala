@@ -18,7 +18,7 @@ object ServiceMacros {
 
   case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], features: UsedFeatures[Model])
 
-  def collect: Seq[RichService] = macro ServiceMacrosImpl.collect
+  def collect[T](enclosing: T): Seq[RichService] = macro ServiceMacrosImpl.collect[T]
 }
 
 private class ServiceMacrosImpl(val c: blackbox.Context) {
@@ -33,7 +33,8 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
 
   private def ServiceFragment = c.typeOf[ServiceFragment[Model]]
 
-  def collect = {
+  def collect[T: WeakTypeTag](enclosing: c.Expr[T]) = {
+    val enclosingTpe = weakTypeOf[T]
     val services = for {
       decl <- c.mirror.staticPackage("sta.services").typeSignature.decls
       inherited <- decl.typeSignature.baseClasses if
@@ -43,9 +44,21 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
         val manual = decl.annotations.map(_.tree).collectFirst {
           case q"""new $parent(..$args)""" if parent.tpe =:= weakTypeOf[manual] => args
         }
+        val makeInstance = {
+          val tpe = decl.asType.toType
+          val ctors = tpe.decl(termNames.CONSTRUCTOR).alternatives
+          if (ctors.length != 1) c.abort(c.enclosingPosition,
+            s"Cannot create service fragment with multiple constructors: ${decl.asType}")
+          ctors.head.asMethod.paramLists.flatten match {
+            case Nil => q"new $tpe"
+            case arg :: Nil if enclosingTpe <:< arg.typeSignature => q"new $tpe($enclosing)"
+            case args => c.abort(c.enclosingPosition,
+              s"""Cannot create service fragment using constructor with args: ${args.map(_.typeSignature).mkString("(", ", ", ")")}""")
+          }
+        }
         q"""
         new $RichService(
-          actual = (new ${decl.asType.toType}).asInstanceOf[$ServiceFragment],
+          actual = $makeInstance.asInstanceOf[$ServiceFragment],
           manual = $manual,
           features = implicitly[${UsedFeatures(decl.typeSignature.baseType(inherited).typeArgs.head)}].asInstanceOf[$UsedFeatures]
         )

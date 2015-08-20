@@ -70,7 +70,7 @@ object STAService {
   }
 }
 
-class STAService extends Service with Logging {
+class STAService extends Service with Logging { root =>
 
   import sta.services.STAService._
 
@@ -145,7 +145,7 @@ class STAService extends Service with Logging {
   object ServicesMap {
     def apply() = {
       val pm = getPackageManager
-      val collected = ServiceMacros.collect
+      val collected = ServiceMacros.collect(root)
       val services = mutable.Map.empty[Intent, SF]
       val rules = storage.rules.flatMap(_.uses).toSet
       for (wst <- collected if wst.features.features.forall(pm.hasSystemFeature)) {
