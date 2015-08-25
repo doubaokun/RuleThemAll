@@ -2,14 +2,14 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import java.nio.charset.Charset
-import sta.common.UsedFeatures
+import sta.common.Uses
 import sta.model.triggers.AtomicTrigger
 import sta.model.triggers.Implicits._
 
 object BluetoothRules extends TriggerParser[Bluetooth] {
   import white._
 
-  def Prefix: String = implicitly[UsedFeatures[Bluetooth]].category
+  def Prefix: String = Uses.categoryOf[Bluetooth]
 
   def state: P[AtomicTrigger[BluetoothState]] = {
     mapParser(BluetoothState.namesToValuesMap) map (v => AtomicTrigger[BluetoothState](_ == v))

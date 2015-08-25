@@ -1,7 +1,7 @@
 package sta.parser.triggers
 
 import fastparse.noApi._
-import sta.common.UsedFeatures
+import sta.common.Uses
 import sta.model.triggers.AtomicTrigger
 import sta.model.triggers.Implicits._
 
@@ -9,7 +9,7 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
   import CalendarEvent._
   import white._
 
-  def Prefix: String = implicitly[UsedFeatures[CalendarEvent]].category
+  def Prefix: String = Uses.categoryOf[CalendarEvent]
 
   override val Suffix: Option[P[AtomicTrigger[_ <: CalendarEvent]]] = Some(
     mapParser(State.namesToValuesMap) map (v => AtomicTrigger[CalendarEvent](_.state == v))

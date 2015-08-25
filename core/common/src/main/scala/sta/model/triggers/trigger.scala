@@ -4,7 +4,7 @@ import android.content.Intent
 import android.content.Intent.FilterComparison
 import scala.annotation.tailrec
 import shapeless.HMap
-import sta.common.UsedFeatures
+import sta.common.Uses
 import sta.model._
 import sta.model.triggers.functions.ModelFunction
 
@@ -79,7 +79,7 @@ case class XorTrigger(lhs: Trigger, rhs: Trigger) extends LogicOpTrigger {
   }
 }
 
-case class AtomicTrigger[M <: Model: ModelCompanion: UsedFeatures](function: ModelFunction[M])
+case class AtomicTrigger[M <: Model: ModelCompanion: Uses](function: ModelFunction[M])
     extends Trigger {
   def satisfiedBy(state: HMap[ModelKV]): Boolean = {
     val companion = implicitly[ModelCompanion[M]]
@@ -87,5 +87,5 @@ case class AtomicTrigger[M <: Model: ModelCompanion: UsedFeatures](function: Mod
     state.get(Key).exists(function)
   }
 
-  def uses: Set[FilterComparison] = implicitly[UsedFeatures[M]].intents.map(new FilterComparison(_))
+  def uses: Set[FilterComparison] = implicitly[Uses[M]].intents.map(new FilterComparison(_))
 }

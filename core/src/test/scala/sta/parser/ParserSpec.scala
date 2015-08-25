@@ -4,7 +4,7 @@ import scala.language.implicitConversions
 import java.io.InputStream
 import org.scalatest.{Matchers, WordSpec}
 import spire.implicits._
-import sta.common.UsedFeatures._
+import sta.common.Uses._
 import sta.model.Rule
 import sta.model.actions._
 import sta.model.triggers.Implicits._

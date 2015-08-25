@@ -10,7 +10,7 @@ trait CalendarModels {
 
   @category("calendar event")
   @action(Intent.ACTION_PROVIDER_CHANGED)
-  @data("content://com.android.calendar")
+  @data(CalendarContract.CONTENT_URI)
   case class CalendarEvent(state: CalendarEvent.State, name: String,
     description: String, availability: CalendarEvent.Availability) extends Model(CalendarEvent)
 

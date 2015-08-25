@@ -2,10 +2,11 @@ package sta.common
 
 import org.robolectric.annotation.Config
 import org.scalatest.{RobolectricSuite, Matchers, WordSpec}
+import Uses._
 
 @Config(sdk = Array(21), manifest = Config.NONE)
-class UsedFeaturesSpec extends WordSpec with RobolectricSuite with Matchers {
-  def usedFeatures[T: UsedFeatures] = implicitly[UsedFeatures[T]]
+class UsesSpec extends WordSpec with RobolectricSuite with Matchers {
+  def usedFeatures[T: Uses] = implicitly[Uses[T]]
 
   @category("base")
   sealed abstract class Base
@@ -28,13 +29,13 @@ class UsedFeaturesSpec extends WordSpec with RobolectricSuite with Matchers {
   @action("C")
   case object Impl4 extends BaseImpl
 
-  "UsedFeatures" when {
+  "Uses" when {
     "dealing with categories" should {
       "return the most specific one" in {
-        usedFeatures[Base].category should ===("base")
-        usedFeatures[Impl1].category should ===("base")
-        usedFeatures[Impl3].category should ===("impl3")
-        usedFeatures[Impl4.type].category should ===("baseImpl")
+        categoryOf[Base] should ===("base")
+        categoryOf[Impl1] should ===("base")
+        categoryOf[Impl3] should ===("impl3")
+        categoryOf[Impl4.type] should ===("baseImpl")
       }
     }
 

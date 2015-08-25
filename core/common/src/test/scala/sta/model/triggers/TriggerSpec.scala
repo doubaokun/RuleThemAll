@@ -3,8 +3,8 @@ package sta.model.triggers
 import org.scalatest.{Matchers, WordSpec}
 import shapeless.HMap
 import spire.implicits._
-import sta.common.UsedFeatures
-import sta.common.UsedFeatures._
+import sta.common.Uses
+import sta.common.Uses._
 import sta.model.triggers.functions.ModelFunction
 import sta.model.{Model, ModelCompanion, ModelHelpers, ModelKV}
 import sta.tests.PropertyChecks
@@ -13,11 +13,11 @@ class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelH
 
   import ops._
 
-  implicit class RichTrigger[M <: Model: ModelCompanion: UsedFeatures](trigger: AtomicTrigger[M]) {
+  implicit class RichTrigger[M <: Model: ModelCompanion: Uses](trigger: AtomicTrigger[M]) {
     val companion = implicitly[ModelCompanion[M]]
   }
 
-  private def checkAtomicTrigger[M <: Model: ModelCompanion: UsedFeatures](
+  private def checkAtomicTrigger[M <: Model: ModelCompanion: Uses](
     mf: ModelFunction[M], state: HMap[ModelKV]
   )(pred: Boolean => Boolean): Unit = {
     val trigger = AtomicTrigger[M](mf)
@@ -32,7 +32,7 @@ class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelH
     }
   }
 
-  private def checkLogicOpTrigger[M1 <: Model: ModelCompanion: UsedFeatures, M2 <: Model: ModelCompanion: UsedFeatures](
+  private def checkLogicOpTrigger[M1 <: Model: ModelCompanion: Uses, M2 <: Model: ModelCompanion: Uses](
     mf1: ModelFunction[M1], state1: HMap[ModelKV],
     mf2: ModelFunction[M2], state2: HMap[ModelKV]
   )(

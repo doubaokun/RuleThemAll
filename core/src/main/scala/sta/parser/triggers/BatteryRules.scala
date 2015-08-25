@@ -1,7 +1,7 @@
 package sta.parser.triggers
 
 import fastparse.noApi._
-import sta.common.UsedFeatures
+import sta.common.Uses
 import sta.model.triggers.AtomicTrigger
 import sta.model.triggers.Implicits._
 
@@ -9,7 +9,7 @@ object BatteryRules extends TriggerParser[BatteryLike] {
   import Battery._
   import white._
 
-  def Prefix: String = implicitly[UsedFeatures[BatteryLike]].category
+  def Prefix: String = Uses.categoryOf[BatteryLike]
 
   private def powerState: P[AtomicTrigger[PowerState]] = {
     "power" ~ mapParser(PowerState.namesToValuesMap) map (v =>
