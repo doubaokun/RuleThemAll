@@ -9,4 +9,10 @@ object Scheduler {
     pool.scheduleWithFixedDelay(new Runnable {
       def run(): Unit = body
     }, initialDelay.toMillis, delay.toMillis, TimeUnit.MILLISECONDS)
+
+  def scheduleOnce[T](delay: Duration)(body: => T)
+    (implicit pool: ScheduledExecutorService): ScheduledFuture[T] =
+    pool.schedule(new Callable[T] {
+      def call(): T = body
+    }, delay.toMillis, TimeUnit.MILLISECONDS)
 }

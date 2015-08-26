@@ -51,4 +51,17 @@ object Task {
         }
       }
     }
+
+  def scheduleOnce[T](delay: Duration)(body: => T)
+    (implicit ec: ScheduledExecutionContext = Implicits.scheduledExecutionContext): Task[T] =
+    new Task[T] {
+      private[this] var scheduled: ScheduledFuture[T] = null
+
+      def cancel(mayInterruptIfRunning: Boolean): Boolean =
+        scheduled != null && scheduled.cancel(mayInterruptIfRunning)
+
+      def run(handler: Try[T] => Unit): Unit = {
+        scheduled = Scheduler.scheduleOnce(delay)(body)
+      }
+    }
 }
