@@ -1,5 +1,6 @@
 package sta.common
 
+import android.content.Intent
 import org.robolectric.annotation.Config
 import org.scalatest.{RobolectricSuite, Matchers, WordSpec}
 import Uses._
@@ -50,10 +51,18 @@ class UsesSpec extends WordSpec with RobolectricSuite with Matchers {
 
     "dealing with intents" should {
       "collect all from direct children" in {
-        usedFeatures[Base].intents.map(_.getAction) should ===(Set("A", "B"))
-        usedFeatures[Impl2.type].intents.map(_.getAction) should ===(Set("A"))
-        usedFeatures[BaseImpl].intents.map(_.getAction) should ===(Set("B", "C"))
-        usedFeatures[Impl4.type].intents.map(_.getAction) should ===(Set("C"))
+        usedFeatures[Base].requirements should === (Set("A", "B").map(a =>
+          new Requirement.IntentBased(new Intent(a))
+        ))
+        usedFeatures[Impl2.type].requirements should === (Set("A").map(a =>
+          new Requirement.IntentBased(new Intent(a))
+        ))
+        usedFeatures[BaseImpl].requirements should === (Set("B", "C").map(a =>
+          new Requirement.IntentBased(new Intent(a))
+        ))
+        usedFeatures[Impl4.type].requirements should === (Set("C").map(a =>
+          new Requirement.IntentBased(new Intent(a))
+        ))
       }
     }
   }

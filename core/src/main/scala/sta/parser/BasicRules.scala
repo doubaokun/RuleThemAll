@@ -13,7 +13,7 @@ trait BasicRules {
 
   private def hexDigit = P(CharIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')))
 
-  private implicit def parserExtras[T](parser: Parser[T]): BasicRules.ParserExtras[T] =
+  implicit def parserExtras[T](parser: Parser[T]): BasicRules.ParserExtras[T] =
     new BasicRules.ParserExtras[T](parser)
 
   sealed abstract class Converter[T](radix: Int, conv: (String, Int) => T) {

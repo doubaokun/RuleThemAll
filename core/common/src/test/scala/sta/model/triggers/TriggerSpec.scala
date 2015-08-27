@@ -13,14 +13,14 @@ class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelH
 
   import ops._
 
-  implicit class RichTrigger[M <: Model: ModelCompanion: Uses](trigger: AtomicTrigger[M]) {
+  implicit class RichTrigger[M <: Model: ModelCompanion: Uses](trigger: ModelTrigger[M]) {
     val companion = implicitly[ModelCompanion[M]]
   }
 
-  private def checkAtomicTrigger[M <: Model: ModelCompanion: Uses](
+  private def checkModelTrigger[M <: Model: ModelCompanion: Uses](
     mf: ModelFunction[M], state: HMap[ModelKV]
   )(pred: Boolean => Boolean): Unit = {
-    val trigger = AtomicTrigger[M](mf)
+    val trigger = ModelTrigger[M](mf)
     val model: Option[M] = state.get(trigger.companion.Key)(trigger.companion.ev)
     model should be('defined)
 
@@ -39,8 +39,8 @@ class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelH
     f:     (Trigger, Trigger) => LogicOpTrigger,
     tPred: (Boolean, Boolean) => Boolean, pred: Boolean => Boolean
   ): Unit = {
-    val t1 = AtomicTrigger[M1](mf1)
-    val t2 = AtomicTrigger[M2](mf2)
+    val t1 = ModelTrigger[M1](mf1)
+    val t2 = ModelTrigger[M2](mf2)
     val model1 = state1.get(t1.companion.Key)(t1.companion.ev)
     val model2 = state2.get(t2.companion.Key)(t2.companion.ev)
 
@@ -63,21 +63,21 @@ class TriggerSpec extends WordSpec with PropertyChecks with Matchers with ModelH
   "AtomicTrigger" should {
     "yield true if ModelFunction returns true" in {
       forAll(modelFunctionGen[Int], stateGen[Int]) { (mf, state) =>
-        checkAtomicTrigger(mf, state)(identity)
+        checkModelTrigger(mf, state)(identity)
       }
 
       forAll(modelFunctionGen[String], stateGen[String]) { (mf, state) =>
-        checkAtomicTrigger(mf, state)(identity)
+        checkModelTrigger(mf, state)(identity)
       }
     }
 
     "yield false if ModelFunction returns false" in {
       forAll(modelFunctionGen[Int], stateGen[Int]) { (mf, state) =>
-        checkAtomicTrigger(mf, state)(!_)
+        checkModelTrigger(mf, state)(!_)
       }
 
       forAll(modelFunctionGen[String], stateGen[String]) { (mf, state) =>
-        checkAtomicTrigger(mf, state)(!_)
+        checkModelTrigger(mf, state)(!_)
       }
     }
   }

@@ -2,7 +2,6 @@ package sta.model
 
 import scala.language.implicitConversions
 import android.content.Context
-import android.content.Intent.FilterComparison
 import cats._
 import cats.data.Validated._
 import cats.data.{NonEmptyList => NEL, Validated}
@@ -12,6 +11,7 @@ import kj.android.common.{Notify, AppInfo}
 import kj.android.logging._
 import scala.util.control.NonFatal
 import shapeless.HMap
+import sta.common.Requirement
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
 
@@ -53,8 +53,13 @@ case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Lo
     )
   }
 
-  def uses: Set[FilterComparison] = trigger.uses
+  def requires: Set[Requirement] = trigger.requires
 
   override def hashCode(): Int = name.hashCode
+
+  override def equals(o: Any): Boolean = o match {
+    case Rule(`name`, _, _) => true
+    case _ => false
+  }
 }
 

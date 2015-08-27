@@ -38,10 +38,10 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
               "simple1",
               AndTrigger(
                 AndTrigger(
-                  AtomicTrigger[Battery](_.plugged == Battery.Plugged.withName("ac")),
-                  AtomicTrigger[Battery](_.level > ub"50")
+                  ModelTrigger[Battery](_.plugged == Battery.Plugged.withName("ac")),
+                  ModelTrigger[Battery](_.level > ub"50")
                 ),
-                AtomicTrigger[Headset](_ == Headset.withName("connected"))
+                ModelTrigger[Headset](_ == Headset.withName("connected"))
               ),
               Vector(
                 ChangeSoundProfile(ChangeSoundProfile.Mode.Vibrate)
@@ -51,10 +51,10 @@ class ParserSpec extends WordSpec with PropertyChecks with Matchers with ParserH
               "simple2",
               XorTrigger(
                 OrTrigger(
-                  AtomicTrigger[Battery](_.plugged == Battery.Plugged.withName("usb")),
-                  AtomicTrigger[Battery](_.level <= ub"70")
+                  ModelTrigger[Battery](_.plugged == Battery.Plugged.withName("usb")),
+                  ModelTrigger[Battery](_.level <= ub"70")
                 ),
-                AtomicTrigger[Headset](_ == Headset.withName("disconnected"))
+                ModelTrigger[Headset](_ == Headset.withName("disconnected"))
               ),
               Vector(
                 ChangeSoundProfile(ChangeSoundProfile.Mode.Silent)

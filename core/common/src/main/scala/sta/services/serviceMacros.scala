@@ -5,7 +5,7 @@ import scala.language.{dynamics, existentials, higherKinds}
 import scala.annotation.StaticAnnotation
 import scala.concurrent.duration.Duration
 import scala.reflect.macros.blackbox
-import sta.common.Uses
+import sta.common.{Requirement, Uses}
 import sta.model.Model
 
 /** Marks intents that shouldn't be registered by a broadcast receiver,
@@ -16,7 +16,7 @@ class manual(seq: (String, Duration)*) extends StaticAnnotation
 object ServiceMacros {
   type SF = ServiceFragment[Model]
 
-  case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], features: Uses[Model])
+  case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], uses: Uses[Model])
 
   def collect[T](enclosing: T): Seq[RichService] = macro ServiceMacrosImpl.collect[T]
 }
@@ -60,7 +60,7 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
         new $RichService(
           actual = $makeInstance.asInstanceOf[$ServiceFragment],
           manual = $manual,
-          features = implicitly[${Uses(decl.typeSignature.baseType(inherited).typeArgs.head)}].asInstanceOf[$Uses]
+          uses = implicitly[${Uses(decl.typeSignature.baseType(inherited).typeArgs.head)}].asInstanceOf[$Uses]
         )
       """
       }

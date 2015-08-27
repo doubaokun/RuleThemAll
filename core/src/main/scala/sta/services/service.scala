@@ -1,7 +1,6 @@
 package sta.services
 
 import android.app.{PendingIntent, Service}
-import android.content.Intent.FilterComparison
 import android.content.{BroadcastReceiver, Context, Intent}
 import android.net.Uri
 import android.os._
@@ -14,6 +13,7 @@ import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Failure
 import shapeless.HMap
+import sta.common.Requirement
 import sta.model.{Model, ModelKV}
 import sta.storage.PlaintextStorage
 
@@ -70,7 +70,7 @@ object STAService {
   }
 }
 
-class STAService extends Service with Logging { root =>
+class STAService extends Service with TriggerExecutor with Logging { root =>
 
   import sta.services.STAService._
 
@@ -78,24 +78,18 @@ class STAService extends Service with Logging { root =>
 
   type SF = List[(IntentType, ServiceFragment[Model])]
 
-  class ServicesMap private[STAService](rawMap: Map[Int, (Intent, SF)]) {
-    @inline final private def updateState(model: Model): Unit = {
+  class ServicesMap private[STAService](rawMap: Map[Int, (Requirement, SF)]) {
+    @inline private final def updateModel(model: Model): Unit = {
       import model.companion._
-      rawState.update { state =>
-        state + (Key -> model)
-      }.fold(th => log.error("Error has occurred during updating state", th), state => {
-        storage.rules.foreach { rule =>
-          Task(rule.execute(state)).run(_ => ())
-        }
-      })
+      updateState(_ + (Key -> model))
     }
 
     private[this] val tasks: Map[String, Task[Unit]] = for {
-      (_, (intent, service)) <- rawMap
+      (_, (Requirement.IntentBased(intent), service)) <- rawMap
       (Manual(interval), sf) <- service 
     } yield {
       sf.logTag.tag -> Task.schedule(0.seconds, interval) {
-        sf(ctx, registerReceiver(null, intent)).foreach(updateState)
+        sf(ctx, registerReceiver(null, intent)).foreach(updateModel)
       }
     }
     
@@ -110,12 +104,12 @@ class STAService extends Service with Logging { root =>
       automatic
     }
 
-    def iterator: Iterator[(Intent, SF)] = rawMap.valuesIterator
+    def iterator: Iterator[(Requirement, SF)] = rawMap.valuesIterator
     
-    def map(f: ((Intent, SF)) => (Intent, SF)): ServicesMap = {
+    def map(f: ((Requirement, SF)) => (Requirement, SF)): ServicesMap = {
       new ServicesMap(rawMap.map { case (k, v) =>
         val nv = f(v)
-        nv._1.filterHashCode() -> nv
+        nv._1.hashCode() -> nv
       })
     }
 
@@ -124,7 +118,7 @@ class STAService extends Service with Logging { root =>
       sf <- services;
       model <- sf(context, intent)
     ) {
-      updateState(model)
+      updateModel(model)
     }
 
     def stopTasks(): Boolean = {
@@ -146,22 +140,25 @@ class STAService extends Service with Logging { root =>
     def apply() = {
       val pm = getPackageManager
       val collected = ServiceMacros.collect(root)
-      val services = mutable.Map.empty[Intent, SF]
-      val rules = storage.rules.flatMap(_.uses).toSet
-      for (wst <- collected if wst.features.features.forall(pm.hasSystemFeature)) {
+      val services = mutable.Map.empty[Requirement, SF]
+      val rules = storage.rules.flatMap(_.requires).toSet
+      for (wst <- collected if wst.uses.features.forall(pm.hasSystemFeature)) {
         val manual = wst.manual.map(_.toMap).getOrElse(Map.empty[String, Duration])
-        wst.features.intents.foreach {
-          case intent if manual.isDefinedAt(intent.getAction) =>
-            val fc = new FilterComparison(intent)
-            services += ((intent, (if (!rules.contains(fc)) Manual(manual(intent.getAction)).suspend()
-              else Manual(manual(intent.getAction)), wst.actual) :: services.getOrElse(intent, Nil)))
-          case intent =>
-            val fc = new FilterComparison(intent)
-            services += ((intent, (if (!rules.contains(fc)) Automatic.suspend() else Automatic,
-              wst.actual) :: services.getOrElse(intent, Nil)))
+        wst.uses.requirements.foreach {
+          case requirement @ Requirement.IntentBased(intent) if manual.isDefinedAt(intent.getAction) =>
+            services += ((requirement, (
+              if (!rules.contains(requirement)) Manual(manual(intent.getAction)).suspend()
+              else Manual(manual(intent.getAction)),
+              wst.actual
+            ) :: services.getOrElse(requirement, Nil)))
+          case requirement =>
+            services += ((requirement, (
+              if (!rules.contains(requirement)) Automatic.suspend() else Automatic,
+              wst.actual
+            ) :: services.getOrElse(requirement, Nil)))
         }
       }
-      new ServicesMap(rawMap = services.map { case (k, v) => (k.filterHashCode(), (k, v)) }(collection.breakOut))
+      new ServicesMap(rawMap = services.map { case (k, v) => (k.hashCode(), (k, v)) }(collection.breakOut))
     }
   }
 
@@ -183,7 +180,12 @@ class STAService extends Service with Logging { root =>
       val intents = Seq.newBuilder[Intent]
       rawServices.update { services =>
         services.stopTasks()
-        services.map(f(intents += _, _))
+        services.map {
+          case (Requirement.IntentBased(intent), sf) =>
+            val (newIntent, newSF) = f(intents += _, intent -> sf)
+            Requirement.IntentBased(newIntent) -> newSF
+          case other => other
+        }
       }.fold(th => {
         log.error("Failed to update services", th)
       }, services => {
@@ -240,6 +242,16 @@ class STAService extends Service with Logging { root =>
     intents.foreach(registerReceiver(stateProcessor, _))
   }
 
+  def state: HMap[ModelKV] = rawState.get
+
+  def updateState(f: HMap[ModelKV] => HMap[ModelKV]): Unit = {
+    rawState.update(f).fold(th => log.error("Error has occurred during updating state", th), state => {
+      storage.rules.foreach { rule =>
+        Task(rule.execute(state)).run(_ => ())
+      }
+    })
+  }
+
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
     appInfo
     storage
@@ -247,7 +259,7 @@ class STAService extends Service with Logging { root =>
       intent.extra[PendingIntent].get(STAService.ACTION)))
     val services = rawServices.get
     registerStateProcessor(services.iterator.collect {
-      case (v, xs) if xs.exists(_._1 == Automatic)  => v
+      case (Requirement.IntentBased(v), xs) if xs.exists(_._1 == Automatic)  => v
     }.toSeq, unregisterFirst = false)
     services.runTasks()
 

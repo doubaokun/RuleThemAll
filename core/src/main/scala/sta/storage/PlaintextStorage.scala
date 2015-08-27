@@ -27,9 +27,9 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     val map = mutable.Map.empty[Int, Int]
     for (
       rule <- rawRules.valuesIterator;
-      use <- rule.uses
+      requirement <- rule.requires
     ) {
-      val hash = use.hashCode()
+      val hash = requirement.hashCode()
       map += (hash -> (map.getOrElse(hash, 0) + 1))
     }
     map
@@ -73,27 +73,27 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     for (
       rule <- rules;
       oldRule <- rawRules.get(rule.hashCode());
-      use <- oldRule.uses;
-      count <- rawUses.get(use.hashCode())
+      requirement <- oldRule.requires;
+      count <- rawUses.get(requirement.hashCode())
     ) {
       count match {
         case 1 =>
-          removed += use.hashCode()
-          rawUses -= use.hashCode()
+          removed += requirement.hashCode()
+          rawUses -= requirement.hashCode()
         case _ =>
-          rawUses += (use.hashCode() -> (count - 1))
+          rawUses += (requirement.hashCode() -> (count - 1))
       }
     }
 
     // add new uses
     for (
       rule <- rules;
-      use <- rule.uses
+      requirement <- rule.requires
     ) {
-      rawUses.get(use.hashCode()).fold[Unit] {
-        added += use.hashCode()
-        rawUses += (use.hashCode() -> 1)
-      }(count => rawUses += (use.hashCode() -> (count + 1)))
+      rawUses.get(requirement.hashCode()).fold[Unit] {
+        added += requirement.hashCode()
+        rawUses += (requirement.hashCode() -> 1)
+      }(count => rawUses += (requirement.hashCode() -> (count + 1)))
     }
 
     val prevSize = rawRules.size
@@ -113,15 +113,15 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       rawRules -= rule.hashCode()
       file.delete()
       for (
-        use <- rule.uses;
-        count <- rawUses.get(use.hashCode())
+        requirement <- rule.requires;
+        count <- rawUses.get(requirement.hashCode())
       ) {
         count match {
           case 1 =>
-            removed += use.hashCode()
-            rawUses -= use.hashCode()
+            removed += requirement.hashCode()
+            rawUses -= requirement.hashCode()
           case _ =>
-            rawUses += (use.hashCode() -> (count - 1))
+            rawUses += (requirement.hashCode() -> (count - 1))
         }
       }
     }

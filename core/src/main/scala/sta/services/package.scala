@@ -4,10 +4,14 @@ import scala.language.implicitConversions
 import android.content.{Intent, IntentFilter}
 import android.os.PatternMatcher
 import kj.android.common.Common
+import sta.common.Requirement
 import sta.model.Model
 
 package object services extends Common {
   implicit def liftModel[M <: Model](m: M): Option[M] = Option(m)
+
+  implicit def liftActionToRequirement(action: String): Requirement =
+    new Requirement.IntentBased(new Intent(action))
 
   implicit def intentToIntentFilter(intent: Intent): IntentFilter = {
     val f = new IntentFilter(intent.getAction)

@@ -1,10 +1,8 @@
 package sta.model.triggers
 
-import android.content.Intent
-import android.content.Intent.FilterComparison
 import scala.annotation.tailrec
 import shapeless.HMap
-import sta.common.Uses
+import sta.common.{Requirement, Uses}
 import sta.model._
 import sta.model.triggers.functions.ModelFunction
 
@@ -45,13 +43,13 @@ object Trigger {
 sealed abstract class Trigger {
   def satisfiedBy(state: HMap[ModelKV]): Boolean
 
-  def uses: Set[FilterComparison]
+  def requires: Set[Requirement]
 }
 
 object EmptyTrigger extends Trigger {
   def satisfiedBy(state: HMap[ModelKV]): Boolean = true
 
-  def uses: Set[FilterComparison] = Set.empty
+  def requires: Set[Requirement] = Set.empty
 }
 
 sealed abstract class LogicOpTrigger extends Trigger {
@@ -59,7 +57,7 @@ sealed abstract class LogicOpTrigger extends Trigger {
 
   def rhs: Trigger
 
-  def uses: Set[FilterComparison] = lhs.uses ++ rhs.uses
+  def requires: Set[Requirement] = lhs.requires ++ rhs.requires
 }
 
 case class AndTrigger(lhs: Trigger, rhs: Trigger) extends LogicOpTrigger {
@@ -79,7 +77,7 @@ case class XorTrigger(lhs: Trigger, rhs: Trigger) extends LogicOpTrigger {
   }
 }
 
-case class AtomicTrigger[M <: Model: ModelCompanion: Uses](function: ModelFunction[M])
+case class ModelTrigger[M <: Model: ModelCompanion: Uses](function: ModelFunction[M])
     extends Trigger {
   def satisfiedBy(state: HMap[ModelKV]): Boolean = {
     val companion = implicitly[ModelCompanion[M]]
@@ -87,5 +85,10 @@ case class AtomicTrigger[M <: Model: ModelCompanion: Uses](function: ModelFuncti
     state.get(Key).exists(function)
   }
 
-  def uses: Set[FilterComparison] = implicitly[Uses[M]].intents.map(new FilterComparison(_))
+  def requires: Set[Requirement] = implicitly[Uses[M]].requirements
+
+  def withRequirements(req: Requirement, reqs: Requirement*): ModelTrigger[M] =
+    new ModelTrigger(function) {
+      override def requires: Set[Requirement] = implicitly[Uses[M]].requirements ++ reqs + req
+    }
 }

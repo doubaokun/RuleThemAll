@@ -25,7 +25,7 @@ object Uses {
 trait Uses[T] {
   def features: Set[String]
 
-  def intents: Set[Intent]
+  def requirements: Set[Requirement]
 }
 
 private class UsesImpl(val c: blackbox.Context) {
@@ -45,8 +45,6 @@ private class UsesImpl(val c: blackbox.Context) {
     else Nil
   }
 
-  private def Intent = c.typeOf[Intent]
-
   private object IntentExtractor {
     def unapply(annotations: List[Annotation]): Option[Tree] = {
       val trees = annotations.map(_.tree)
@@ -58,8 +56,8 @@ private class UsesImpl(val c: blackbox.Context) {
         case q"""new $annotation($arg)""" if annotation.tpe =:= typeOf[data] => arg
       }
       (action, uri) match {
-        case (Some(at), Some(ut)) => Some(q"new $Intent($at, $ut)")
-        case (Some(at), None) => Some(q"new $Intent($at)")
+        case (Some(at), Some(ut)) => Some(q"new ${c.typeOf[Intent]}($at, $ut)")
+        case (Some(at), None) => Some(q"new ${c.typeOf[Intent]}($at)")
         case (None, Some(ut)) => c.abort(c.enclosingPosition,
           "`@data` annotation should be used with the `@action` annotation.")
         case (None, None) => None
@@ -89,14 +87,14 @@ private class UsesImpl(val c: blackbox.Context) {
     val features = allChildrenAnnotationsFor(tpe).flatten.map(_.tree).collect {
       case q"""new $annotation(..$args)""" if annotation.tpe =:= typeOf[feature] => args
     }.flatten.foldLeft(q"Set.empty[String]") { case (acc, f) => q"$acc + $f" }
-    val intents = allChildrenAnnotationsFor(tpe).collect {
-      case IntentExtractor(tree) => tree
-    }.foldLeft(q"Set.empty[$Intent]") { case (acc, f) => q"$acc + $f" }
+    val requirements = allChildrenAnnotationsFor(tpe).collect {
+      case IntentExtractor(tree) => q"new ${c.typeOf[Requirement.IntentBased]}($tree)"
+    }.foldLeft(q"Set.empty[${c.typeOf[Requirement]}]") { case (acc, f) => q"$acc + $f" }
 
     q"""new ${appliedType(typeOf[Uses[_]].typeConstructor, tpe)} {
       def features: Set[String] = $features
 
-      def intents: Set[$Intent] = $intents
+      def requirements: Set[${c.typeOf[Requirement]}] = $requirements
     }"""
   }
 }

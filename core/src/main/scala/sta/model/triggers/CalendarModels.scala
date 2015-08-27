@@ -11,8 +11,11 @@ trait CalendarModels {
   @category("calendar event")
   @action(Intent.ACTION_PROVIDER_CHANGED)
   @data(CalendarContract.CONTENT_URI)
-  case class CalendarEvent(state: CalendarEvent.State, name: String,
-    description: String, availability: CalendarEvent.Availability) extends Model(CalendarEvent)
+  case class CalendarEvent(availability: CalendarEvent.Availability, title: String,
+    description: String, location: String)(val state: CalendarEvent.State) // exclude `state` from hash code
+    extends Model(CalendarEvent) {
+    override def hashCode(): Int = super.hashCode()
+  }
 
   implicit object CalendarEvent extends ModelCompanion[CalendarEvent] {
     sealed abstract class State extends ModelEnumEntry
