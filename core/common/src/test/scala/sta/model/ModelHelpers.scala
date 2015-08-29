@@ -10,7 +10,7 @@ import sta.model.triggers.functions._
 trait ModelHelpers {
 
   @category("test")
-  case class TestModel(i: Int, s: String, o: TestModel.O) extends Model(TestModel)
+  case class TestModel(i: Int = 0, s: String = "", o: TestModel.O = null) extends Model(TestModel)
   implicit object TestModel extends ModelCompanion[TestModel] {
     sealed abstract class O
 

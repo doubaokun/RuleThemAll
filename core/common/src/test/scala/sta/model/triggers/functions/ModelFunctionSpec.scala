@@ -7,12 +7,12 @@ import spire.implicits._
 import sta.model.ModelHelpers
 import sta.tests.PropertyChecks
 
-class FunctionSpec extends FlatSpec with PropertyChecks with Matchers with ModelHelpers {
+class ModelFunctionSpec extends FlatSpec with PropertyChecks with Matchers with ModelHelpers {
 
   import ops._
 
   private def testFunctions[V](gen: Gen[V], f1: V => ModelFunction[TestModel],
-                               f2: V => ModelFunction[TestModel])(pred: (V, V) => Boolean)(implicit unwrap: TestModel => V): Unit = {
+    f2: V => ModelFunction[TestModel])(pred: (V, V) => Boolean)(implicit unwrap: TestModel => V): Unit = {
     forAll(tupledGen(gen)) {
       case (v, m) =>
         whenever(pred(v, m)) {
@@ -60,6 +60,9 @@ class FunctionSpec extends FlatSpec with PropertyChecks with Matchers with Model
     mat[TestModel](_.i < 1/12) should ===(LTFunction[Int, TestModel](1/12)(o, _.i))
     mat[TestModel](_.i <= math.pow(2, 2).toInt) should ===(LTEQFunction[Int, TestModel](4)(o, _.i))
     mat[TestModel](v => !(v.s == "test")) should ===(NotFunction[TestModel](EqualFunction[String, TestModel]("test")(_.s)))
+
+    mat[TestModel](_.i % 2 == 1).apply(TestModel(3)) should === (true)
+    mat[TestModel](_.i % 2 == 1).apply(TestModel(4)) should === (false)
   }
 
 }
