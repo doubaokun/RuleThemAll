@@ -17,7 +17,7 @@ sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with T
 
   def Name: P[String] = P((alphaNum ~ ("_" ~ alphaNum).?).repX(1).!)
 
-  def Branches: P[Seq[Rule.Branch]] = P("(" ~ MainT.map(_.flatten) ~ ")")
+  def Branches: P[Seq[Trigger.Branch]] = P("(" ~ MainT.map(_.flatten) ~ ")")
 
   def Action: P[Seq[Action]] = P("{" ~ MainA.rep(1, sep = newLine | ";") ~ "}")
 

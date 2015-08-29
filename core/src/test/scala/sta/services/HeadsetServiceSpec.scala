@@ -2,29 +2,31 @@ package sta.services
 
 import android.content.Intent
 import org.robolectric.annotation.Config
-import org.scalatest.{ Matchers, RobolectricSuite, WordSpec }
+import org.scalatest.{FlatSpec, Matchers, RobolectricSuite}
 import sta.model.triggers.Implicits._
 
-@Config(sdk = Array(18), manifest = "core/src/test/AndroidManifest.xml")
-class HeadsetServiceSpec extends WordSpec with RobolectricSuite with Matchers {
+@Config(sdk = Array(21), manifest = "core/src/test/AndroidManifest.xml")
+class HeadsetServiceSpec extends FlatSpec with RobolectricSuite with Matchers {
 
-  private def prepareIntent(state: Int): Intent = {
-    val intent = new Intent
-    intent.setAction(Intent.ACTION_HEADSET_PLUG)
-    intent.putExtra("state", state)
+  trait Service {
+    def prepareIntent(state: Int): Intent = {
+      val intent = new Intent
+      intent.setAction(Intent.ACTION_HEADSET_PLUG)
+      intent.putExtra("state", state)
+    }
+
+    val service = new HeadsetService
   }
 
-  "HeadsetService" should {
-    val service = new HeadsetService
+  behavior of "HeadsetService"
 
-    "report connected headset" in {
-      service.handle(prepareIntent(Headset.Connected.intValue)) should
-        === (Some(Headset.Connected))
-    }
+  it should "report connected headset" in new Service {
+    service.handle(prepareIntent(Headset.Connected.intValue)) should
+      ===(Some(Headset.Connected))
+  }
 
-    "report disconnected headset" in {
-      service.handle(prepareIntent(Headset.Disconnected.intValue)) should
-        === (Some(Headset.Disconnected))
-    }
+  it should "report disconnected headset" in new Service {
+    service.handle(prepareIntent(Headset.Disconnected.intValue)) should
+      ===(Some(Headset.Disconnected))
   }
 }

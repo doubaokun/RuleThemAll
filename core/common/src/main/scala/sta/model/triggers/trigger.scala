@@ -1,28 +1,26 @@
 package sta.model.triggers
 
-import cats._
 import cats.std.all._
 import cats.syntax.all._
 import shapeless.HMap
 import sta.common.{Requirement, Uses}
-import sta.model.Rule.Branch
 import sta.model._
-import sta.model.triggers.functions.{NotFunction, ModelFunction}
+import sta.model.triggers.functions.{ModelFunction, NotFunction}
 
 sealed abstract class Trigger {
-  protected type FlatResult = Either[List[Trigger.Atomic[_]], List[Rule.Branch]]
+  protected type FlatResult = Either[List[Trigger.Atomic[_]], List[Trigger.Branch]]
 
   def flatChildren: Seq[FlatResult]
 
-  final def flatten: Seq[Rule.Branch] = {
+  final def flatten: Seq[Trigger.Branch] = {
     val prefix = Seq.newBuilder[Trigger.Atomic[_]]
-    val cross = List.newBuilder[List[Branch]]
+    val cross = List.newBuilder[List[Trigger.Branch]]
     flatChildren.foreach {
       case Left(triggers) => prefix ++= triggers
       case Right(branches) => cross += branches
     }
     cross.result().sequence.map { branches =>
-      Branch(prefix.result() ++ branches.flatMap(_.triggers))
+      Trigger.Branch(prefix.result() ++ branches.flatMap(_.triggers))
     }
   }
 
@@ -32,6 +30,8 @@ sealed abstract class Trigger {
 }
 
 object Trigger {
+  case class Branch(triggers: Seq[Trigger.Atomic[_]])
+
   def empty = Empty
 
   def apply(trigger: Trigger, triggers: Trigger*): Trigger = {

@@ -15,7 +15,7 @@ import sta.common.Requirement
 import sta.model.actions.Action
 import sta.model.triggers._
 
-case class Rule(name: String, branches: Seq[Rule.Branch], actions: Seq[Action]) extends Logging {
+case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
@@ -65,8 +65,4 @@ case class Rule(name: String, branches: Seq[Rule.Branch], actions: Seq[Action]) 
     case Rule(`name`, _, _) => true
     case _ => false
   }
-}
-
-object Rule {
-  case class Branch(triggers: Seq[Trigger.Atomic[_]])
 }
