@@ -13,9 +13,9 @@ import scala.util.control.NonFatal
 import shapeless.HMap
 import sta.common.Requirement
 import sta.model.actions.Action
-import sta.model.triggers.Trigger
+import sta.model.triggers._
 
-case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Logging {
+case class Rule(name: String, branches: Seq[Rule.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
@@ -30,7 +30,7 @@ case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Lo
 
   // TODO rete
   def tryExecute(state: HMap[ModelKV])(implicit ctx: Context): Either[Rule, Result] = {
-    if (trigger.satisfiedBy(state)) {
+    if (branches.exists(_.triggers.forall(_.satisfiedBy(state)))) {
       implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
       val combine = (_: Unit, _: Unit) => ()
       Right(
@@ -53,7 +53,11 @@ case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Lo
     )
   }
 
-  def requires: Set[Requirement] = trigger.requires
+  lazy val requires: Set[Requirement] = (for {
+    branch <- branches
+    trigger <- branch.triggers
+    requirement <- trigger.requires
+  } yield requirement).toSet
 
   override def hashCode(): Int = name.hashCode
 
@@ -63,3 +67,6 @@ case class Rule(name: String, trigger: Trigger, actions: Seq[Action]) extends Lo
   }
 }
 
+object Rule {
+  case class Branch(triggers: Seq[Trigger.Atomic[_]])
+}

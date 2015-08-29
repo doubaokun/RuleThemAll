@@ -34,14 +34,14 @@ trait TriggerRules extends WhitespaceSkip {
         val main2toN = twoOrMore(main)
 
         val conditions = ("(" ~ (
-          (main.rep(1, sep = ",") map (Trigger(_))) |
-            ("or" ~ main2toN map (ts => Trigger.or(ts))) |
-            ("xor" ~ main2 map (t => XorTrigger(t._1, t._2))) |
-            ("and" ~ main2toN map (ts => Trigger.and(ts)))
+          (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) |
+            ("or" ~ main2toN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+            ("xor" ~ main2 map (t => Trigger.xor(t._1, t._2))) |
+            ("and" ~ main2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*)))
           ) ~ ")") | main
 
         prefix ~! trigger.Suffix.fold(conditions)(suffix =>
-          conditions.? ~! suffix map (t => t._1.fold[Trigger](t._2)(r => AndTrigger(t._2, r)))
+          conditions.? ~! suffix map (t => t._1.fold[Trigger](t._2)(r => Trigger.and(t._2, r)))
         )
       }
 
@@ -54,9 +54,9 @@ trait TriggerRules extends WhitespaceSkip {
     val triggers2 = "(" ~ triggers ~ "," ~ triggers ~ ")"
     val triggers2toN = twoOrMore(triggers)
 
-    P((triggers.rep(1, sep = ",") map (Trigger(_))) |
-      ("or" ~ triggers2toN map (ts => Trigger.or(ts))) |
-      ("xor" ~ triggers2 map (t => XorTrigger(t._1, t._2))) |
-      ("and" ~ triggers2toN map (ts => Trigger.and(ts))))
+    P((triggers.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) |
+      ("or" ~ triggers2toN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+      ("xor" ~ triggers2 map (t => Trigger.xor(t._1, t._2))) |
+      ("and" ~ triggers2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))))
   }
 }

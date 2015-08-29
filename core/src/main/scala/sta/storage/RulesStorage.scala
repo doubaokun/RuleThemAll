@@ -5,7 +5,6 @@ import java.io.File
 import kj.android.common.AppInfo
 import kj.android.logging.Logging
 import sta.model.Rule
-import sta.model.triggers.EmptyTrigger
 
 abstract class RulesStorage extends Logging {
   def ctx: Context
@@ -28,7 +27,7 @@ abstract class RulesStorage extends Logging {
 
   def allRules: Iterator[Rule]
 
-  def rules: Iterator[Rule] = allRules.filterNot(_.trigger == EmptyTrigger)
+  def rules: Iterator[Rule] = allRules.filter(_.branches.nonEmpty)
 
-  def startupRules: Iterator[Rule] = allRules.filter(_.trigger == EmptyTrigger)
+  def startupRules: Iterator[Rule] = allRules.filter(_.branches.isEmpty)
 }

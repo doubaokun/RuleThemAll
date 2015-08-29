@@ -4,7 +4,7 @@ import fastparse.noApi._
 import java.text.SimpleDateFormat
 import scala.util.Try
 import sta.common.{Requirement, Uses}
-import sta.model.triggers.ModelTrigger
+import sta.model.triggers.Trigger
 import sta.model.triggers.Implicits._
 
 object DateRules extends TriggerParser[DateTime] {
@@ -22,9 +22,9 @@ object DateRules extends TriggerParser[DateTime] {
       Pattern(p) <- SingleLineString
     } yield p
     ("with" ~ "format" ~ pattern).?.map(_.getOrElse(new SimpleDateFormat())) ~ "is" ~ SingleLineString map {
-      case (p, d) => ModelTrigger[DateTime](dt => p.format(dt.date) == d).withRequirements(Requirement.DateBased)
+      case (p, d) => Trigger.Atomic[DateTime](dt => p.format(dt.date) == d).withRequirements(Requirement.DateBased)
     }
   }
 
-  val Rule: P[ModelTrigger[_ <: DateTime]] = date
+  val Rule: P[Trigger.Atomic[_ <: DateTime]] = date
 }
