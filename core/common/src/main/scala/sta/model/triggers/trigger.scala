@@ -23,10 +23,6 @@ sealed abstract class Trigger {
       Trigger.Branch(prefix.result() ++ branches.flatMap(_.triggers))
     }
   }
-
-  def satisfiedBy(state: HMap[ModelKV]): Boolean
-
-  def requires: Set[Requirement]
 }
 
 object Trigger {
@@ -51,62 +47,29 @@ object Trigger {
 
   object Empty extends Trigger {
     def flatChildren: Seq[FlatResult] = Seq.empty
-
-    def satisfiedBy(state: HMap[ModelKV]): Boolean = true
-
-    def requires: Set[Requirement] = Set.empty
   }
 
   case class And private[Trigger](triggers: Seq[Trigger]) extends Trigger {
     def flatChildren: Seq[FlatResult] = triggers.flatMap(_.flatChildren)
-
-    def satisfiedBy(state: HMap[ModelKV]): Boolean = triggers.forall(_.satisfiedBy(state))
-
-    def requires: Set[Requirement] = triggers.flatMap(_.requires)(collection.breakOut)
   }
 
   case class Or private[Trigger](triggers: Seq[Trigger]) extends Trigger {
     def flatChildren: Seq[FlatResult] = Seq(Right(triggers.flatMap(_.flatten)(collection.breakOut)))
-
-    def satisfiedBy(state: HMap[ModelKV]): Boolean = triggers.exists(_.satisfiedBy(state))
-
-    def requires: Set[Requirement] = triggers.flatMap(_.requires)(collection.breakOut)
   }
 
   case class Xor private[Trigger](lhs: Trigger, rhs: Trigger) extends Trigger {
     def flatChildren: Seq[FlatResult] = {
       val branches = List(
-        Branch(
-          lhs.flatten.flatMap(_.triggers) ++ rhs.flatten.flatMap(_.triggers.map { t =>
-            val casted = t.asInstanceOf[Atomic[Model]]
-            Atomic(NotFunction(casted.function))(casted.companion, casted.uses)
-          })
-        ),
-        Branch(
-          lhs.flatten.flatMap(_.triggers.map { t =>
-            val casted = t.asInstanceOf[Atomic[Model]]
-            Atomic(NotFunction(casted.function))(casted.companion, casted.uses)
-          }) ++ rhs.flatten.flatMap(_.triggers)
-        )
+        Branch(lhs.flatten.flatMap(_.triggers) ++ rhs.flatten.flatMap(_.triggers.map(!_))),
+        Branch(lhs.flatten.flatMap(_.triggers.map(!_)) ++ rhs.flatten.flatMap(_.triggers))
       )
       Seq(Right(branches))
     }
-
-    def satisfiedBy(state: HMap[ModelKV]): Boolean = {
-      val l = lhs.satisfiedBy(state)
-      val r = rhs.satisfiedBy(state)
-
-      (l && !r) || (!l && r)
-    }
-
-    def requires: Set[Requirement] = lhs.requires ++ rhs.requires
   }
 
   case class Atomic[M <: Model: ModelCompanion: Uses](function: ModelFunction[M]) extends Trigger {
-    protected[Trigger] def companion = implicitly[ModelCompanion[M]]
-
-    protected[Trigger] def uses = implicitly[Uses[M]]
-
+    def unary_! = copy(function = NotFunction(function))
+    
     def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
 
     def satisfiedBy(state: HMap[ModelKV]): Boolean = {

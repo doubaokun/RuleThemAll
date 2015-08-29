@@ -14,6 +14,22 @@ class TriggerSpec extends FlatSpec with PropertyChecks with Matchers with ModelH
   import Trigger._
   import ops._
 
+  trait Instances {
+    val m1 = Trigger.Atomic[TestModel](_.i != 1)
+    val notM1 = Trigger.Atomic[TestModel](NotFunction(m1.function))
+    val m2 = Trigger.Atomic[TestModel](_.o == TestModel.O.Object1.asInstanceOf[TestModel.O])
+    val notM2 = Trigger.Atomic[TestModel](NotFunction(m2.function))
+    val m3 = Trigger.Atomic[TestModel](_.s == "ala ma kota")
+    val notM3 = Trigger.Atomic[TestModel](NotFunction(m3.function))
+    val m4 = Trigger.Atomic[TestModel](_.i > 1)
+    val m5 = Trigger.Atomic[TestModel](_.s != "ala ma kota")
+    val m6 = Trigger.Atomic[TestModel](_.i < 1)
+    val m7 = Trigger.Atomic[TestModel](_.o == TestModel.O.Object2.asInstanceOf[TestModel.O])
+
+    def compare(actual: Trigger, expected: Seq[Branch]) =
+      actual.flatten.map(_.triggers.toSet) should contain theSameElementsAs expected.map(_.triggers.toSet)
+  }
+
   implicit class RichTrigger[M <: Model: ModelCompanion: Uses](trigger: Trigger.Atomic[M]) {
     val companion = implicitly[ModelCompanion[M]]
   }
@@ -31,50 +47,6 @@ class TriggerSpec extends FlatSpec with PropertyChecks with Matchers with ModelH
         trigger.satisfiedBy(state) should ===(p)
       }
     }
-  }
-
-  private def checkComplexTrigger[M1 <: Model: ModelCompanion: Uses, M2 <: Model: ModelCompanion: Uses](
-    mf1: ModelFunction[M1], state1: HMap[ModelKV],
-    mf2: ModelFunction[M2], state2: HMap[ModelKV]
-  )(
-    f: (Trigger, Trigger) => Trigger,
-    tPred: (Boolean, Boolean) => Boolean, pred: Boolean => Boolean
-  ): Unit = {
-    val t1 = Trigger.Atomic[M1](mf1)
-    val t2 = Trigger.Atomic[M2](mf2)
-    val model1 = state1.get(t1.companion.Key)(t1.companion.ev)
-    val model2 = state2.get(t2.companion.Key)(t2.companion.ev)
-
-    model1 should be('defined)
-    model2 should be('defined)
-
-    for {
-      m1 <- model1
-      m2 <- model2
-    } {
-      val state = HMap[ModelKV](t1.companion.Key -> m1, t2.companion.Key -> m2)(t1.companion.ev, t2.companion.ev)
-      val trigger = f(t1, t2)
-      val p = tPred(t1.satisfiedBy(state), t2.satisfiedBy(state))
-      whenever(pred(p)) {
-        trigger.satisfiedBy(state) should ===(p)
-      }
-    }
-  }
-
-  trait Instances {
-    val m1 = Trigger.Atomic[TestModel](_.i != 1)
-    val notM1 = Trigger.Atomic[TestModel](NotFunction(m1.function))
-    val m2 = Trigger.Atomic[TestModel](_.o == TestModel.O.Object1.asInstanceOf[TestModel.O])
-    val notM2 = Trigger.Atomic[TestModel](NotFunction(m2.function))
-    val m3 = Trigger.Atomic[TestModel](_.s == "ala ma kota")
-    val notM3 = Trigger.Atomic[TestModel](NotFunction(m3.function))
-    val m4 = Trigger.Atomic[TestModel](_.i > 1)
-    val m5 = Trigger.Atomic[TestModel](_.s != "ala ma kota")
-    val m6 = Trigger.Atomic[TestModel](_.i < 1)
-    val m7 = Trigger.Atomic[TestModel](_.o == TestModel.O.Object2.asInstanceOf[TestModel.O])
-
-    def compare(actual: Trigger, expected: Seq[Branch]) =
-      actual.flatten.map(_.triggers.toSet) should contain theSameElementsAs expected.map(_.triggers.toSet)
   }
 
   behavior of "Trigger.flatten"
@@ -141,51 +113,4 @@ class TriggerSpec extends FlatSpec with PropertyChecks with Matchers with ModelH
     }
   }
 
-  behavior of "Trigger.And"
-
-  it should "yield true if all triggers are satisfied" in {
-    forAll(modelFunctionGen[String], stateGen[String],
-      modelFunctionGen[Int], stateGen[Int]) { (mf1, state1, mf2, state2) =>
-      checkComplexTrigger(mf1, state1, mf2, state2)((t1, t2) => Trigger.and(t1, t2), _ && _, identity)
-    }
-  }
-
-  it should "yield false if not all triggers are satisfied" in {
-    forAll(modelFunctionGen[String], stateGen[String],
-      modelFunctionGen[Int], stateGen[Int]) { (mf1, state1, mf2, state2) =>
-      checkComplexTrigger(mf1, state1, mf2, state2)((t1, t2) => Trigger.and(t1, t2), _ && _, !_)
-    }
-  }
-
-  behavior of "Trigger.Or"
-
-  it should "yield true if at least one of triggers is satisfied" in {
-    forAll(modelFunctionGen[String], stateGen[String],
-      modelFunctionGen[Int], stateGen[Int]) { (mf1, state1, mf2, state2) =>
-      checkComplexTrigger(mf1, state1, mf2, state2)((t1, t2) => Trigger.or(t1, t2), _ || _, identity)
-    }
-  }
-
-  it should "yield false if none trigger is satisfied" in {
-    forAll(modelFunctionGen[String], stateGen[String],
-      modelFunctionGen[Int], stateGen[Int]) { (mf1, state1, mf2, state2) =>
-      checkComplexTrigger(mf1, state1, mf2, state2)((t1, t2) => Trigger.or(t1, t2), _ || _, !_)
-    }
-  }
-
-  behavior of "Trigger.Xor"
-
-  it should "yield true if only one of triggers is satisfied" in {
-    forAll(modelFunctionGen[String], stateGen[String],
-      modelFunctionGen[Int], stateGen[Int]) { (mf1, state1, mf2, state2) =>
-      checkComplexTrigger(mf1, state1, mf2, state2)(Trigger.xor, (l, r) => (l && !r) || (!l && r), identity)
-    }
-  }
-
-  it should "yield false if both triggers are satisfied or none trigger is satisfied" in {
-    forAll(modelFunctionGen[String], stateGen[String],
-      modelFunctionGen[Int], stateGen[Int]) { (mf1, state1, mf2, state2) =>
-      checkComplexTrigger(mf1, state1, mf2, state2)(Trigger.xor, (l, r) => (l && !r) || (!l && r), !_)
-    }
-  }
 }
