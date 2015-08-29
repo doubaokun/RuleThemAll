@@ -12,6 +12,11 @@ abstract class HashBasedFunction[V, M <: Model] extends ModelFunction[M] {
   def v: V
 
   final override def hashCode() = v.hashCode()
+
+  final override def equals(o: Any): Boolean = o match {
+    case mf: HashBasedFunction[V, M] =>  v.equals(mf.v)
+    case _ => false
+  }
 }
 
 object ModelFunction {
