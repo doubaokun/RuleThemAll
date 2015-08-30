@@ -19,7 +19,7 @@ object Dependencies {
     object tests {
       val scalacheck = "1.12.4"
       val scalatest = "2.2.5"
-      val scalameter = "0.7-SNAPSHOT"
+      val scalameter = "0.7"
     }
   }
 
