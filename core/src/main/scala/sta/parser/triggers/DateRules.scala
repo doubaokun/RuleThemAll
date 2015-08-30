@@ -2,10 +2,12 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import java.text.SimpleDateFormat
+import kj.android.concurrent.Task
+import scala.concurrent.duration._
 import scala.util.Try
-import sta.common.{Requirement, Uses}
-import sta.model.triggers.Trigger
+import sta.common.Uses
 import sta.model.triggers.Implicits._
+import sta.model.triggers.Condition
 
 object DateRules extends TriggerParser[DateTime] {
   import white._
@@ -22,9 +24,9 @@ object DateRules extends TriggerParser[DateTime] {
       Pattern(p) <- SingleLineString
     } yield p
     ("with" ~ "format" ~ pattern).?.map(_.getOrElse(new SimpleDateFormat())) ~ "is" ~ SingleLineString map {
-      case (p, d) => Trigger.Atomic[DateTime](dt => p.format(dt.date) == d).withRequirements(Requirement.DateBased)
+      case (p, d) => Condition.Trigger[DateTime](dt => p.format(dt.date) == d)
     }
   }
 
-  val Rule: P[Trigger.Atomic[_ <: DateTime]] = date
+  val Rule: P[Condition.Standalone[_ <: DateTime]] = date
 }

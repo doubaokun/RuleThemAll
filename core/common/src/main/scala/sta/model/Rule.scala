@@ -15,7 +15,7 @@ import sta.common.Requirement
 import sta.model.actions.Action
 import sta.model.triggers._
 
-case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
+case class Rule(name: String, branches: Seq[Condition.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]

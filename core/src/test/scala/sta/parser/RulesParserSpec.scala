@@ -8,7 +8,7 @@ import sta.common.Uses._
 import sta.model.Rule
 import sta.model.actions._
 import sta.model.triggers.Implicits._
-import sta.model.triggers.Trigger.Branch
+import sta.model.triggers.Condition.Branch
 import sta.model.triggers._
 import sta.tests.PropertyChecks
 
@@ -42,10 +42,10 @@ class RulesParserSpec extends FlatSpec with PropertyChecks with Matchers with Pa
       Rule(
         "simple1",
         Seq(
-          Branch(List(
-            Trigger.Atomic[Battery](_.plugged == Battery.Plugged.withName("ac")),
-            Trigger.Atomic[Battery](_.level > ub"50"),
-            Trigger.Atomic[Headset](_ == Headset.withName("connected"))
+          Branch(triggers = List(
+            Condition.Trigger[Battery](_.plugged == Battery.Plugged.withName("ac")),
+            Condition.Trigger[Battery](_.level > ub"50"),
+            Condition.Trigger[Headset](_ == Headset.withName("connected"))
           ))
         ),
         Vector(
@@ -55,15 +55,15 @@ class RulesParserSpec extends FlatSpec with PropertyChecks with Matchers with Pa
       Rule(
         "simple2",
         Seq(
-          Branch(List(
-            Trigger.Atomic[Battery](_.plugged == Battery.Plugged.withName("usb")),
-            Trigger.Atomic[Battery](_.level <= ub"70"),
-            Trigger.Atomic[Headset](h => !(h == Headset.withName("disconnected")))
+          Branch(triggers = List(
+            Condition.Trigger[Battery](_.plugged == Battery.Plugged.withName("usb")),
+            Condition.Trigger[Battery](_.level <= ub"70"),
+            Condition.Trigger[Headset](h => !(h == Headset.withName("disconnected")))
           )),
-          Branch(List(
-            Trigger.Atomic[Battery](b => !(b.plugged == Battery.Plugged.withName("usb"))),
-            Trigger.Atomic[Battery](b => !(b.level <= ub"70")),
-            Trigger.Atomic[Headset](_ == Headset.withName("disconnected"))
+          Branch(triggers = List(
+            Condition.Trigger[Battery](b => !(b.plugged == Battery.Plugged.withName("usb"))),
+            Condition.Trigger[Battery](b => !(b.level <= ub"70")),
+            Condition.Trigger[Headset](_ == Headset.withName("disconnected"))
           ))
         ),
         Vector(

@@ -24,6 +24,4 @@ object Requirement {
     }
   }
 
-  object DateBased extends Requirement
-
 }
