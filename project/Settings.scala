@@ -62,7 +62,9 @@ object Settings {
 
     resolvers ++= repositories,
 
-    addCompilerPlugin(paradise)
+    addCompilerPlugin(paradise),
+
+    libraryDependencies ++= tests.map(_ % "test")
   )
 
   def androidSettings: Seq[Def.Setting[_]] = commonSettings ++ Seq(
@@ -158,7 +160,7 @@ object Settings {
     libraryDependencies ++= Seq(
       cats,
       shapeless
-    ) ++ tests.map(_ % "test")
+    )
   )
 
   private def robolectricSettings: Seq[Def.Setting[_]] = Seq(
