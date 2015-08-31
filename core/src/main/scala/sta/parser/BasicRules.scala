@@ -2,7 +2,7 @@ package sta.parser
 
 import scala.language.{higherKinds, implicitConversions}
 import fastparse.all._
-import scala.annotation.tailrec
+import kj.android.cron.{CronExpression => Cron}
 import scala.util.Try
 import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
 
@@ -121,6 +121,40 @@ trait BasicRules {
       case (r, kv) =>
         r | makeRule(kv)
     }
+  }
+
+  lazy val CronExpression: P[Cron] = {
+    def Value(min: Int, max: Int, abbreviations: Map[String, Int] = Map.empty) = {
+      val ip = for {
+        ToInt(v) <- digit.rep(1).! if v >= min && v <= max
+      } yield v
+      val p = if (abbreviations.nonEmpty) {
+        val ap = abbreviations.keys.tail.foldLeft(abbreviations.keys.head.!) {
+          case (acc, e) => acc | e.!
+        }
+        ip | ap.map(abbreviations)
+      } else ip
+      ("*" ~ "/" ~ ip).map(v => Cron.Range(min = min, max = max, step = v)) |
+      "*".!.map(_ => Cron.Range(min = min, max = max)) |
+        (p ~ "-" ~ p ~ "/" ~ ip).map(v => Cron.Range(min = v._1, max = v._2, step = v._3)) |
+        (p ~ "-" ~ p).map(v => Cron.Range(min = v._1, max = v._2)) |
+        p.rep(1, sep = ",").map(v => Cron.List(v.head, v.tail.sorted.distinct.toArray))
+    }
+
+    val months = Seq("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL",
+      "AUG", "SEP", "OCT", "NOV", "DEC").zipWithIndex.toMap.mapValues(_ + 1)
+    val daysOfWeak = Seq("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT").zipWithIndex.toMap
+    P(Value(0, 59) ~ " " ~ Value(0, 23) ~ " " ~ Value(1, 31) ~ " " ~
+      Value(1, 12, months) ~ " " ~ Value(0, 6, daysOfWeak) ~ (" " ~ Value(1970, 2099)).? map {
+      case (minute, hour, dayOfMonth, month, dayOfWeek, year) => Cron(
+        minute = minute,
+        hour = hour,
+        dayOfMonth = dayOfMonth,
+        month = month,
+        dayOfWeek = dayOfWeek,
+        year = year
+      )
+    })
   }
 }
 

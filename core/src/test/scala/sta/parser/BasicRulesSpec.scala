@@ -1,6 +1,7 @@
 package sta.parser
 
 import fastparse.core.SyntaxError
+import kj.android.cron.CronExpression
 import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
 import spire.math._
@@ -259,6 +260,42 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
           BasicParser.MacAddress.parse(mac).get.value
         }
       }
+    }
+  }
+
+  def cronExpressionRule(): Unit = {
+    behavior of "CronExpression rule"
+
+    it should "yield proper cron expression" in {
+      val expr1 = "* * * * * *"
+      val expected1 = CronExpression(
+        minute = CronExpression.Range(0, 59),
+        hour = CronExpression.Range(0, 23),
+        dayOfMonth = CronExpression.Range(1, 31),
+        month = CronExpression.Range(1, 12),
+        dayOfWeek = CronExpression.Range(0, 6),
+        year = Some(CronExpression.Range(1970, 2099))
+      )
+      val actual1 = BasicParser.CronExpression.parse(expr1).get.value
+      actual1 should === (expected1)
+
+      val expr2 = "*/5 0-12/2 1,11,21,31 JAN-JUN/2 TUE-4"
+      val el = CronExpression.List(1, Array(11, 21, 31))
+      val expected2 = CronExpression(
+        minute = CronExpression.Range(0, 59, 5),
+        hour = CronExpression.Range(0, 12, 2),
+        dayOfMonth = el,
+        month = CronExpression.Range(1, 6, 2),
+        dayOfWeek = CronExpression.Range(2, 4),
+        year = None
+      )
+      val actual2 = BasicParser.CronExpression.parse(expr2).get.value
+      actual2.copy(dayOfMonth = CronExpression.Range(1, 31)) should
+        === (expected2.copy(dayOfMonth = CronExpression.Range(1, 31)))
+      actual2.dayOfMonth shouldBe a [CronExpression.List]
+      val al = actual2.dayOfMonth.asInstanceOf[CronExpression.List]
+      al.min should === (el.min)
+      al.rest should === (el.rest)
     }
   }
 }
