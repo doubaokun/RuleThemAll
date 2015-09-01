@@ -129,9 +129,7 @@ trait BasicRules {
         ToInt(v) <- digit.rep(1).! if v >= min && v <= max
       } yield v
       val p = if (abbreviations.nonEmpty) {
-        val ap = abbreviations.keys.tail.foldLeft(abbreviations.keys.head.!) {
-          case (acc, e) => acc | e.!
-        }
+        val ap = abbreviations.keys.tail.foldLeft(abbreviations.keys.head.!) { _ | _.! }
         ip | ap.map(abbreviations)
       } else ip
       ("*" ~ "/" ~ ip).map(v => Cron.Range(min = min, max = max, step = v)) |
@@ -144,8 +142,8 @@ trait BasicRules {
     val months = Seq("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL",
       "AUG", "SEP", "OCT", "NOV", "DEC").zipWithIndex.toMap.mapValues(_ + 1)
     val daysOfWeak = Seq("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT").zipWithIndex.toMap
-    P(Value(0, 59) ~ " " ~ Value(0, 23) ~ " " ~ Value(1, 31) ~ " " ~
-      Value(1, 12, months) ~ " " ~ Value(0, 6, daysOfWeak) ~ (" " ~ Value(1970, 2099)).? map {
+    P("\"" ~ Value(0, 59) ~ " " ~ Value(0, 23) ~ " " ~ Value(1, 31) ~ " " ~
+      Value(1, 12, months) ~ " " ~ Value(0, 6, daysOfWeak) ~ (" " ~ Value(1970, 2099)).? ~ "\"" map {
       case (minute, hour, dayOfMonth, month, dayOfWeek, year) => Cron(
         minute = minute,
         hour = hour,

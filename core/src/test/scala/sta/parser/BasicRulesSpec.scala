@@ -267,7 +267,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     behavior of "CronExpression rule"
 
     it should "yield proper cron expression" in {
-      val expr1 = "* * * * * *"
+      val expr1 = """"* * * * * *""""
       val expected1 = CronExpression(
         minute = CronExpression.Range(0, 59),
         hour = CronExpression.Range(0, 23),
@@ -279,7 +279,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       val actual1 = BasicParser.CronExpression.parse(expr1).get.value
       actual1 should === (expected1)
 
-      val expr2 = "*/5 0-12/2 1,11,21,31 JAN-JUN/2 TUE-4"
+      val expr2 = """"*/5 0-12/2 1,11,21,31 JAN-JUN/2 TUE-4""""
       val el = CronExpression.List(1, Array(11, 21, 31))
       val expected2 = CronExpression(
         minute = CronExpression.Range(0, 59, 5),
