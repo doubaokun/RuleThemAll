@@ -8,7 +8,7 @@ import sta.parser.WhitespaceSkip
 
 trait TriggerRules extends WhitespaceSkip {
   private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: Model]]
-  parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, DateRules, HeadsetRules, WiFiRules)
+  parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, HeadsetRules, TimeRules, WiFiRules)
 
   protected def addTriggerParser(parser: TriggerParser[_ <: Model]): Unit = {
     parsers += parser
@@ -20,8 +20,8 @@ trait TriggerRules extends WhitespaceSkip {
 
   import white._
 
-  final def MainT: P[Condition] = {
-    def twoOrMore(of: P[Condition]) = "(" ~ of.rep(2, sep = ",") ~ ")"
+  final def MainT: P[Trigger] = {
+    def twoOrMore(of: P[Trigger]) = "(" ~ of.rep(2, sep = ",") ~ ")"
 
     val triggers = {
       def single(trigger: TriggerParser[_ <: Model]) = {
@@ -30,19 +30,15 @@ trait TriggerRules extends WhitespaceSkip {
           splitted.tail.foldLeft(splitted.head: P[Unit]) { _ ~ _ }
         }
         val main = P(trigger.Rule)(trigger.Prefix)
-        val main2 = "(" ~ main ~ "," ~ main ~ ")"
         val main2toN = twoOrMore(main)
 
         val conditions = ("(" ~ (
-          (main.rep(1, sep = ",") map (ts => Condition(ts.head, ts.tail: _*))) |
-            ("or" ~ main2toN map (ts => Condition.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-            ("xor" ~ main2 map (t => Condition.xor(t._1, t._2))) |
-            ("and" ~ main2toN map (ts => Condition.and(ts.head, ts.tail.head, ts.tail.tail: _*)))
+          (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) |
+            ("or" ~ main2toN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+            ("and" ~ main2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*)))
           ) ~ ")") | main
 
-        prefix ~! trigger.Suffix.fold(conditions)(suffix =>
-          conditions.? ~! suffix map (t => t._1.fold[Condition](t._2)(r => Condition.and(t._2, r)))
-        )
+        prefix ~! conditions
       }
 
       P(parsers.tail.foldLeft(single(parsers.head)) {
@@ -51,12 +47,10 @@ trait TriggerRules extends WhitespaceSkip {
       })
     }
 
-    val triggers2 = "(" ~ triggers ~ "," ~ triggers ~ ")"
     val triggers2toN = twoOrMore(triggers)
 
-    P((triggers.rep(1, sep = ",") map (ts => Condition(ts.head, ts.tail: _*))) |
-      ("or" ~ triggers2toN map (ts => Condition.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-      ("xor" ~ triggers2 map (t => Condition.xor(t._1, t._2))) |
-      ("and" ~ triggers2toN map (ts => Condition.and(ts.head, ts.tail.head, ts.tail.tail: _*))))
+    P((triggers.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) |
+      ("or" ~ triggers2toN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+      ("and" ~ triggers2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))))
   }
 }

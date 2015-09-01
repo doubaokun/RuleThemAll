@@ -27,7 +27,7 @@ lazy val `core-common` = project.in(file("core/common")).settings(
     _ / "sta" / "common" / "Requirement",
     _ / "sta" / "common" / "usesMacros",
     _ / "sta" / "model" / "Rule",
-    _ / "sta" / "model" / "triggers" / "Condition",
+    _ / "sta" / "model" / "triggers" / "Trigger",
     _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
     _ / "sta" / "services" / "serviceMacros"
   )

@@ -8,14 +8,17 @@ import cats.data.{NonEmptyList => NEL, Validated}
 import cats.std.all._
 import cats.syntax.all._
 import kj.android.common.{Notify, AppInfo}
+import kj.android.concurrent.Task
 import kj.android.logging._
+import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
 import shapeless.HMap
 import sta.common.Requirement
 import sta.model.actions.Action
+import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._
 
-case class Rule(name: String, branches: Seq[Condition.Branch], actions: Seq[Action]) extends Logging {
+case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
@@ -28,34 +31,45 @@ case class Rule(name: String, branches: Seq[Condition.Branch], actions: Seq[Acti
     case NonFatal(t) => Validated.invalidNel(a.name -> t)
   }
 
-  // TODO rete
-  def tryExecute(state: HMap[ModelKV])(implicit ctx: Context): Either[Rule, Result] = {
-    if (branches.exists(_.triggers.forall(_.satisfiedBy(state)))) {
-      implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
-      val combine = (_: Unit, _: Unit) => ()
-      Right(
-        actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>
-          (acc |@| executeAction(action)) map combine
-        }
-      )
-    } else Left(this)
-  }
+  private[this] val (direct, withSignal) = branches.partition(_.signal.isEmpty)
 
-  def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
-    tryExecute(state).fold(
-      _ => (),
-      v => v.fold(errs => {
-        (errs.head :: errs.tail).foreach { case (action, th) =>
+  private def executeRule(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
+    implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
+    val combine = (_: Unit, _: Unit) => ()
+    val result = actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>
+      (acc |@| executeAction(action)) map combine
+    }
+    result.fold(
+      errs => {
+        (errs.head :: errs.tail).foreach { case (action, th) => 
           Logger.error(s"Error has occurred during running action $action in $name", th)
         }
         Notify(s"Failed to execute $name", Some(name))
-      }, _ => Notify(s"Rule $name executed successfully"))
+      }, _ => Notify(s"Rule $name executed successfully")
     )
+  }
+
+  def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
+    if (direct.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
+  }
+
+  def execute(stateHolder: () => HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
+    for {
+      branch <- withSignal
+      signal <- branch.signal
+    } signal.start {
+      case Success(_) =>
+        val state = stateHolder()
+        if (branch.conditions.forall(_.satisfiedBy(state))) executeRule
+      case Failure(th) =>
+        Logger.error(s"Error has occurred during checking conditions in $name", th)
+        Notify(s"Failed to execute $name", Some(name))
+    }
   }
 
   lazy val requires: Set[Requirement] = (for {
     branch <- branches
-    trigger <- branch.triggers
+    trigger <- branch.conditions
     requirement <- trigger.requires
   } yield requirement).toSet
 

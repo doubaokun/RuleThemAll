@@ -2,7 +2,7 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import sta.common.Uses
-import sta.model.triggers.Condition
+import sta.model.triggers.Trigger
 import sta.model.triggers.Implicits._
 
 object CalendarRules extends TriggerParser[CalendarEvent] {
@@ -11,27 +11,27 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
 
   def Prefix: String = Uses.categoryOf[CalendarEvent]
 
-  override val Suffix: Option[P[Condition.Trigger[_ <: CalendarEvent]]] = Some(
-    mapParser(State.namesToValuesMap) map (v => Condition.Trigger[CalendarEvent](_.state == v))
+  override val Suffix: Option[P[Trigger.Standalone[_ <: CalendarEvent]]] = Some(
+    mapParser(State.namesToValuesMap) map (v => Trigger.Condition[CalendarEvent](_.state == v))
   )
 
-  private def title: P[Condition.Trigger[CalendarEvent]] = {
+  private def title: P[Trigger.Condition[CalendarEvent]] = {
     "title" ~ matchStringParser[CalendarEvent](_.title)
   }
 
-  private def description: P[Condition.Trigger[CalendarEvent]] = {
+  private def description: P[Trigger.Condition[CalendarEvent]] = {
     "description" ~ matchStringParser[CalendarEvent](_.description)
   }
 
-  private def location: P[Condition.Trigger[CalendarEvent]] = {
+  private def location: P[Trigger.Condition[CalendarEvent]] = {
     "location" ~ matchStringParser[CalendarEvent](_.location)
   }
 
-  private def availability: P[Condition.Trigger[CalendarEvent]] = {
+  private def availability: P[Trigger.Condition[CalendarEvent]] = {
     "availability" ~ "is" ~ mapParser(Availability.namesToValuesMap) map (v =>
-      Condition.Trigger[CalendarEvent](_.availability == v)
+      Trigger.Condition[CalendarEvent](_.availability == v)
     )
   }
 
-  val Rule: P[Condition.Standalone[_ <: CalendarEvent]] = title | description | location | availability
+  def Main: P[Trigger.Standalone[_ <: CalendarEvent]] = title | description | location | availability
 }

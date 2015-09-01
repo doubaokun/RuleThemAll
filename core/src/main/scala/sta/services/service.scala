@@ -245,11 +245,10 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
   def state: HMap[ModelKV] = rawState.get
 
   def updateState(f: HMap[ModelKV] => HMap[ModelKV]): Unit = {
-    rawState.update(f).fold(th => log.error("Error has occurred during updating state", th), state => {
-      storage.rules.foreach { rule =>
-        Task(rule.execute(state)).run(_ => ())
-      }
-    })
+    rawState.update(f).fold(
+      th => log.error("Error has occurred during updating state", th),
+      state => storage.rules.foreach(_.execute(state))
+    )
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
@@ -262,6 +261,9 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
       case (Requirement.IntentBased(v), xs) if xs.exists(_._1 == Automatic)  => v
     }.toSeq, unregisterFirst = false)
     services.runTasks()
+
+    val stateHolder = () => rawState.get
+    storage.rules.foreach(_.execute(stateHolder))
 
     val state = rawState.get
     for (rule <- storage.startupRules) {

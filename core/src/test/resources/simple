@@ -1,8 +1,10 @@
 def simple1 {
     when (
         battery (
-            plugged ac,
-            level > 50%
+            or (
+                plugged ac,
+                level > 50%
+            )
         ),
         headset connected
     ) do {
@@ -12,13 +14,8 @@ def simple1 {
 
 def simple2 {
     when (
-        xor (
-            battery (
-                or (
-                    plugged usb,
-                    level <= 70%
-                )
-            ),
+        or (
+            battery level <= 70%,
             headset disconnected
         )
     ) do {

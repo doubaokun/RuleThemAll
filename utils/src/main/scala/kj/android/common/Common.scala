@@ -27,7 +27,7 @@ object Common {
       Option(intent.getSerializableExtra(key)).asInstanceOf[Option[T]]
     } catch {
       case th: Throwable =>
-        android.util.Log.e(logTag.tag, s"Error during getting key '$key' from intent", th) // TODO
+        android.util.Log.e(logTag.tag, s"Error during getting key $key from intent", th) // TODO
         None
     }
   }

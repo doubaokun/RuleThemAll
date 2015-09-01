@@ -2,7 +2,7 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import sta.common.Uses
-import sta.model.triggers.Condition
+import sta.model.triggers.Trigger
 import sta.model.triggers.Implicits._
 
 object BatteryRules extends TriggerParser[BatteryLike] {
@@ -11,39 +11,39 @@ object BatteryRules extends TriggerParser[BatteryLike] {
 
   def Prefix: String = Uses.categoryOf[BatteryLike]
 
-  private def powerState: P[Condition.Trigger[PowerState]] = {
+  private def powerState: P[Trigger.Condition[PowerState]] = {
     "power" ~ mapParser(PowerState.namesToValuesMap) map (v =>
-      Condition.Trigger[PowerState](_ == v))
+      Trigger.Condition[PowerState](_ == v))
   }
 
-  private def batteryState: P[Condition.Trigger[BatteryState]] = {
-    "state" ~ mapParser(BatteryState.namesToValuesMap) map (v => Condition.Trigger[BatteryState](_ == v))
+  private def batteryState: P[Trigger.Condition[BatteryState]] = {
+    "state" ~ mapParser(BatteryState.namesToValuesMap) map (v => Trigger.Condition[BatteryState](_ == v))
   }
 
-  private def level: P[Condition.Trigger[Battery]] = {
+  private def level: P[Trigger.Condition[Battery]] = {
     "level" ~ (
-      (("<" ~ Percent) map (n => Condition.Trigger[Battery](_.level < n))) |
-      (("<=" ~ Percent) map (n => Condition.Trigger[Battery](_.level <= n))) |
-      ((">" ~ Percent) map (n => Condition.Trigger[Battery](_.level > n))) |
-      ((">=" ~ Percent) map (n => Condition.Trigger[Battery](_.level >= n))) |
-      (("==" ~ Percent) map (n => Condition.Trigger[Battery](_.level == n))) |
-      (("!=" ~ Percent) map (n => Condition.Trigger[Battery](_.level != n)))
+      (("<" ~ Percent) map (n => Trigger.Condition[Battery](_.level < n))) |
+      (("<=" ~ Percent) map (n => Trigger.Condition[Battery](_.level <= n))) |
+      ((">" ~ Percent) map (n => Trigger.Condition[Battery](_.level > n))) |
+      ((">=" ~ Percent) map (n => Trigger.Condition[Battery](_.level >= n))) |
+      (("==" ~ Percent) map (n => Trigger.Condition[Battery](_.level == n))) |
+      (("!=" ~ Percent) map (n => Trigger.Condition[Battery](_.level != n)))
     )
   }
 
-  private def plugged: P[Condition.Trigger[Battery]] = {
-    "plugged" ~ mapParser(Plugged.namesToValuesMap) map (v => Condition.Trigger[Battery](_.plugged == v))
+  private def plugged: P[Trigger.Condition[Battery]] = {
+    "plugged" ~ mapParser(Plugged.namesToValuesMap) map (v => Trigger.Condition[Battery](_.plugged == v))
   }
 
-  private def present: P[Condition.Trigger[Battery]] = {
-    ("present".! map (_ => Condition.Trigger[Battery](_.present == true))) |
-      ("absent".! map (_ => Condition.Trigger[Battery](_.present == false)))
+  private def present: P[Trigger.Condition[Battery]] = {
+    ("present".! map (_ => Trigger.Condition[Battery](_.present == true))) |
+      ("absent".! map (_ => Trigger.Condition[Battery](_.present == false)))
   }
 
-  private def status: P[Condition.Trigger[Battery]] = {
-    "status" ~ mapParser(Status.namesToValuesMap) map (v => Condition.Trigger[Battery](_.status == v))
+  private def status: P[Trigger.Condition[Battery]] = {
+    "status" ~ mapParser(Status.namesToValuesMap) map (v => Trigger.Condition[Battery](_.status == v))
   }
 
-  val Rule: P[Condition.Standalone[_ <: BatteryLike]] =
+  def Main: P[Trigger.Standalone[_ <: BatteryLike]] =
     powerState | batteryState | level | plugged | present | status
 }
