@@ -15,7 +15,9 @@ trait Task[T] {
 
 object Task {
   def join[T](tasks: Seq[Task[T]]): Task[T] = new Task[T] {
-    def cancel(mayInterruptIfRunning: Boolean): Boolean = tasks.forall(_.cancel(mayInterruptIfRunning))
+    def cancel(mayInterruptIfRunning: Boolean): Boolean = {
+      tasks.foldLeft(true) { case (status, task) => task.cancel(mayInterruptIfRunning) && status }
+    }
 
     def run(handler: Try[T] => Unit): Unit = tasks.foreach(_.run(handler))
   }
@@ -77,26 +79,31 @@ object Task {
       }
     }
 
-  def repeat[T](expression: CronExpression)(body: => T)
+  def repeat[T](expression: CronExpression, minWaitTime: Long = 60000)(body: => T)
     (implicit ec: ScheduledExecutionContext = Implicits.scheduledExecutionContext): Task[T] =
     new Task[T] {
       @volatile private[this] var scheduled: ScheduledFuture[_] = null
 
-      @inline private def nextDelay: Option[Duration] =
-        expression.nextDate(new Date).map(d => (d.getTime - System.currentTimeMillis()).millis)
+      @inline private def nextDelay(wait: Boolean): Option[Duration] = {
+        val from = new Date()
+        if (wait) from.setTime(from.getTime + minWaitTime)
+        expression.nextDate(from).map(d => (d.getTime - System.currentTimeMillis()).millis)
+      }
 
-      def cancel(mayInterruptIfRunning: Boolean): Boolean =
-        scheduled != null && scheduled.cancel(mayInterruptIfRunning)
-
-      def run(handler: Try[T] => Unit): Unit = {
+      private def runRepeatedly(handler: Try[T] => Unit, wait: Boolean): Unit = {
         val promise = Promise[T]()
-        nextDelay.foreach(d =>
+        nextDelay(wait).foreach(d =>
           scheduled = Scheduler.scheduleOnce(d) {
             promise.tryComplete(Try(body))
             promise.future.onComplete(handler)
           }
         )
-        promise.future.onSuccess { case _ => run(handler) }
+        promise.future.onSuccess { case _ => runRepeatedly(handler, wait = true) }
       }
+
+      def cancel(mayInterruptIfRunning: Boolean): Boolean =
+        scheduled != null && scheduled.cancel(mayInterruptIfRunning)
+
+      def run(handler: Try[T] => Unit): Unit = runRepeatedly(handler, wait = false)
     }
 }
