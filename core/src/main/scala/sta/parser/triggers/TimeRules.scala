@@ -9,7 +9,7 @@ object TimeRules extends TriggerParser[Nothing] {
 
   def Prefix: String = "time"
 
-  private def time = "matches" ~ CronExpression map (expr => Trigger.Signal(Task.repeat(expr)(())))
+  private def time = "matches" ~ CronExpression map Trigger.Timer.apply
 
   def Main: P[Trigger.Standalone[_ <: Nothing]] = time
 }

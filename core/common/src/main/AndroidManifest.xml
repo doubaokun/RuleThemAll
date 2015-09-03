@@ -2,6 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="sta.common">
 
-    <uses-sdk android:minSdkVersion="18" android:targetSdkVersion="21" android:maxSdkVersion="21"/>
+    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="21" android:maxSdkVersion="22"/>
 
 </manifest>

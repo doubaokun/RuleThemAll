@@ -11,13 +11,13 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
   private[this] val rulesDir: File = ctx.getDir("rules", Context.MODE_PRIVATE)
 
   private[this] val rawRules = {
-    val map = mutable.Map.empty[Int, Rule]
+    val map = mutable.Map.empty[String, Rule]
     val files = rulesDir.listFiles(new FilenameFilter {
       def accept(dir: File, filename: String): Boolean = filename.endsWith(".rule")
     })
     for (file <- files) {
       val rule = RulesParser.parseSingle(io.Source.fromFile(file).mkString)
-      map += (rule.hashCode() -> rule)
+      map += (rule.name -> rule)
     }
     Notify(s"${files.length} rules loaded", Some(logTag.tag))
     map
@@ -64,6 +64,10 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     rawRules.valuesIterator
   }
 
+  def rule(name: String) = synchronized {
+    rawRules.get(name)
+  }
+
   def register(from: File): (Set[Int], Set[Int]) = synchronized {
     val rules = parse(from)
     val added = Set.newBuilder[Int]
@@ -72,7 +76,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     // remove old uses
     for (
       rule <- rules;
-      oldRule <- rawRules.get(rule.hashCode());
+      oldRule <- rawRules.get(rule.name);
       requirement <- oldRule.requires;
       count <- rawUses.get(requirement.hashCode())
     ) {
@@ -97,7 +101,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     }
 
     val prevSize = rawRules.size
-    rawRules ++= rules.map(r => r.hashCode() -> r)
+    rawRules ++= rules.map(r => r.name -> r)
     val currSize = rawRules.size
     Notify(s"${currSize - prevSize} rules inserted, " +
       s"${prevSize + rules.length - currSize} rules updated", Some(logTag.tag))
@@ -110,7 +114,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       val file = new File(rulesDir, s"$name.rule")
       val rule = RulesParser.parseSingle(io.Source.fromFile(file).mkString)
 
-      rawRules -= rule.hashCode()
+      rawRules -= rule.name
       file.delete()
       for (
         requirement <- rule.requires;

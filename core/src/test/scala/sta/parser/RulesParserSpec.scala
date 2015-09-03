@@ -61,13 +61,13 @@ class RulesParserSpec extends FlatSpec with PropertyChecks with Matchers with Pa
         "simple2",
         Seq(
           Branch(
-            signal = None,
+            timers = Seq.empty,
             conditions = List(
               Trigger.Condition[Battery](_.level <= ub"70")
             )
           ),
           Branch(
-            signal = None,
+            timers = Seq.empty,
             conditions = List(
               Trigger.Condition[Headset](_ == Headset.withName("disconnected"))
             )

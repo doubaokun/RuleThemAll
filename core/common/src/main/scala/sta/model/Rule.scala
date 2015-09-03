@@ -1,16 +1,18 @@
 package sta.model
 
 import scala.language.implicitConversions
-import android.content.Context
+import android.app.{PendingIntent, AlarmManager}
+import android.content.{Intent, Context}
 import cats._
 import cats.data.Validated._
 import cats.data.{NonEmptyList => NEL, Validated}
 import cats.std.all._
 import cats.syntax.all._
+import java.util.UUID
 import kj.android.common.{Notify, AppInfo}
-import kj.android.concurrent.Task
+import kj.android.common.SystemServices._
 import kj.android.logging._
-import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import shapeless.HMap
 import sta.common.Requirement
@@ -31,7 +33,15 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     case NonFatal(t) => Validated.invalidNel(a.name -> t)
   }
 
-  private[this] val (direct, withSignal) = branches.partition(_.signal.isEmpty)
+  private[this] lazy val (direct, withTimer) = {
+    val directBuilder = Seq.newBuilder[Branch]
+    val withTimerBuilder = Map.newBuilder[UUID, Branch]
+    branches.foreach {
+      case d if d.timers.isEmpty => directBuilder += d
+      case t => withTimerBuilder += (UUID.randomUUID() -> t)
+    }
+    (directBuilder.result(), withTimerBuilder.result())
+  }
 
   private def executeRule(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
     implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
@@ -49,22 +59,44 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     )
   }
 
+  private def setTimer(branch: Branch, branchId: UUID, intent: Intent,
+    alarmManager: AlarmManager, waitTime: Duration)(implicit ctx: Context): Unit = {
+    val dates = for {
+      timer <- branch.timers
+      date <- timer.fireAt(waitTime = waitTime)
+    } yield {
+      date.setTime(date.getTime - (date.getTime % (1000 * 60))) // we only want minute precision
+      date
+    }
+    if (dates.nonEmpty) {
+      val date = dates.minBy(_.getTime)
+      if (dates.length == branch.timers.length && dates.exists(_ != date))
+        Trigger.Timer.setAction(intent, name, branchId, partial = true)
+      else
+        Trigger.Timer.setAction(intent, name, branchId, partial = false)
+      alarmManager.setExact(AlarmManager.RTC_WAKEUP, date.getTime,
+        PendingIntent.getService(ctx, 0, intent, PendingIntent.FLAG_ONE_SHOT))
+    }
+  }
+
   def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
     if (direct.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
   }
 
-  def execute(stateHolder: () => HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
-    for {
-      branch <- withSignal
-      signal <- branch.signal
-    } signal.start {
-      case Success(_) =>
-        val state = stateHolder()
-        if (branch.conditions.forall(_.satisfiedBy(state))) executeRule
-      case Failure(th) =>
-        Logger.error(s"Error has occurred during checking conditions in $name", th)
-        Notify(s"Failed to execute $name", Some(name))
-    }
+  def setTimers(intent: Intent)(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Seq[Intent] =  {
+    val manager = alarmManager
+    withTimer.map { case (id, branch) =>
+      val clone = intent.cloneFilter()
+      setTimer(branch, id, clone, manager, 0.millis)
+      clone
+    }(collection.breakOut)
+  }
+  
+  def executeBranch(branchId: UUID, intent: Intent,  state: HMap[ModelKV])
+    (implicit ctx: Context, logTag: LogTag, appInfo: AppInfo) = {
+    val branch = withTimer.get(branchId)
+    branch.foreach(setTimer(_, branchId, intent, alarmManager, 60.seconds))
+    if (branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
   }
 
   lazy val requires: Set[Requirement] = (for {

@@ -1,11 +1,11 @@
 package sta.services
 
 import android.app.{PendingIntent, Service}
-import android.content.{BroadcastReceiver, Context, Intent}
+import android.content._
 import android.net.Uri
 import android.os._
-import android.support.v4.content.WakefulBroadcastReceiver
 import java.io.File
+import kj.android.common.SystemServices._
 import kj.android.common.{AppInfo, Notify}
 import kj.android.concurrent._
 import kj.android.logging.Logging
@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import shapeless.HMap
 import sta.common.Requirement
+import sta.model.triggers.Trigger
 import sta.model.{Model, ModelKV}
 import sta.storage.PlaintextStorage
 
@@ -29,12 +30,12 @@ class BootReceiver extends BroadcastReceiver with Logging {
 }
 
 object STAService {
-  val ACTION = "action"
+  val BACKGROUND_ACTION = "sta.background_action"
 
-  val URI = "path"
+  val URI = "sta.rule.path"
   val LOAD = 1
 
-  val NAME = "name"
+  val NAME = "sta.rule.name"
   val UNLOAD = 2
 
   def loadRules(from: Uri*): Message = {
@@ -47,7 +48,7 @@ object STAService {
 
   def unloadRules(names: String*): Message = {
     val bundle = new Bundle()
-    bundle.putStringArray(URI, names.toArray)
+    bundle.putStringArray(NAME, names.toArray)
     val msg = Message.obtain(null, UNLOAD)
     msg.setData(bundle)
     msg
@@ -175,6 +176,10 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
 
   private[this] val rawState = Atomic(HMap.empty[ModelKV])
 
+  private[this] val alarms = mutable.ArrayBuffer.empty[Intent]
+
+  private[this] var initialized = false
+
   private[this] val requestProcessor = new Messenger(new Handler {
     private def update(f: (Intent => Unit, (Intent, SF)) => (Intent, SF)): Unit = {
       val intents = Seq.newBuilder[Intent]
@@ -233,16 +238,18 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
     }
   })
 
-  private[this] val stateProcessor = new WakefulBroadcastReceiver {
+  private[this] val stateProcessor = new BroadcastReceiver {
     def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(context, intent)
   }
 
   private def registerStateProcessor(intents: Seq[Intent], unregisterFirst: Boolean): Unit = {
-    if (unregisterFirst) unregisterReceiver(stateProcessor)
+    if (unregisterFirst) try {
+      unregisterReceiver(stateProcessor)
+    } catch {
+      case ex: IllegalArgumentException =>
+    }
     intents.foreach(registerReceiver(stateProcessor, _))
   }
-
-  def state: HMap[ModelKV] = rawState.get
 
   def updateState(f: HMap[ModelKV] => HMap[ModelKV]): Unit = {
     rawState.update(f).fold(
@@ -252,22 +259,40 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
-    appInfo
-    storage
-    startForeground(1, Notify.build(s"Monitoring",
-      intent.extra[PendingIntent].get(STAService.ACTION)))
-    val services = rawServices.get
-    registerStateProcessor(services.iterator.collect {
-      case (Requirement.IntentBased(v), xs) if xs.exists(_._1 == Automatic)  => v
-    }.toSeq, unregisterFirst = false)
-    services.runTasks()
+    if (initialized) {
+      intent match {
+        case Trigger.Timer(ruleName, branchId, partial) =>
+          val lock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, logTag.tag)
+          lock.acquire()
+          val rule = storage.rule(ruleName)
+          rule.foreach(_.executeBranch(branchId, intent, rawState.get))
+          lock.release()
+        case _ =>
+          log.warn(s"Unknown $intent", new RuntimeException)
+      }
+    } else {
+      appInfo
+      storage
 
-    val stateHolder = () => rawState.get
-    storage.rules.foreach(_.execute(stateHolder))
+      val services = rawServices.get
+      registerStateProcessor(services.iterator.collect {
+        case (Requirement.IntentBased(v), xs) if xs.exists(_._1 == Automatic) => v
+      }.toSeq, unregisterFirst = false)
+      services.runTasks()
 
-    val state = rawState.get
-    for (rule <- storage.startupRules) {
-      Task(rule.execute(state)).run(_ => ())
+      val timer = new Intent(ctx, classOf[STAService])
+      for(rule <- storage.rules) {
+        alarms ++= rule.setTimers(timer)
+      }
+
+      val state = rawState.get
+      for (rule <- storage.startupRules) {
+        Task(rule.execute(state)).run(_ => ())
+      }
+
+      startForeground(1, Notify.build(s"Monitoring",
+        intent.extra[PendingIntent].get(STAService.BACKGROUND_ACTION)))
+      initialized = true
     }
 
     Service.START_STICKY
@@ -276,6 +301,9 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
   override def onDestroy(): Unit = {
     stopForeground(true)
     unregisterReceiver(stateProcessor)
+    alarms.foreach(intent =>
+      alarmManager.cancel(PendingIntent.getService(ctx, 0, intent, PendingIntent.FLAG_ONE_SHOT))
+    )
     rawServices.get.stopTasks()
   }
 }

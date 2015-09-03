@@ -1,10 +1,13 @@
 package sta.model.triggers
 
 import scala.language.existentials
+import android.content.Intent
 import cats.std.all._
 import cats.syntax.all._
-import kj.android.concurrent.Task
-import scala.util.{Try, Success}
+import java.util.{UUID, Date}
+import kj.android.cron.CronExpression
+import scala.concurrent.duration.Duration
+import scala.util.Try
 import shapeless.HMap
 import sta.common.{Requirement, Uses}
 import sta.model._
@@ -16,19 +19,19 @@ sealed abstract class Trigger {
   def flatChildren: Seq[FlatResult]
 
   final def flatten: Seq[Trigger.Branch] = {
-    val signals = Seq.newBuilder[Trigger.Signal]
+    val timers = IndexedSeq.newBuilder[Trigger.Timer]
     val triggers = Seq.newBuilder[Trigger.Condition[_]]
     val cross = List.newBuilder[List[Trigger.Branch]]
     flatChildren.foreach {
       case Left(xs) => xs.foreach {
-        case s: Trigger.Signal => signals += s
+        case s: Trigger.Timer => timers += s
         case t: Trigger.Condition[_] => triggers += t
       }
       case Right(branches) => cross += branches
     }
     cross.result().sequence.map { branches =>
       Trigger.Branch(
-        signal = Trigger.Signal.join(signals.result() ++ branches.flatMap(_.signal)),
+        timers = timers.result() ++ branches.flatMap(_.timers),
         conditions = triggers.result() ++ branches.flatMap(_.conditions)
       )
     }
@@ -36,7 +39,7 @@ sealed abstract class Trigger {
 }
 
 object Trigger {
-  case class Branch(signal: Option[Signal] = None, conditions: Seq[Condition[_]] = Seq.empty)
+  case class Branch(timers: Seq[Timer] = Seq.empty, conditions: Seq[Condition[_]] = Seq.empty)
 
   def empty = Empty
 
@@ -67,21 +70,38 @@ object Trigger {
 
   sealed abstract class Standalone[M <: Model] extends Trigger
 
-  class Signal(rawTask: Task[Unit]) extends Standalone[Nothing] {
-    private def task: Task[Unit] = rawTask
+  sealed abstract class Timer extends Standalone[Nothing] {
 
-    def start(onComplete: Try[Unit] => Unit): Unit = rawTask.run(onComplete)
-
-    def stop(): Unit = rawTask.cancel(true)
+    def fireAt(waitTime: Duration): Option[Date]
 
     def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
   }
   
-  object Signal {
-    def apply(task: Task[Unit]): Signal = new Signal(task)
+  object Timer {
+    def setAction(intent: Intent, rule: String, branchId: UUID, partial: Boolean): Intent = {
+      intent.setAction(s"sta.rule.timer/$rule/$branchId")
+      intent.putExtra("partial", partial)
+    }
 
-    def join(seq: Seq[Signal]): Option[Signal] =
-      if (seq.isEmpty) None else Some(new Signal(Task.join(seq.map(_.task))))
+    def unapply(intent: Intent): Option[(String, UUID, Boolean)] = {
+      Option(intent.getAction).filter(_.startsWith("sta.rule.timer/")).flatMap { str =>
+        Try {
+          val splitted = str.stripPrefix("sta.rule.timer/").split('/')
+          val ruleName = splitted.init.mkString("/")
+          val branchId = UUID.fromString(splitted.last)
+          val partial = intent.getBooleanExtra("partial", true)
+          (ruleName, branchId, partial)
+        }.toOption
+      }
+    }
+
+    def apply(expr: CronExpression): Timer = new Timer {
+      def fireAt(waitTime: Duration) = {
+        val from = new Date
+        from.setTime(from.getTime + waitTime.toMillis)
+        expr.nextDate(from)
+      }
+    }
   }
 
   case class Condition[M <: Model: ModelCompanion: Uses](function: ModelFunction[M]) extends Standalone[M] {

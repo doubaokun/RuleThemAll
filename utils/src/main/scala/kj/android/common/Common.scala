@@ -19,7 +19,7 @@ object Common {
       Option(intent.getExtras.get(key)).getOrElse(throw new NullPointerException).asInstanceOf[T]
     } catch {
       case th: Throwable =>
-        android.util.Log.e(logTag.tag, s"Error during getting $key from intent", th) // TODO
+        android.util.Log.e(logTag.tag, s"Error during getting key $key from intent", th)
         throw th
     }
     
@@ -27,7 +27,7 @@ object Common {
       Option(intent.getSerializableExtra(key)).asInstanceOf[Option[T]]
     } catch {
       case th: Throwable =>
-        android.util.Log.e(logTag.tag, s"Error during getting key $key from intent", th) // TODO
+        android.util.Log.e(logTag.tag, s"Error during getting key $key from intent", th)
         None
     }
   }

@@ -3,14 +3,13 @@ package sta.model.actions
 import android.content.Context
 import android.media.AudioManager
 import enumeratum.Enum
-import kj.android.logging.Logger
-import sta.model.{FromInt, FromIntEntry}
-
+import kj.android.common.SystemServices._
+import sta.model.FromIntEntry
 
 case class ChangeSoundProfile(mode: ChangeSoundProfile.Mode) extends Action {
   def execute()(implicit ctx: Context): Unit = {
     val value = mode.intValue
-    val manager = ctx.getSystemService(Context.AUDIO_SERVICE).asInstanceOf[AudioManager]
+    val manager = audioManger
     if (manager.getRingerMode != value) manager.setRingerMode(value)
   }
 }

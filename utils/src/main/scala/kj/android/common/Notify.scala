@@ -2,10 +2,11 @@ package kj.android.common
 
 import android.app.{PendingIntent, NotificationManager, Notification}
 import android.content.Context
+import kj.android.common.SystemServices._
 
 object Notify {
   def apply(txt: String, tag: Option[String] = None)(implicit ctx: Context, appInfo: AppInfo) = {
-    val m = ctx.getSystemService(Context.NOTIFICATION_SERVICE).asInstanceOf[NotificationManager]
+    val m = notificationManager
     m.notify(tag.orNull, 0, build(txt))
   }
 

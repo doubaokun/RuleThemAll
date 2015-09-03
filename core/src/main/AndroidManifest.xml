@@ -2,9 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="sta.core">
 
-    <uses-sdk android:minSdkVersion="18" android:targetSdkVersion="21" android:maxSdkVersion="21"/>
+    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="21" android:maxSdkVersion="22"/>
 
-    <!-- launch at boot -->
+    <!-- service maintenance -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application android:installLocation="internalOnly">
         <service android:name="sta.services.STAService" />
@@ -18,6 +19,7 @@
     <!-- actions and triggers -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.READ_CALENDAR"/>
 
