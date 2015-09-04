@@ -32,6 +32,8 @@ trait BasicRules {
     def unapply(s: String): Option[Double] = Try(java.lang.Double.parseDouble(s)).toOption
   }
 
+  implicit def liftToParser(str: String) = new BasicRules.LiftToParser(str)
+
   lazy val Percent: P[UByte] = P(
     ("0" | "100" | (digit19 ~ digit.?)).! ~ "%" map ((s: String) => UByte(s.toByte))
   )
@@ -114,7 +116,7 @@ trait BasicRules {
       hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ !(hexDigit | ":")).!)
 
   def mapParser[T](map: Map[String, T]): P[T] = {
-    def makeRule(kv: (String, T)): P[T] = kv._1.! map (_ => kv._2)
+    def makeRule(kv: (String, T)): P[T] = kv._1.u map (_ => kv._2)
 
     if (map.isEmpty) Fail
     else map.tail.foldLeft(makeRule(map.head)) {
@@ -157,9 +159,11 @@ trait BasicRules {
 }
 
 object BasicRules {
+  class LiftToParser(val str: String) extends AnyVal {
+    def u: Parser[Unit] = wspStr(str)
+  }
 
   class ParserExtras[T](private val parser: Parser[T]) extends AnyVal {
     def withFilter(p: T => Boolean) = parser.filter(p)
   }
-
 }

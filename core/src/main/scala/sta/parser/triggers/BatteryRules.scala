@@ -36,8 +36,8 @@ object BatteryRules extends TriggerParser[BatteryLike] {
   }
 
   private def present: P[Trigger.Condition[Battery]] = {
-    ("present".! map (_ => Trigger.Condition[Battery](_.present == true))) |
-      ("absent".! map (_ => Trigger.Condition[Battery](_.present == false)))
+    ("present".u map (_ => Trigger.Condition[Battery](_.present == true))) |
+      ("absent".u map (_ => Trigger.Condition[Battery](_.present == false)))
   }
 
   private def status: P[Trigger.Condition[Battery]] = {
