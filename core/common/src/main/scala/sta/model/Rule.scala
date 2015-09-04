@@ -68,9 +68,9 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
       date.setTime(date.getTime - (date.getTime % (1000 * 60))) // we only want minute precision
       date
     }
-    if (dates.nonEmpty) {
+    if (dates.length == branch.timers.length) {
       val date = dates.minBy(_.getTime)
-      if (dates.length == branch.timers.length && dates.exists(_ != date))
+      if (dates.exists(_ != date))
         Trigger.Timer.setAction(intent, name, branchId, partial = true)
       else
         Trigger.Timer.setAction(intent, name, branchId, partial = false)
@@ -86,17 +86,16 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
   def setTimers(intent: Intent)(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Seq[Intent] =  {
     val manager = alarmManager
     withTimer.map { case (id, branch) =>
-      val clone = intent.cloneFilter()
-      setTimer(branch, id, clone, manager, 0.millis)
-      clone
+      setTimer(branch, id, intent, manager, 0.millis)
+      intent
     }(collection.breakOut)
   }
   
-  def executeBranch(branchId: UUID, intent: Intent,  state: HMap[ModelKV])
-    (implicit ctx: Context, logTag: LogTag, appInfo: AppInfo) = {
+  def executeBranch(branchId: UUID, intent: Intent, state: HMap[ModelKV],
+    timerFullyExecuted: Boolean)(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo) = {
     val branch = withTimer.get(branchId)
     branch.foreach(setTimer(_, branchId, intent, alarmManager, 60.seconds))
-    if (branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
+    if (timerFullyExecuted && branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
   }
 
   lazy val requires: Set[Requirement] = (for {

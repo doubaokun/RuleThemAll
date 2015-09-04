@@ -16,7 +16,7 @@ import shapeless.HMap
 import sta.common.Requirement
 import sta.model.triggers.Trigger
 import sta.model.{Model, ModelKV}
-import sta.storage.PlaintextStorage
+import sta.storage.{RegistrationInfo, PlaintextStorage}
 
 class BootReceiver extends BroadcastReceiver with Logging {
   def onReceive(context: Context, intent: Intent): Unit = intent.getAction match {
@@ -176,9 +176,14 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
 
   private[this] val rawState = Atomic(HMap.empty[ModelKV])
 
-  private[this] val alarms = mutable.ArrayBuffer.empty[Intent]
+  private[this] val alarms = mutable.Map.empty[String, Seq[Intent]]
 
   private[this] var initialized = false
+
+  private def timerIntent = new Intent(ctx, classOf[STAService])
+
+  private def cancelAlarm(intent: Intent) =
+    alarmManager.cancel(PendingIntent.getService(ctx, 0, intent, PendingIntent.FLAG_ONE_SHOT))
 
   private[this] val requestProcessor = new Messenger(new Handler {
     private def update(f: (Intent => Unit, (Intent, SF)) => (Intent, SF)): Unit = {
@@ -227,11 +232,23 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
     override def handleMessage(msg: Message): Unit = {
       msg.what match {
         case LOAD => msg.getData.getStringArray(URI).foreach { path =>
-          val (toAdd, toRemove) = storage.register(new File(path))
+          val RegistrationInfo(toAdd, toRemove, rules) = storage.register(new File(path))
+          rules.foreach { rule =>
+            for (intents <- alarms.get(rule.name); intent <- intents) cancelAlarm(intent)
+            alarms += (rule.name -> rule.setTimers(timerIntent))
+          }
           if (toAdd.nonEmpty || toRemove.nonEmpty) update(onAdd(toAdd, toRemove))
         }
         case UNLOAD =>
-          val toRemove = storage.unregister(msg.getData.getStringArray(NAME): _*)
+          val ruleNames = msg.getData.getStringArray(NAME)
+          val toRemove = storage.unregister(ruleNames: _*)
+          ruleNames.foreach { ruleName =>
+            for (
+              intents <- alarms.get(ruleName);
+              intent <- intents
+            ) cancelAlarm(intent)
+            alarms -= ruleName
+          }
           if (toRemove.nonEmpty) update(onRemove(toRemove))
         case other => log.warn(s"Unknown message received: $other")
       }
@@ -262,10 +279,11 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
     if (initialized) {
       intent match {
         case Trigger.Timer(ruleName, branchId, partial) =>
+          log.info(s"Handling timer $intent")
           val lock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, logTag.tag)
           lock.acquire()
           val rule = storage.rule(ruleName)
-          rule.foreach(_.executeBranch(branchId, intent, rawState.get))
+          rule.foreach(_.executeBranch(branchId, intent, rawState.get, !partial))
           lock.release()
         case _ =>
           log.warn(s"Unknown $intent", new RuntimeException)
@@ -280,9 +298,8 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
       }.toSeq, unregisterFirst = false)
       services.runTasks()
 
-      val timer = new Intent(ctx, classOf[STAService])
       for(rule <- storage.rules) {
-        alarms ++= rule.setTimers(timer)
+        alarms += (rule.name -> rule.setTimers(timerIntent))
       }
 
       val state = rawState.get
@@ -301,9 +318,7 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
   override def onDestroy(): Unit = {
     stopForeground(true)
     unregisterReceiver(stateProcessor)
-    alarms.foreach(intent =>
-      alarmManager.cancel(PendingIntent.getService(ctx, 0, intent, PendingIntent.FLAG_ONE_SHOT))
-    )
+    alarms.valuesIterator.flatten.foreach(cancelAlarm)
     rawServices.get.stopTasks()
   }
 }

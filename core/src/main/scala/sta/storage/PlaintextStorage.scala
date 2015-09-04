@@ -35,16 +35,16 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     map
   }
 
-  private def parse(from: File): Seq[Rule] = {
+  private def parse(from: File): Set[Rule] = {
     val input = io.Source.fromFile(from).mkString
     val rules = RulesParser.tracedParse(input).fold(
       err => {
         log.error(s"Failed to parse rules from ${from.getPath}", err)
-        Seq.empty[Rule]
+        Set.empty[Rule]
       },
       res => {
         var from = 0
-        res.map { case (rule, trace) =>
+        val result: Set[Rule] = res.map { case (rule, trace) =>
           val fos = new FileOutputStream(new File(rulesDir, s"${rule.name}.rule"))
           try {
             val s = input.substring(from, trace)
@@ -54,7 +54,8 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
           }
           from = trace
           rule
-        }
+        }(collection.breakOut)
+        result
       }
     )
     rules
@@ -68,7 +69,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     rawRules.get(name)
   }
 
-  def register(from: File): (Set[Int], Set[Int]) = synchronized {
+  def register(from: File): RegistrationInfo = synchronized {
     val rules = parse(from)
     val added = Set.newBuilder[Int]
     val removed = Set.newBuilder[Int]
@@ -104,8 +105,12 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     rawRules ++= rules.map(r => r.name -> r)
     val currSize = rawRules.size
     Notify(s"${currSize - prevSize} rules inserted, " +
-      s"${prevSize + rules.length - currSize} rules updated", Some(logTag.tag))
-    (added.result(), removed.result() -- added.result())
+      s"${prevSize + rules.size - currSize} rules updated", Some(logTag.tag))
+    RegistrationInfo(
+      addedRequirements = added.result(),
+      removedRequirements = removed.result() -- added.result(),
+      addedRules = rules
+    )
   }
 
   def unregister(names: String*): Set[Int] = synchronized {
