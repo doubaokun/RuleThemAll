@@ -2,7 +2,7 @@ package sta.storage
 
 import android.content.Context
 import java.io._
-import kj.android.common.{AppInfo, Notify}
+import kj.android.common.{AppInfo, Notify, Toast}
 import scala.collection.mutable
 import sta.model.Rule
 import sta.parser.RulesParser
@@ -19,7 +19,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       val rule = RulesParser.parseSingle(io.Source.fromFile(file).mkString)
       map += (rule.name -> rule)
     }
-    Notify(s"${files.length} rules loaded", Some(logTag.tag))
+    Toast(s"${files.length} rules loaded")
     map
   }
 
@@ -40,6 +40,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     val rules = RulesParser.tracedParse(input).fold(
       err => {
         log.error(s"Failed to parse rules from ${from.getPath}", err)
+        Notify(s"Failed to parse rules from ${from.getPath}", Some(logTag.tag)) // TODO add notification action
         Set.empty[Rule]
       },
       res => {
@@ -104,8 +105,8 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     val prevSize = rawRules.size
     rawRules ++= rules.map(r => r.name -> r)
     val currSize = rawRules.size
-    Notify(s"${currSize - prevSize} rules inserted, " +
-      s"${prevSize + rules.size - currSize} rules updated", Some(logTag.tag))
+    Toast(txt = s"${currSize - prevSize} rules inserted, " +
+      s"${prevSize + rules.size - currSize} rules updated", length = Toast.Long)
     RegistrationInfo(
       addedRequirements = added.result(),
       removedRequirements = removed.result() -- added.result(),
@@ -135,7 +136,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       }
     }
 
-    Notify(s"${names.length} rules removed", Some(logTag.tag))
+    Toast(txt = s"${names.length} rules removed", length = Toast.Long)
     removed.result()
   }
 }

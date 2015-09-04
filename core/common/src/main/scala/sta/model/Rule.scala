@@ -9,7 +9,7 @@ import cats.data.{NonEmptyList => NEL, Validated}
 import cats.std.all._
 import cats.syntax.all._
 import java.util.UUID
-import kj.android.common.{Notify, AppInfo}
+import kj.android.common.{Toast, Notify, AppInfo}
 import kj.android.common.SystemServices._
 import kj.android.logging._
 import scala.concurrent.duration._
@@ -54,8 +54,8 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
         (errs.head :: errs.tail).foreach { case (action, th) => 
           Logger.error(s"Error has occurred during running action $action in $name", th)
         }
-        Notify(s"Failed to execute $name", Some(name))
-      }, _ => Notify(s"Rule $name executed successfully")
+        Notify(s"Failed to execute $name", Some(name)) // TODO add notification action
+      }, _ => Toast(s"Rule $name executed successfully")
     )
   }
 
