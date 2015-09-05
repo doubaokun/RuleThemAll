@@ -1,18 +1,33 @@
+def charger_connected  {
+    when (
+        battery plugged usb
+    ) do {
+        set brightness to 100%
+        set screen timeout to never
+    }
+}
+
+def charger_disconnected  {
+    when (
+        battery power disconnected
+    ) do {
+        set brightness to 75%
+        set screen timeout to 1 minute
+    }
+}
+
 def simple_sound_off {
     when (
         headset connected,
-        wifi on,
-        time matches "0-50/10 * * * *"
+        wifi on
     ) do {
-        set sound profile to silent
+        set sound profile to vibrate
     }
 }
 
 def simple_sound_on {
     when (
-        headset disconnected,
-        wifi off,
-        time matches "5-55/10 * * * *"
+        headset disconnected
     ) do {
         set sound profile to normal
     }
