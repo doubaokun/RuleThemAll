@@ -3,7 +3,9 @@ package kj.android.common
 import android.app.{NotificationManager, AlarmManager}
 import android.content.Context
 import android.media.AudioManager
+import android.net.wifi.WifiManager
 import android.os.PowerManager
+
 
 object SystemServices {
   @inline def alarmManager(implicit ctx: Context) =
@@ -17,4 +19,7 @@ object SystemServices {
 
   @inline def powerManager(implicit ctx: Context) =
     ctx.getSystemService(Context.POWER_SERVICE).asInstanceOf[PowerManager]
+
+  @inline def wifiManager(implicit ctx: Context) =
+    ctx.getSystemService(Context.WIFI_SERVICE).asInstanceOf[WifiManager]
 }

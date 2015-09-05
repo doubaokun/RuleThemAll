@@ -5,18 +5,20 @@ import scala.collection.mutable
 import sta.model.actions.Action
 
 trait ActionRules {
-  private val parsers = mutable.LinkedHashSet.empty[ActionParser]
-  parsers ++= Seq(SoundProfileRules)
+  private val parsers = mutable.LinkedHashSet.empty[ActionParser[_ <: Action]]
+  parsers ++= Seq(SoundProfileRules, TurnOnOffRules)
 
-  protected def addActionParser(parser: ActionParser): Unit = {
+  protected def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
     parsers += parser
   }
 
-  protected def removeActionParser(parser: ActionParser): Unit = {
+  protected def removeActionParser(parser: ActionParser[_ <: Action]): Unit = {
     parsers -= parser
   }
 
   final def MainA: P[Action] = {
-    parsers.tail.foldLeft(parsers.head.Main) { case (acc, p) => acc | p.Main }
+    parsers.tail.foldLeft(parsers.head.Rule.asInstanceOf[P[Action]]) {
+      case (acc, p) => acc | p.Rule.asInstanceOf[P[Action]]
+    }
   }
 }

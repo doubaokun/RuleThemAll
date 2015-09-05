@@ -54,7 +54,8 @@ class RulesParserSpec extends FlatSpec with PropertyChecks with Matchers with Pa
           ))
         ),
         Vector(
-          ChangeSoundProfile(ChangeSoundProfile.Mode.Vibrate)
+          ChangeSoundProfile(ChangeSoundProfile.Mode.Vibrate),
+          TurnOnOffDevice.WiFi(enable = true)
         )
       ),
       Rule(
@@ -74,7 +75,8 @@ class RulesParserSpec extends FlatSpec with PropertyChecks with Matchers with Pa
           )
         ),
         Vector(
-          ChangeSoundProfile(ChangeSoundProfile.Mode.Silent)
+          ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),
+          TurnOnOffDevice.Bluetooth(enable = false)
         )
       )
     )

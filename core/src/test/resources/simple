@@ -8,7 +8,8 @@ def simple1 {
         ),
         headset connected
     ) do {
-        set sound profile to vibrate
+        set sound profile to vibrate;
+        turn wifi on
     }
 }
 
@@ -20,5 +21,6 @@ def simple2 {
         )
     ) do {
         set sound profile to silent
+        turn bluetooth off
     }
 }

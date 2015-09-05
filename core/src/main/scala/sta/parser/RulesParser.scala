@@ -11,15 +11,13 @@ import sta.parser.triggers.TriggerRules
 sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with TriggerRules {
   import white._
 
-  private def newLine = "\n" | "\n\r"
-
   private def alphaNum = CharIn(('0' to '9') ++ ('a' to 'z') ++ ('A' to 'Z'))
 
   def Name: P[String] = P((alphaNum ~ ("_" ~ alphaNum).?).repX(1).!)
 
   def Branches: P[Seq[Trigger.Branch]] = P("(" ~ MainT.map(_.flatten) ~ ")")
 
-  def Action: P[Seq[Action]] = P("{" ~ MainA.rep(1, sep = newLine | ";") ~ "}")
+  def Action: P[Seq[Action]] = P("{" ~ MainA.repX(1, sep = (WL ~~ NoTrace(";") ~~ WL) | WL) ~ "}")
 
   def Definition: P[Rule] = P(
     ("def" ~ Name ~ {
