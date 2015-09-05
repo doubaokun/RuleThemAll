@@ -37,6 +37,8 @@ class RulesParserSpec extends FlatSpec with PropertyChecks with Matchers with Pa
 
   cronExpressionRule()
 
+  durationRule()
+
   behavior of "RulesParser"
 
   it should "parse whole scripts" in {

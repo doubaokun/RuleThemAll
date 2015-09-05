@@ -4,6 +4,7 @@ import fastparse.core.SyntaxError
 import kj.android.cron.CronExpression
 import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
+import scala.concurrent.duration._
 import spire.math._
 import sta.tests.PropertyChecks
 
@@ -296,6 +297,48 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       val al = actual2.dayOfMonth.asInstanceOf[CronExpression.List]
       al.min should === (el.min)
       al.rest should === (el.rest)
+    }
+  }
+
+  def durationRule(): Unit = {
+    behavior of "Duration rule"
+
+    it should "parse seconds" in {
+      forAll(Gen.chooseNum(0, 59), Gen.oneOf("s", "second", "seconds")) { (seconds, suffix) =>
+        BasicParser.Duration.parse(s"$seconds $suffix").get.value should === (seconds.seconds)
+      }
+    }
+
+    it should "parse minutes" in {
+      forAll(Gen.chooseNum(0, 59), Gen.oneOf("m", "minute", "minutes")) { (minutes, suffix) =>
+        BasicParser.Duration.parse(s"$minutes $suffix").get.value should === (minutes.minutes)
+      }
+    }
+
+    it should "parse hours" in {
+      forAll(Gen.chooseNum(0, 23), Gen.oneOf("h", "hour", "hours")) { (hours, suffix) =>
+        BasicParser.Duration.parse(s"$hours $suffix").get.value should === (hours.hours)
+      }
+    }
+
+    it should "throw error on out of range literal" in {
+      forAll(Gen.chooseNum(60, Int.MaxValue), Gen.oneOf("s", "second", "seconds")) { (seconds, suffix) =>
+        intercept[SyntaxError] {
+          BasicParser.Duration.parse(s"$seconds $suffix").get
+        }
+      }
+
+      forAll(Gen.chooseNum(60, Int.MaxValue), Gen.oneOf("m", "minute", "minutes")) { (minutes, suffix) =>
+        intercept[SyntaxError] {
+          BasicParser.Duration.parse(s"$minutes $suffix").get
+        }
+      }
+
+      forAll(Gen.chooseNum(24, Int.MaxValue), Gen.oneOf("h", "hour", "hours")) { (hours, suffix) =>
+        intercept[SyntaxError] {
+          BasicParser.Duration.parse(s"$hours $suffix").get
+        }
+      }
     }
   }
 }

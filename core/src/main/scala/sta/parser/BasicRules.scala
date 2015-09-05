@@ -3,15 +3,18 @@ package sta.parser
 import scala.language.{higherKinds, implicitConversions}
 import fastparse.all._
 import kj.android.cron.{CronExpression => Cron}
+import scala.concurrent.duration.{Duration => ScalaDuration, _}
 import scala.util.Try
 import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
 
-trait BasicRules {
+trait BasicRules extends WhitespaceSkip {
   private def digit = P(CharIn('0' to '9').!)
 
   private def digit19 = P(CharIn('1' to '9').!)
 
   private def hexDigit = P(CharIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')))
+
+  private def variations(str: String): P[Unit] = s"${str}s" | str | s"${str.head}"
 
   implicit def parserExtras[T](parser: Parser[T]): BasicRules.ParserExtras[T] =
     new BasicRules.ParserExtras[T](parser)
@@ -156,6 +159,12 @@ trait BasicRules {
       )
     })
   }
+
+  lazy val Duration: P[ScalaDuration] = P(
+    (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WL) ~ variations("second") map (_.toInt.seconds)) |
+      (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WL) ~ variations("minute") map (_.toInt.minutes)) |
+      (UnsignedInt.filter(_.toInt <= 23) ~ NoCut(WL) ~ variations("hour") map (_.toInt.hours))
+  )
 }
 
 object BasicRules {
