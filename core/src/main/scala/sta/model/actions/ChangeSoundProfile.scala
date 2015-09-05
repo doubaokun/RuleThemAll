@@ -6,7 +6,7 @@ import enumeratum.Enum
 import kj.android.common.SystemServices._
 import sta.model.FromIntEntry
 
-case class ChangeSoundProfile(mode: ChangeSoundProfile.Mode) extends Action {
+case class ChangeSoundProfile(mode: ChangeSoundProfile.Mode) extends SetTo {
   def execute()(implicit ctx: Context): Unit = {
     val value = mode.intValue
     val manager = audioManger

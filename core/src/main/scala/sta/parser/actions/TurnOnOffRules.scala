@@ -1,7 +1,7 @@
 package sta.parser.actions
 
 import fastparse.noApi._
-import sta.model.actions.{TurnOnOffDevice, Action}
+import sta.model.actions.TurnOnOffDevice
 
 object TurnOnOffRules extends ActionParser[TurnOnOffDevice] {
   import white._
