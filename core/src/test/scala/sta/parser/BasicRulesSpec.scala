@@ -1,5 +1,6 @@
 package sta.parser
 
+import fastparse.all._
 import fastparse.core.SyntaxError
 import kj.android.cron.CronExpression
 import org.scalacheck.Gen
@@ -10,7 +11,9 @@ import sta.tests.PropertyChecks
 
 trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with ParserHelpers =>
 
-  private object BasicParser extends BasicRules
+  private object BasicParser extends BasicRules {
+    def apply[T](rule: BasicRules => P[T]): P[T] = P(Start ~ rule(this) ~ End) 
+  }
 
   def byteRule(): Unit = {
     behavior of "Byte rule"
@@ -18,14 +21,14 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "yield unsigned byte on in range literal" in {
       forAll(Gen.chooseNum(Byte.MinValue, Byte.MaxValue)) { _num =>
         val num = UByte(_num)
-        BasicParser.Byte.parse(num.toString()).get.value should ===(num)
+        BasicParser(_.Byte).parse(num.toString()).get.value should ===(num)
       }
     }
 
     it should "throw error on negative literal" in {
       forAll(Gen.chooseNum(Byte.MinValue, -1)) { num =>
         intercept[SyntaxError] {
-          BasicParser.Byte.parse(num.toString).get
+          BasicParser(_.Byte).parse(num.toString).get
         }
       }
     }
@@ -33,7 +36,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "throw error on out of range literal" in {
       forAll(Gen.chooseNum(256, Int.MaxValue)) { num =>
         intercept[SyntaxError] {
-          BasicParser.Byte.parse(num.toString).get
+          BasicParser(_.Byte).parse(num.toString).get
         }
       }
     }
@@ -42,7 +45,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       forAll(Gen.chooseNum(1, 255)) { _num =>
         val hex = "0x" + java.lang.Integer.toHexString(_num)
         val num = UByte(_num)
-        BasicParser.Byte.parse(hex).get.value should ===(num)
+        BasicParser(_.Byte).parse(hex).get.value should ===(num)
       }
     }
 
@@ -50,7 +53,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       forAll(Gen.chooseNum(256, Int.MaxValue)) { _num =>
         val hex = "0x" + java.lang.Integer.toHexString(_num)
         intercept[SyntaxError] {
-          BasicParser.Byte.parse(hex).get
+          BasicParser(_.Byte).parse(hex).get
         }
       }
     }
@@ -62,14 +65,14 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "yield unsigned int on in range literal" in {
       forAll(Gen.chooseNum(Int.MinValue, Int.MaxValue)) { _num =>
         val num = UInt(_num)
-        BasicParser.UnsignedInt.parse(num.toString()).get.value should ===(num)
+        BasicParser(_.UnsignedInt).parse(num.toString()).get.value should ===(num)
       }
     }
 
     it should "throw error on negative literal" in {
       forAll(Gen.chooseNum(Int.MinValue, -1)) { num =>
         intercept[SyntaxError] {
-          BasicParser.UnsignedInt.parse(num.toString).get
+          BasicParser(_.UnsignedInt).parse(num.toString).get
         }
       }
     }
@@ -77,7 +80,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "throw error on out of range literal" in {
       forAll(Gen.chooseNum(UInt.MaxValue.toLong + 1, Long.MaxValue)) { num =>
         intercept[SyntaxError] {
-          BasicParser.UnsignedInt.parse(num.toString).get
+          BasicParser(_.UnsignedInt).parse(num.toString).get
         }
       }
     }
@@ -86,7 +89,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       forAll(Gen.chooseNum(Int.MinValue, Int.MaxValue)) { _num =>
         val hex = "0x" + java.lang.Integer.toHexString(_num)
         val num = UInt(_num)
-        BasicParser.UnsignedInt.parse(hex).get.value should ===(num)
+        BasicParser(_.UnsignedInt).parse(hex).get.value should ===(num)
       }
     }
 
@@ -94,7 +97,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       forAll(Gen.chooseNum(UInt.MaxValue.toLong + 1, Long.MaxValue)) { _num =>
         val hex = "0x" + java.lang.Long.toHexString(_num)
         intercept[SyntaxError] {
-          BasicParser.UnsignedInt.parse(hex).get
+          BasicParser(_.UnsignedInt).parse(hex).get
         }
       }
     }
@@ -105,7 +108,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
 
     it should "yield int on in range literal" in {
       forAll(Gen.chooseNum(Int.MinValue, Int.MaxValue)) { num =>
-        BasicParser.Int.parse(num.toString).get.value should ===(num)
+        BasicParser(_.Int).parse(num.toString).get.value should ===(num)
       }
     }
 
@@ -115,7 +118,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
         Gen.chooseNum(Int.MaxValue.toLong + 1, Long.MaxValue)
       )) { num =>
         intercept[SyntaxError] {
-          BasicParser.Int.parse(num.toString).get
+          BasicParser(_.Int).parse(num.toString).get
         }
       }
     }
@@ -127,7 +130,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "yield unsigned byte on in range literal" in {
       forAll(Gen.chooseNum[Byte](0, 100)) { _num =>
         val num = UByte(_num)
-        BasicParser.Percent.parse(num.toString + '%').get.value should ===(num)
+        BasicParser(_.Percent).parse(num.toString + '%').get.value should ===(num)
       }
     }
 
@@ -135,7 +138,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       forAll(Gen.chooseNum(Int.MinValue, Int.MaxValue).suchThat(num =>
         num < 0 || num > 100)) { num =>
         intercept[SyntaxError] {
-          BasicParser.Percent.parse(num.toString + '%').get
+          BasicParser(_.Percent).parse(num.toString + '%').get
         }
       }
     }
@@ -143,7 +146,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "throw error on literal without '%'" in {
       forAll(Gen.chooseNum(Int.MinValue, Int.MaxValue, (0 to 100).toSeq: _*)) { num =>
         intercept[SyntaxError] {
-          BasicParser.Percent.parse(num.toString).get
+          BasicParser(_.Percent).parse(num.toString).get
         }
       }
     }
@@ -155,14 +158,14 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "yield natural on in range literal" in {
       forAll(Gen.nonEmptyNumStr) { _num =>
         val num = Natural(_num)
-        BasicParser.Natural.parse(num.toString()).get.value should ===(num)
+        BasicParser(_.Natural).parse(num.toString()).get.value should ===(num)
       }
     }
 
     it should "throw error on negative literal" in {
       forAll(Gen.nonEmptyNumStr.suchThat(_ != "0").map('-' + _)) { num =>
         intercept[SyntaxError] {
-          BasicParser.Natural.parse(num).get
+          BasicParser(_.Natural).parse(num).get
         }
       }
     }
@@ -177,7 +180,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
         Gen.nonEmptyNumStr.suchThat(_ != "0").map('-' + _)
       )) { _num =>
         val num = SafeLong(_num)
-        BasicParser.Integer.parse(num.toString()).get.value should ===(num)
+        BasicParser(_.Integer).parse(num.toString()).get.value should ===(num)
       }
     }
   }
@@ -187,14 +190,14 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
 
     it should "yield float on in range literal" in {
       forAll(Gen.floatString(v => Float.MinValue <= v && v <= Float.MaxValue)) { num =>
-        BasicParser.Float.parse(num).get.value should ===(num.toFloat)
+        BasicParser(_.Float).parse(num).get.value should ===(num.toFloat)
       }
     }
 
     it should "throw error on out of range literal" in {
       forAll(Gen.floatString(v => Float.MinValue > v || v > Float.MaxValue)) { num =>
         intercept[SyntaxError] {
-          BasicParser.Float.parse(num.toString).get
+          BasicParser(_.Float).parse(num.toString).get
         }
       }
     }
@@ -208,7 +211,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
         Gen.chooseNum(Double.MinValue, Double.MaxValue).map(_.toString),
         Gen.rationalString
       )) { _num =>
-        BasicParser.Decimal.parse(_num).get.value should ===(Rational(_num))
+        BasicParser(_.Decimal).parse(_num).get.value should ===(Rational(_num))
       }
     }
   }
@@ -218,19 +221,19 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
 
     it should "yield string for single-line string" in {
       forAll(Gen.alphaStr) { s =>
-        BasicParser.String.parse("\"" + s + "\"").get.value should ===(s)
+        BasicParser(_.String).parse("\"" + s + "\"").get.value should ===(s)
       }
     }
 
     it should "yield string for multi-line string with '\\n'" in {
       forAll(Gen.nonEmptyListOf(Gen.alphaStr).map(_.mkString("\n"))) { s =>
-        BasicParser.String.parse("\"\"\"" + s + "\"\"\"").get.value should ===(s)
+        BasicParser(_.String).parse("\"\"\"" + s + "\"\"\"").get.value should ===(s)
       }
     }
 
     it should "yield string for multi-line string with '\\r\\n'" in {
       forAll(Gen.nonEmptyListOf(Gen.alphaStr).map(_.mkString("\r\n"))) { s =>
-        BasicParser.String.parse("\"\"\"" + s + "\"\"\"").get.value should ===(s)
+        BasicParser(_.String).parse("\"\"\"" + s + "\"\"\"").get.value should ===(s)
       }
     }
   }
@@ -241,7 +244,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
     it should "yield proper mac address string" in {
       forAll(Gen.hexString(12)) { s =>
         val mac = s.grouped(2).mkString(":")
-        BasicParser.MacAddress.parse(mac).get.value should ===(mac)
+        BasicParser(_.MacAddress).parse(mac).get.value should ===(mac)
       }
     }
 
@@ -249,7 +252,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       forAll(Gen.hexString.suchThat(_.length != 12)) { s =>
         val mac = s.grouped(2).mkString(":")
         intercept[SyntaxError] {
-          BasicParser.MacAddress.parse(mac).get.value
+          BasicParser(_.MacAddress).parse(mac).get.value
         }
       }
     }
@@ -258,7 +261,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
       forAll(Gen.alphaStr.suchThat(_.exists(_.toLower > 'f'))) { s =>
         val mac = s.grouped(2).mkString(":")
         intercept[SyntaxError] {
-          BasicParser.MacAddress.parse(mac).get.value
+          BasicParser(_.MacAddress).parse(mac).get.value
         }
       }
     }
@@ -277,7 +280,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
         dayOfWeek = CronExpression.Range(0, 6),
         year = Some(CronExpression.Range(1970, 2099))
       )
-      val actual1 = BasicParser.CronExpression.parse(expr1).get.value
+      val actual1 = BasicParser(_.CronExpression).parse(expr1).get.value
       actual1 should === (expected1)
 
       val expr2 = """"*/5 0-12/2 1,11,21,31 JAN-JUN/2 TUE-4""""
@@ -290,7 +293,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
         dayOfWeek = CronExpression.Range(2, 4),
         year = None
       )
-      val actual2 = BasicParser.CronExpression.parse(expr2).get.value
+      val actual2 = BasicParser(_.CronExpression).parse(expr2).get.value
       actual2.copy(dayOfMonth = CronExpression.Range(1, 31)) should
         === (expected2.copy(dayOfMonth = CronExpression.Range(1, 31)))
       actual2.dayOfMonth shouldBe a [CronExpression.List]
@@ -305,38 +308,38 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
 
     it should "parse seconds" in {
       forAll(Gen.chooseNum(0, 59), Gen.oneOf("s", "second", "seconds")) { (seconds, suffix) =>
-        BasicParser.Duration.parse(s"$seconds $suffix").get.value should === (seconds.seconds)
+        BasicParser(_.Duration).parse(s"$seconds $suffix").get.value should === (seconds.seconds)
       }
     }
 
     it should "parse minutes" in {
       forAll(Gen.chooseNum(0, 59), Gen.oneOf("m", "minute", "minutes")) { (minutes, suffix) =>
-        BasicParser.Duration.parse(s"$minutes $suffix").get.value should === (minutes.minutes)
+        BasicParser(_.Duration).parse(s"$minutes $suffix").get.value should === (minutes.minutes)
       }
     }
 
     it should "parse hours" in {
       forAll(Gen.chooseNum(0, 23), Gen.oneOf("h", "hour", "hours")) { (hours, suffix) =>
-        BasicParser.Duration.parse(s"$hours $suffix").get.value should === (hours.hours)
+        BasicParser(_.Duration).parse(s"$hours $suffix").get.value should === (hours.hours)
       }
     }
 
     it should "throw error on out of range literal" in {
       forAll(Gen.chooseNum(60, Int.MaxValue), Gen.oneOf("s", "second", "seconds")) { (seconds, suffix) =>
         intercept[SyntaxError] {
-          BasicParser.Duration.parse(s"$seconds $suffix").get
+          BasicParser(_.Duration).parse(s"$seconds $suffix").get
         }
       }
 
       forAll(Gen.chooseNum(60, Int.MaxValue), Gen.oneOf("m", "minute", "minutes")) { (minutes, suffix) =>
         intercept[SyntaxError] {
-          BasicParser.Duration.parse(s"$minutes $suffix").get
+          BasicParser(_.Duration).parse(s"$minutes $suffix").get
         }
       }
 
       forAll(Gen.chooseNum(24, Int.MaxValue), Gen.oneOf("h", "hour", "hours")) { (hours, suffix) =>
         intercept[SyntaxError] {
-          BasicParser.Duration.parse(s"$hours $suffix").get
+          BasicParser(_.Duration).parse(s"$hours $suffix").get
         }
       }
     }
