@@ -27,7 +27,6 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
   type Result = Validated[FailNEL, Success]
 
   @inline private def executeAction(a: Action)(implicit ctx: Context): Result = try {
-    log.info(s"Executing action ${a.name}")
     Validated.valid(a.execute())
   } catch {
     case NonFatal(t) => Validated.invalidNel(a.name -> t)
@@ -44,6 +43,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
   }
 
   private def executeRule(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
+    log.info(s"Executing actions in rule $name")
     implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
     val combine = (_: Unit, _: Unit) => ()
     val result = actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>

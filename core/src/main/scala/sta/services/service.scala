@@ -82,7 +82,18 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
   class ServicesMap private[STAService](rawMap: Map[Int, (Requirement, SF)]) {
     @inline private final def updateModel(model: Model): Unit = {
       import model.companion._
-      updateState(_ + (Key -> model))
+      @volatile var changed = false
+      rawState.update { state =>
+        state.get(Key) match {
+          case Some(`model`) => state
+          case _ =>
+            changed = true
+            state + (Key -> model)
+        }
+      }.fold(
+        th => log.error("Error has occurred during updating state", th),
+        state => if (changed) storage.rules.foreach(_.execute(state))
+      )
     }
 
     private[this] val tasks: Map[String, Task[Unit]] = for {
@@ -266,13 +277,6 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
       case ex: IllegalArgumentException =>
     }
     intents.foreach(registerReceiver(stateProcessor, _))
-  }
-
-  def updateState(f: HMap[ModelKV] => HMap[ModelKV]): Unit = {
-    rawState.update(f).fold(
-      th => log.error("Error has occurred during updating state", th),
-      state => storage.rules.foreach(_.execute(state))
-    )
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
