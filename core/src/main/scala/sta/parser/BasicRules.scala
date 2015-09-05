@@ -6,6 +6,7 @@ import kj.android.cron.{CronExpression => Cron}
 import scala.concurrent.duration.{Duration => ScalaDuration, _}
 import scala.util.Try
 import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
+import sta.parser.WhitespaceSkip._
 
 trait BasicRules extends WhitespaceSkip {
   private def digit = P(CharIn('0' to '9').!)
@@ -35,7 +36,7 @@ trait BasicRules extends WhitespaceSkip {
     def unapply(s: String): Option[Double] = Try(java.lang.Double.parseDouble(s)).toOption
   }
 
-  implicit def liftToParser(str: String) = new BasicRules.LiftToParser(str)
+  implicit def liftToParser(str: String): BasicRules.LiftToParser = new BasicRules.LiftToParser(str)
 
   lazy val Percent: P[UByte] = P(
     ("0" | "100" | (digit19 ~ digit.?)).! ~ "%" map ((s: String) => UByte(s.toByte))
@@ -119,7 +120,7 @@ trait BasicRules extends WhitespaceSkip {
       hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ !(hexDigit | ":")).!)
 
   def mapParser[T](map: Map[String, T]): P[T] = {
-    def makeRule(kv: (String, T)): P[T] = kv._1.u map (_ => kv._2)
+    def makeRule(kv: (String, T)): P[T] = kv._1.lWS map (_ => kv._2)
 
     if (map.isEmpty) Fail
     else map.tail.foldLeft(makeRule(map.head)) {
@@ -167,9 +168,14 @@ trait BasicRules extends WhitespaceSkip {
   )
 }
 
-object BasicRules {
+object BasicRules extends WhitespaceSkip {
   class LiftToParser(val str: String) extends AnyVal {
-    def u: Parser[Unit] = wspStr(str)
+    def lWS: Parser[Unit] = {
+      val splitted = str.split("\\s+")
+      splitted.tail.foldLeft(splitted.head: P[Unit]) { _ ~ NoCut(WL) ~ _ }
+    }
+
+    def l: Parser[Unit] = wspStr(str)
   }
 
   class ParserExtras[T](private val parser: Parser[T]) extends AnyVal {

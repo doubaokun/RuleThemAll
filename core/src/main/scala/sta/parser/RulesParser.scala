@@ -5,6 +5,7 @@ import fastparse.noApi._
 import sta.model.Rule
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
+import sta.parser.WhitespaceSkip._
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 

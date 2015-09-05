@@ -16,7 +16,7 @@ abstract class ModelCompanion[+M <: Model] { root =>
 }
 
 trait ModelEnumEntry extends EnumEntry with Product {
-  override def entryName: String = productPrefix.replaceAll("(\\p{Ll})(\\p{Lu})", "$1_$2").toLowerCase
+  override def entryName: String = productPrefix.replaceAll("(\\p{Ll})(\\p{Lu})", "$1 $2").toLowerCase
 }
 
 trait FromIntEntry extends ModelEnumEntry {

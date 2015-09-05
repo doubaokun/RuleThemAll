@@ -1,17 +1,17 @@
-def charger_connected  {
+def charger_connected {
     when (
-        battery plugged usb
+        battery power connected
     ) do {
         set brightness to 100%
         set screen timeout to never
     }
 }
 
-def charger_disconnected  {
+def charger_disconnected {
     when (
         battery power disconnected
     ) do {
-        set brightness to 75%
+        set brightness to 60%
         set screen timeout to 1 minute
     }
 }
@@ -22,5 +22,18 @@ def music_player {
         wifi on
     ) do {
         launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+def no_music_player {
+    when (
+        headset disconnected
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
     }
 }
