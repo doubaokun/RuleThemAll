@@ -80,28 +80,26 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
   type SF = List[(IntentType, ServiceFragment[Model])]
 
   class ServicesMap private[STAService](rawMap: Map[Int, (Requirement, SF)]) {
-    @inline private final def updateModel(model: Model): Unit = {
-      import model.companion._
-      @volatile var changed = false
-      rawState.update { state =>
-        state.get(Key) match {
-          case Some(`model`) => state
-          case _ =>
-            changed = true
-            state + (Key -> model)
-        }
-      }.fold(
-        th => log.error("Error has occurred during updating state", th),
-        state => if (changed) storage.rules.foreach(_.execute(state))
-      )
-    }
-
     private[this] val tasks: Map[String, Task[Unit]] = for {
-      (_, (Requirement.IntentBased(intent), service)) <- rawMap
+      (_, (req @ Requirement.IntentBased(intent), service)) <- rawMap
       (Manual(interval), sf) <- service 
     } yield {
       sf.logTag.tag -> Task.schedule(0.seconds, interval) {
-        sf(ctx, registerReceiver(null, intent)).foreach(updateModel)
+        sf(ctx, registerReceiver(null, intent)).foreach { model =>
+          var changed = false
+          import model.companion._
+          rawState.update { state =>
+            state.get(Key) match {
+              case Some(`model`) => state
+              case _ =>
+                changed = true
+                state + (Key -> model)
+            }
+          }.fold(th => log.error("Error has occurred during updating state", th),
+              state => if (changed) for (rule <- storage.rules if rule.requires.contains(req)) {
+                rule.execute(state)
+              })
+        }
       }
     }
     
@@ -130,7 +128,14 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
       sf <- services;
       model <- sf(context, intent)
     ) {
-      updateModel(model)
+      import model.companion._
+      rawState.update { state =>
+        state.get(Key) match {
+          case Some(`model`) => state
+          case _ => state + (Key -> model)
+        }
+      }.fold(th => log.error("Error has occurred during updating state", th),
+          state => storage.rules.foreach(_.execute(state)))
     }
 
     def stopTasks(): Boolean = {
