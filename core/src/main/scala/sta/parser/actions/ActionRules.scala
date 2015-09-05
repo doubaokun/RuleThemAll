@@ -6,7 +6,7 @@ import sta.model.actions.Action
 
 trait ActionRules {
   private val parsers = mutable.LinkedHashSet.empty[ActionParser[_ <: Action]]
-  parsers ++= Seq(SetToRules, TurnOnOffRules)
+  parsers ++= Seq(LaunchApplicationRules, SetToRules, TurnOnOffRules)
 
   protected def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
     parsers += parser

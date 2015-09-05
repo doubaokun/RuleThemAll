@@ -16,19 +16,11 @@ def charger_disconnected  {
     }
 }
 
-def simple_sound_off {
+def music_player {
     when (
         headset connected,
         wifi on
     ) do {
-        set sound profile to vibrate
-    }
-}
-
-def simple_sound_on {
-    when (
-        headset disconnected
-    ) do {
-        set sound profile to normal
+        launch app "Spotify"
     }
 }
