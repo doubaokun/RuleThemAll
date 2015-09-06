@@ -4,6 +4,7 @@ import fastparse.noApi._
 import scala.collection.mutable
 import sta.model.Model
 import sta.model.triggers._
+import sta.parser.BasicRules._
 import sta.parser.WhitespaceSkip
 
 trait TriggerRules extends WhitespaceSkip {
@@ -25,10 +26,6 @@ trait TriggerRules extends WhitespaceSkip {
 
     val triggers = {
       def single(trigger: TriggerParser[_ <: Model]) = {
-        val prefix = {
-          val splitted = trigger.Prefix.split("\\s+")
-          splitted.tail.foldLeft(splitted.head: P[Unit]) { _ ~ _ }
-        }
         val main = P(trigger.Rule)(trigger.Prefix)
         val main2toN = twoOrMore(main)
 
@@ -38,19 +35,19 @@ trait TriggerRules extends WhitespaceSkip {
             ("and" ~ main2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*)))
           ) ~ ")") | main
 
-        prefix ~! conditions
+        trigger.Prefix.lWS ~! conditions
       }
 
-      P(parsers.tail.foldLeft(single(parsers.head)) {
-        case (acc, t) =>
-          acc | single(t)
-      })
+      P(parsers.tail.foldLeft(single(parsers.head))(_ | single(_)))
     }
+    lazy val combined2ToN = P(twoOrMore(triggers | all))
+    lazy val combined: P[Trigger] = P(triggers | all)
+    lazy val all: P[Trigger] = P(
+      ("or" ~! combined2ToN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+        ("and" ~! combined2ToN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+        (combined.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*)))
+    )
 
-    val triggers2toN = twoOrMore(triggers)
-
-    P((triggers.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) |
-      ("or" ~ triggers2toN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-      ("and" ~ triggers2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))))
+    all
   }
 }
