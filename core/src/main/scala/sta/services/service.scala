@@ -60,7 +60,7 @@ object STAService {
   }
 }
 
-class STAService extends Service with RuleExecutor with Logging { root =>
+class STAService extends Service with RulesExecutor with Logging { root =>
 
   import sta.services.STAService._
 

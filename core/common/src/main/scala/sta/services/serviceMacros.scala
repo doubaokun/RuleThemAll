@@ -18,7 +18,7 @@ object ServiceMacros {
 
   case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], uses: Uses[Model])
 
-  def collect(enclosing: RuleExecutor): Seq[RichService] = macro ServiceMacrosImpl.collect
+  def collect(enclosing: RulesExecutor): Seq[RichService] = macro ServiceMacrosImpl.collect
 }
 
 private class ServiceMacrosImpl(val c: blackbox.Context) {
@@ -33,8 +33,8 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
 
   private def ServiceFragment = c.typeOf[ServiceFragment[Model]]
 
-  def collect(enclosing: c.Expr[RuleExecutor]) = {
-    val enclosingTpe = weakTypeOf[RuleExecutor]
+  def collect(enclosing: c.Expr[RulesExecutor]) = {
+    val enclosingTpe = weakTypeOf[RulesExecutor]
     val services = for {
       decl <- c.mirror.staticPackage("sta.services").typeSignature.decls
       inherited <- decl.typeSignature.baseClasses if
@@ -49,11 +49,14 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
           val ctors = tpe.decl(termNames.CONSTRUCTOR).alternatives
           if (ctors.length != 1) c.abort(c.enclosingPosition,
             s"Cannot create service fragment with multiple constructors: ${decl.asType}")
-          ctors.head.asMethod.paramLists.flatten match {
-            case Nil => q"new $tpe"
-            case arg :: Nil if enclosingTpe <:< arg.typeSignature => q"new $tpe($enclosing)"
-            case args => c.abort(c.enclosingPosition,
-              s"""Cannot create service fragment using constructor with args: ${args.map(_.typeSignature).mkString("(", ", ", ")")}""")
+          ctors.head.asMethod.paramLists match {
+            case List(Nil) => q"new $tpe"
+            case List(arg :: Nil) if enclosingTpe <:< arg.typeSignature => q"new $tpe($enclosing)"
+            case List(Nil, arg :: Nil) if enclosingTpe <:< arg.typeSignature => q"new $tpe()($enclosing)"
+            case args =>
+              val ctor = args.map(_.map(_.typeSignature).mkString("(", ", ", ")")).mkString
+              c.abort(c.enclosingPosition,
+                s"""Cannot create service fragment using constructor with args: $ctor""")
           }
         }
         q"""
