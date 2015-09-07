@@ -1,19 +1,16 @@
 package sta.parser.triggers
 
 import fastparse.noApi._
+import scala.concurrent.duration._
 import sta.common.Uses
-import sta.model.triggers.Trigger
 import sta.model.triggers.Implicits._
+import sta.model.triggers.Trigger
 
 object CalendarRules extends TriggerParser[CalendarEvent] {
   import CalendarEvent._
   import white._
 
   def Prefix: String = Uses.categoryOf[CalendarEvent]
-
-  override val Suffix: Option[P[Trigger.Standalone[_ <: CalendarEvent]]] = Some(
-    mapParser(State.namesToValuesMap) map (v => Trigger.Condition[CalendarEvent](_.state == v))
-  )
 
   private def title: P[Trigger.Condition[CalendarEvent]] = {
     "title" ~ matchStringParser[CalendarEvent](_.title)
@@ -33,5 +30,14 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
     )
   }
 
-  def Main: P[Trigger.Standalone[_ <: CalendarEvent]] = title | description | location | availability
+  def Main: P[Trigger.Condition[_ <: CalendarEvent]] = title | description | location | availability
+
+  override lazy val Rule: P[Trigger] = {
+    (Main.map(Seq(_)) | ("(" ~ Main.rep(min = 1, sep = ",") ~ ")").?.map(_.getOrElse(Seq.empty))) ~!
+      mapParser(State.namesToValuesMap) map { case (conditions, state) =>
+      Trigger.Timer.dynamic(24.hours, Uses.materializeUses[CalendarEvent].requirements) {
+        case (from, bias, window, ctx) => state.find(from, bias, window, ctx, conditions: _*)
+      }
+    }
+  }
 }

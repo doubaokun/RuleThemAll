@@ -16,6 +16,16 @@ def charger_disconnected {
     }
 }
 
+def calendar_event_test {
+    when (
+        calendar event (
+            title contains "Meeting"
+        ) starts
+    ) do {
+       set sound profile to vibrate
+    }
+}
+
 def music_player {
     when (
         headset connected,

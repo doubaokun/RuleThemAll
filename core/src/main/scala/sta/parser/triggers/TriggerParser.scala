@@ -7,7 +7,7 @@ import sta.model.triggers.Trigger
 import sta.model.{Model, ModelCompanion}
 import sta.parser.{BasicRules, WhitespaceSkip}
 
-trait TriggerParser[M <: Model] extends BasicRules with WhitespaceSkip {
+abstract class TriggerParser[M <: Model] extends BasicRules with WhitespaceSkip {
   import white._
 
   def matchStringParser[T <: Model : ModelCompanion: Uses](extractor: T => String): P[Trigger.Condition[T]] = {
@@ -19,18 +19,16 @@ trait TriggerParser[M <: Model] extends BasicRules with WhitespaceSkip {
   }
 
   def Prefix: String
-  
-  def Suffix: Option[P[Trigger.Standalone[_ <: M]]] = None
 
   def Main: P[Trigger.Standalone[_ <: M]]
 
-  lazy val Rule: P[Trigger] = {
+  lazy val Rule: P[Trigger] = Main /*{
     val conditions = "(" ~ Main.rep(min = 1, sep = ",") ~ ")"
     Suffix match {
       case Some(suffix) => conditions.? ~! suffix map (t =>
-        t._1.fold[Trigger](t._2)(r => Trigger(t._2, r: _*)) // FIXME
+        t._1.fold[Trigger](t._2)(r => ???)
       )
-      case None => Main
+      case None =>
     }
-  }
+  }*/
 }

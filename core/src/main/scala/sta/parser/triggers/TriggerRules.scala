@@ -29,11 +29,11 @@ trait TriggerRules extends WhitespaceSkip {
         val main = P(trigger.Rule)(trigger.Prefix)
         val main2toN = twoOrMore(main)
 
-        val conditions = ("(" ~ (
+        val conditions = main | ("(" ~ (
           (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) |
             ("or" ~ main2toN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
             ("and" ~ main2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*)))
-          ) ~ ")") | main
+          ) ~ ")")
 
         trigger.Prefix.lWS ~! conditions
       }

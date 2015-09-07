@@ -169,7 +169,7 @@ trait BasicRules extends WhitespaceSkip {
 }
 
 object BasicRules extends WhitespaceSkip {
-  class LiftToParser(val str: String) extends AnyVal {
+  implicit class LiftToParser(val str: String) extends AnyVal {
     def lWS: Parser[Unit] = {
       val splitted = str.split("\\s+")
       splitted.tail.foldLeft(splitted.head: P[Unit]) { _ ~ NoCut(WL) ~ _ }
