@@ -16,18 +16,7 @@ import shapeless.HMap
 import sta.common.Requirement
 import sta.model.triggers.Trigger
 import sta.model.{Model, ModelKV}
-import sta.storage.{RegistrationInfo, PlaintextStorage}
-
-class BootReceiver extends BroadcastReceiver with Logging {
-  def onReceive(context: Context, intent: Intent): Unit = intent.getAction match {
-    case Intent.ACTION_BOOT_COMPLETED =>
-      val clazz = classOf[STAService]
-      log.info(s"Starting ${clazz.getSimpleName}")
-      context.startService(new Intent(context, clazz))
-    case other =>
-      log.warn(s"Unknown message received: $other")
-  }
-}
+import sta.storage.{PlaintextStorage, RegistrationInfo}
 
 object STAService {
   val BACKGROUND_ACTION = "sta.background_action"
@@ -71,7 +60,7 @@ object STAService {
   }
 }
 
-class STAService extends Service with TriggerExecutor with Logging { root =>
+class STAService extends Service with RuleExecutor with Logging { root =>
 
   import sta.services.STAService._
 
@@ -178,8 +167,6 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
       new ServicesMap(rawMap = services.map { case (k, v) => (k.hashCode(), (k, v)) }(collection.breakOut))
     }
   }
-
-  def onBind(intent: Intent): IBinder = requestProcessor.getBinder
 
   private[this] implicit lazy val appInfo = AppInfo(
     name = ctx.getResources.getString(ctx.getApplicationInfo.labelRes),
@@ -329,5 +316,13 @@ class STAService extends Service with TriggerExecutor with Logging { root =>
     unregisterReceiver(stateProcessor)
     alarms.valuesIterator.flatten.foreach(cancelAlarm)
     rawServices.get.stopTasks()
+  }
+
+  def onBind(intent: Intent): IBinder = requestProcessor.getBinder
+
+  // TODO add selective restart
+  def resetTimers(): Unit = alarms.foreach { case (rule, intents) =>
+    intents.foreach(cancelAlarm)
+    storage.rule(rule).foreach(r => alarms += (rule -> r.setTimers(timerIntent)))
   }
 }

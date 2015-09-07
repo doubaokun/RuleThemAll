@@ -18,7 +18,7 @@ object ServiceMacros {
 
   case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], uses: Uses[Model])
 
-  def collect[T](enclosing: T): Seq[RichService] = macro ServiceMacrosImpl.collect[T]
+  def collect(enclosing: RuleExecutor): Seq[RichService] = macro ServiceMacrosImpl.collect
 }
 
 private class ServiceMacrosImpl(val c: blackbox.Context) {
@@ -33,8 +33,8 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
 
   private def ServiceFragment = c.typeOf[ServiceFragment[Model]]
 
-  def collect[T: WeakTypeTag](enclosing: c.Expr[T]) = {
-    val enclosingTpe = weakTypeOf[T]
+  def collect(enclosing: c.Expr[RuleExecutor]) = {
+    val enclosingTpe = weakTypeOf[RuleExecutor]
     val services = for {
       decl <- c.mirror.staticPackage("sta.services").typeSignature.decls
       inherited <- decl.typeSignature.baseClasses if
