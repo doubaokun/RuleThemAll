@@ -63,7 +63,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     alarmManager: AlarmManager, waitTime: Duration)(implicit ctx: Context): Unit = {
     val dates = for {
       timer <- branch.timers
-      date <- timer.fireAt(waitTime = waitTime)
+      date <- timer.fireAt(context = ctx, waitTime = waitTime)
     } yield {
       date.setTime(date.getTime - (date.getTime % (1000 * 60))) // we only want minute precision
       date
@@ -98,11 +98,14 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     if (timerFullyExecuted && branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
   }
 
-  lazy val requires: Set[Requirement] = (for {
-    branch <- branches
-    trigger <- branch.conditions
-    requirement <- trigger.requires
-  } yield requirement).toSet
+  lazy val requires: Set[Requirement] = {
+    val requirements = Set.newBuilder[Requirement]
+    for (branch <- branches) {
+      for (condition <- branch.conditions) requirements ++= condition.requires
+      for (timer <- branch.timers) requirements ++= timer.requires
+    }
+    requirements.result()
+  }
 
   override def hashCode(): Int = name.hashCode
 

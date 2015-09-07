@@ -1,7 +1,7 @@
 package sta.model.triggers
 
 import scala.language.existentials
-import android.content.Intent
+import android.content.{Context, Intent}
 import cats.std.all._
 import cats.syntax.all._
 import java.util.{UUID, Date}
@@ -68,19 +68,43 @@ object Trigger {
     def flatChildren: Seq[FlatResult] = Seq(Right(triggers.flatMap(_.flatten)(collection.breakOut)))
   }
 
-  sealed abstract class Standalone[M <: Model] extends Trigger
+  sealed abstract class Standalone[M <: Model] extends Trigger {
+    def requires: Set[Requirement]
+  }
 
   sealed abstract class Timer extends Standalone[Nothing] {
-
-    def fireAt(waitTime: Duration): Option[Date]
+    def fireAt(context: Context, waitTime: Duration): Option[Date]
 
     def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
   }
-  
+
   object Timer {
-    def setAction(intent: Intent, rule: String, branchId: UUID, partial: Boolean): Intent = {
-      intent.setAction(s"sta.rule.timer/$rule/$branchId")
-      intent.putExtra("partial", partial)
+
+    case class CronBased(expr: CronExpression) extends Timer {
+      def requires: Set[Requirement] = Set.empty
+
+      def fireAt(context: Context, waitTime: Duration) = {
+        val from = new Date
+        from.setTime(from.getTime + waitTime.toMillis)
+        expr.nextDate(from)
+      }
+    }
+
+    case class Dynamic(requires: Set[Requirement], recheckAfter: Duration,
+      fromContext: (Date, Duration, Duration, Context) => Option[Date]) extends Timer {
+      def fireAt(context: Context, waitTime: Duration) = {
+        val from = new Date
+        from.setTime(from.getTime + waitTime.toMillis)
+        val set = fromContext(from, waitTime, recheckAfter, context).orElse {
+          Some(new Date(from.getTime + recheckAfter.toMillis))
+        }
+        android.util.Log.i("Trigger.Timer.Dynamic", s"$waitTime $from $set")
+        set
+      }
+    }
+
+    def setAction(intent: Intent, rule: String, branchId: UUID, partial: Boolean): Unit = {
+      intent.setAction(s"sta.rule.timer/$rule/$branchId").putExtra("partial", partial)
     }
 
     def unapply(intent: Intent): Option[(String, UUID, Boolean)] = {
@@ -95,13 +119,10 @@ object Trigger {
       }
     }
 
-    def apply(expr: CronExpression): Timer = new Timer {
-      def fireAt(waitTime: Duration) = {
-        val from = new Date
-        from.setTime(from.getTime + waitTime.toMillis)
-        expr.nextDate(from)
-      }
-    }
+    def apply(expr: CronExpression): Timer = CronBased(expr)
+
+    def dynamic(recheckAfter: Duration, requirements: Set[Requirement] = Set.empty)
+      (fromContext: (Date, Duration, Duration, Context) => Option[Date]) = Dynamic(requirements, recheckAfter, fromContext)
   }
 
   case class Condition[M <: Model: ModelCompanion: Uses](function: ModelFunction[M]) extends Standalone[M] {
