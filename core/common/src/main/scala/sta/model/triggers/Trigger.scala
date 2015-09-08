@@ -79,7 +79,6 @@ object Trigger {
   }
 
   object Timer {
-
     case class CronBased(expr: CronExpression) extends Timer {
       def requires: Set[Requirement] = Set.empty
 
@@ -95,11 +94,9 @@ object Trigger {
       def fireAt(context: Context, waitTime: Duration) = {
         val from = new Date
         from.setTime(from.getTime + waitTime.toMillis)
-        val set = fromContext(from, waitTime, recheckAfter, context).orElse {
+        fromContext(from, waitTime, recheckAfter, context).orElse {
           Some(new Date(from.getTime + recheckAfter.toMillis))
         }
-        android.util.Log.i("Trigger.Timer.Dynamic", s"$waitTime $from $set")
-        set
       }
     }
 

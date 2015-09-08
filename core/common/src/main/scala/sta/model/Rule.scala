@@ -32,6 +32,8 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     case NonFatal(t) => Validated.invalidNel(a.name -> t)
   }
 
+  private[this] var executed = false
+
   private[this] lazy val (direct, withTimer) = {
     val directBuilder = Seq.newBuilder[Branch]
     val withTimerBuilder = Map.newBuilder[UUID, Branch]
@@ -43,20 +45,23 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
   }
 
   private def executeRule(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
-    log.info(s"Executing actions in rule $name")
-    implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
-    val combine = (_: Unit, _: Unit) => ()
-    val result = actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>
-      (acc |@| executeAction(action)) map combine
+    if (!executed) {
+      log.info(s"Executing actions in rule $name")
+      implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
+      val combine = (_: Unit, _: Unit) => ()
+      val result = actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>
+        (acc |@| executeAction(action)) map combine
+      }
+      result.fold(
+        errs => {
+          (errs.head :: errs.tail).foreach { case (action, th) =>
+            Logger.error(s"Error has occurred during running action $action in $name", th)
+          }
+          Notify(s"Failed to execute $name", Some(name)) // TODO add notification action
+        }, _ => Toast(s"Rule $name executed successfully")
+      )
+      executed = true
     }
-    result.fold(
-      errs => {
-        (errs.head :: errs.tail).foreach { case (action, th) => 
-          Logger.error(s"Error has occurred during running action $action in $name", th)
-        }
-        Notify(s"Failed to execute $name", Some(name)) // TODO add notification action
-      }, _ => Toast(s"Rule $name executed successfully")
-    )
   }
 
   private def setTimer(branch: Branch, branchId: UUID, intent: Intent,
@@ -81,6 +86,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
 
   def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
     if (direct.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
+    else executed = false
   }
 
   def setTimers(intent: Intent)(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Seq[Intent] =  {
@@ -96,6 +102,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     val branch = withTimer.get(branchId)
     branch.foreach(setTimer(_, branchId, intent, alarmManager, 60.seconds))
     if (timerFullyExecuted && branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
+    else if (timerFullyExecuted) executed = false
   }
 
   lazy val requires: Set[Requirement] = {
