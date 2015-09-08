@@ -9,7 +9,8 @@ import sta.parser.WhitespaceSkip
 
 trait TriggerRules extends WhitespaceSkip {
   private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: BaseModel]]
-  parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, HeadsetRules, TimeRules, WiFiRules)
+  parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, HeadsetRules,
+    NetworkRules, TimeRules, WiFiRules)
 
   protected def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
     parsers += parser

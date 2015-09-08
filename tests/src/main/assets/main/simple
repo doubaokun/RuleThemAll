@@ -29,7 +29,7 @@ def calendar_event_test {
 def music_player {
     when (
         headset connected,
-        wifi on
+        network connected
     ) do {
         launch app "Spotify"
         set music sound to 70%

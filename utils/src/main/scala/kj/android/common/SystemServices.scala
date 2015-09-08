@@ -3,6 +3,7 @@ package kj.android.common
 import android.app.{NotificationManager, AlarmManager}
 import android.content.Context
 import android.media.AudioManager
+import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.PowerManager
 
@@ -13,6 +14,9 @@ object SystemServices {
 
   @inline def audioManger(implicit ctx: Context) =
     ctx.getSystemService(Context.AUDIO_SERVICE).asInstanceOf[AudioManager]
+
+  @inline def connectivityManager(implicit ctx: Context) =
+    ctx.getSystemService(Context.CONNECTIVITY_SERVICE).asInstanceOf[ConnectivityManager]
 
   @inline def notificationManager(implicit ctx: Context) =
     ctx.getSystemService(Context.NOTIFICATION_SERVICE).asInstanceOf[NotificationManager]
