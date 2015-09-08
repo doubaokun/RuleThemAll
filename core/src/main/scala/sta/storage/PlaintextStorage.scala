@@ -66,7 +66,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     rawRules.valuesIterator
   }
 
-  def rule(name: String) = synchronized {
+  def get(name: String) = synchronized {
     rawRules.get(name)
   }
 

@@ -29,7 +29,7 @@ abstract class RulesStorage extends Logging {
 
   def rules: Iterator[Rule] = allRules.filter(_.branches.nonEmpty)
 
-  def rule(name: String): Option[Rule]
+  def get(name: String): Option[Rule]
 
   def startupRules: Iterator[Rule] = allRules.filter(_.branches.isEmpty)
 }

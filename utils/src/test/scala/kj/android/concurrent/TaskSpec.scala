@@ -7,6 +7,8 @@ import org.scalatest.{Matchers, FlatSpec}
 import scala.concurrent.duration._
 
 class TaskSpec extends FlatSpec with Matchers {
+  import ExecutionContext.Implicits._
+
   "Task.apply" should "fire task once right after call to run" in {
     val bodyCounter = new AtomicInteger(0)
     val handlerCounter = new AtomicInteger(0)
@@ -79,33 +81,5 @@ class TaskSpec extends FlatSpec with Matchers {
     task.cancel(true)
     bodyCounter.get() should === (3)
     handlerCounter.get() should === (3)
-  }
-
-  "Task.join" should "join multiple tasks" in {
-    val bodyCounter = new AtomicInteger(0)
-    val handlerCounter = new AtomicInteger(0)
-    val task = Task.join(Seq(
-      Task {
-        bodyCounter.incrementAndGet()
-      },
-      Task.scheduleOnce(200.millis) {
-        bodyCounter.incrementAndGet()
-      },
-      Task.scheduleOnce(400.millis) {
-        bodyCounter.incrementAndGet()
-      }
-    ))
-
-    task.run(_ => handlerCounter.incrementAndGet())
-    Thread.sleep(50)
-    bodyCounter.get() should === (1)
-    handlerCounter.get() should === (1)
-    Thread.sleep(200)
-    bodyCounter.get() should === (2)
-    handlerCounter.get() should === (2)
-    task.cancel(true)
-    Thread.sleep(200)
-    bodyCounter.get() should === (2)
-    handlerCounter.get() should === (2)
   }
 }

@@ -14,15 +14,7 @@ trait Task[T] {
 }
 
 object Task {
-  def join[T](tasks: Seq[Task[T]]): Task[T] = new Task[T] {
-    def cancel(mayInterruptIfRunning: Boolean): Boolean = {
-      tasks.foldLeft(true) { case (status, task) => task.cancel(mayInterruptIfRunning) && status }
-    }
-
-    def run(handler: Try[T] => Unit): Unit = tasks.foreach(_.run(handler))
-  }
-
-  def apply[T](body: => T)(implicit ec: ExecutionContext = Implicits.stdExecutionContext): Task[T] =
+  def apply[T](body: => T)(implicit ec: ExecutionContext): Task[T] =
     new Task[T] {
       private[this] val promise = Promise[T]()
 
@@ -41,7 +33,7 @@ object Task {
     }
 
   def schedule[T](initialDelay: Duration, delay: Duration)(body: => T)
-    (implicit ec: ScheduledExecutionContext = Implicits.scheduledExecutionContext): Task[T] =
+    (implicit ec: ScheduledExecutionContext): Task[T] =
     new Task[T] {
       @volatile private[this] var scheduled: ScheduledFuture[_] = null
 
@@ -63,7 +55,7 @@ object Task {
     }
 
   def scheduleOnce[T](delay: Duration)(body: => T)
-    (implicit ec: ScheduledExecutionContext = Implicits.scheduledExecutionContext): Task[T] =
+    (implicit ec: ScheduledExecutionContext): Task[T] =
     new Task[T] {
       @volatile private[this] var scheduled: ScheduledFuture[_] = null
 
@@ -80,7 +72,7 @@ object Task {
     }
 
   def repeat[T](expression: CronExpression, minWaitTime: Long = 60000)(body: => T)
-    (implicit ec: ScheduledExecutionContext = Implicits.scheduledExecutionContext): Task[T] =
+    (implicit ec: ScheduledExecutionContext): Task[T] =
     new Task[T] {
       @volatile private[this] var scheduled: ScheduledFuture[_] = null
 

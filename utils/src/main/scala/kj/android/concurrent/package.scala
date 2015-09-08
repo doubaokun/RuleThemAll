@@ -1,29 +1,32 @@
 package kj.android
 
+import android.os.HandlerThread
 import java.util.concurrent.{ScheduledThreadPoolExecutor, ScheduledExecutorService, Executors, ThreadFactory}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext => SExecutionContext}
 
 package object concurrent {
-  type ScheduledExecutionContext = ExecutionContext with ScheduledExecutorService
+  type ScheduledExecutionContext = SExecutionContext with ScheduledExecutorService
 
-  object Implicits {
-    implicit lazy val scheduledExecutionContext: ScheduledExecutionContext = {
+  object ExecutionContext {
+    def fromHandlerThread(thread: HandlerThread): SExecutionContext = {
       val factory = new ThreadFactory {
-        val defaultThreadFactory = Executors.defaultThreadFactory()
-
         def newThread(r: Runnable) = {
-          val t = defaultThreadFactory.newThread(r)
-          t.setDaemon(true)
-          t
+          thread
         }
       }
 
-      new ScheduledThreadPoolExecutor(1, factory) with ExecutionContext {
-        def reportFailure(cause: Throwable): Unit = cause.printStackTrace()
-      }
+      SExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor(factory))
     }
 
-    implicit val stdExecutionContext: ExecutionContext =
-      ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
+    object Implicits {
+      implicit lazy val scheduledExecutionContext: ScheduledExecutionContext = {
+        new ScheduledThreadPoolExecutor(1, Executors.defaultThreadFactory()) with SExecutionContext {
+          def reportFailure(cause: Throwable): Unit = cause.printStackTrace()
+        }
+      }
+
+      implicit val stdExecutionContext: SExecutionContext =
+        SExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
+    }
   }
 }
