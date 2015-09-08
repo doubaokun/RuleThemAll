@@ -2,9 +2,9 @@ package sta.services
 
 import android.content.{Context, Intent}
 import kj.android.logging.Logging
-import sta.model.Model
+import sta.model.BaseModel
 
-abstract class ServiceFragment[M <: Model] extends Logging {
+abstract class ServiceFragment[M <: BaseModel] extends Logging {
   final type PF = PartialFunction[Intent, Option[M]]
 
   def apply(context: Context, intent: Intent): Option[M] = {

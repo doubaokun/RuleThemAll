@@ -10,7 +10,7 @@ import sta.model.triggers.functions._
 trait ModelHelpers {
 
   @category("test")
-  case class TestModel(i: Int = 0, s: String = "", o: TestModel.O = null) extends Model(TestModel)
+  case class TestModel(i: Int = 0, s: String = "", o: TestModel.O = null) extends Model[TestModel](TestModel)
   implicit object TestModel extends ModelCompanion[TestModel] {
     sealed abstract class O
 
@@ -59,7 +59,8 @@ trait ModelHelpers {
 
     implicit def stateGen[T]: Gen[HMap[ModelKV]] = {
       testGen.map { m =>
-        HMap[ModelKV](m.companion.Key -> m.asInstanceOf[Model])(m.companion.ev)
+        import m.companion._
+        HMap[ModelKV](Key -> m.lift)
       }
     }
   }

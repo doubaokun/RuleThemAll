@@ -9,7 +9,7 @@ trait HeadsetModels {
 
   @category("headset")
   @action(Intent.ACTION_HEADSET_PLUG)
-  sealed abstract class Headset extends Model(Headset) with FromIntEntry
+  sealed abstract class Headset extends Model[Headset](Headset) with FromIntEntry
 
   implicit object Headset extends ModelCompanion[Headset] with Enum[Headset] with FromInt[Headset] {
     lazy val values = findValues

@@ -2,21 +2,20 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import scala.collection.mutable
-import sta.model.Model
+import sta.model.BaseModel
 import sta.model.triggers._
 import sta.parser.BasicRules._
 import sta.parser.WhitespaceSkip
 
 trait TriggerRules extends WhitespaceSkip {
-  private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: Model]]
-  parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, HeadsetRules, NetworkRules,
-    TimeRules, WiFiRules)
+  private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: BaseModel]]
+  parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, HeadsetRules, TimeRules, WiFiRules)
 
-  protected def addTriggerParser(parser: TriggerParser[_ <: Model]): Unit = {
+  protected def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
     parsers += parser
   }
 
-  protected def removeTriggerParser(parser: TriggerParser[_ <: Model]): Unit = {
+  protected def removeTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
     parsers -= parser
   }
 
@@ -26,7 +25,7 @@ trait TriggerRules extends WhitespaceSkip {
     def twoOrMore(of: P[Trigger]) = "(" ~ of.rep(2, sep = ",") ~ ")"
 
     val triggers = {
-      def single(trigger: TriggerParser[_ <: Model]) = {
+      def single(trigger: TriggerParser[_ <: BaseModel]) = {
         val main = P(trigger.Rule)(trigger.Prefix)
         val main2toN = twoOrMore(main)
 

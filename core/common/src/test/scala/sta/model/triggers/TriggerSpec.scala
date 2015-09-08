@@ -5,8 +5,8 @@ import shapeless.HMap
 import spire.implicits._
 import sta.common.Uses
 import sta.common.Uses._
-import sta.model.triggers.functions.{NotFunction, ModelFunction}
-import sta.model.{Model, ModelCompanion, ModelHelpers, ModelKV}
+import sta.model.triggers.functions.ModelFunction
+import sta.model.{BaseModel, BaseModelCompanion, ModelHelpers, ModelKV}
 import sta.tests.PropertyChecks
 
 class TriggerSpec extends FlatSpec with PropertyChecks with Matchers with ModelHelpers {
@@ -28,19 +28,18 @@ class TriggerSpec extends FlatSpec with PropertyChecks with Matchers with ModelH
         contain theSameElementsAs expected.map(_.conditions.toSet)
   }
 
-  implicit class RichTrigger[M <: Model: ModelCompanion: Uses](trigger: Trigger.Condition[M]) {
-    val companion = implicitly[ModelCompanion[M]]
-  }
-
-  private def checkTrigger[M <: Model: ModelCompanion: Uses](
+  private def checkTrigger[M <: BaseModel: BaseModelCompanion: Uses](
     mf: ModelFunction[M], state: HMap[ModelKV]
   )(pred: Boolean => Boolean): Unit = {
+    val companion = implicitly[BaseModelCompanion[M]]
+    import companion._
+
     val trigger = Trigger.Condition[M](mf)
-    val model: Option[M] = state.get(trigger.companion.Key)(trigger.companion.ev)
+    val model = state.get(Key)
     model should be('defined)
 
     for (m <- model) {
-      val p = mf(m)
+      val p = exists(m, mf)
       whenever(pred(p)) {
         trigger.satisfiedBy(state) should ===(p)
       }

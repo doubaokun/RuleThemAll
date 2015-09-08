@@ -68,7 +68,7 @@ object Trigger {
     def flatChildren: Seq[FlatResult] = Seq(Right(triggers.flatMap(_.flatten)(collection.breakOut)))
   }
 
-  sealed abstract class Standalone[M <: Model] extends Trigger {
+  sealed abstract class Standalone[M <: BaseModel] extends Trigger {
     def requires: Set[Requirement]
   }
 
@@ -125,15 +125,15 @@ object Trigger {
       (fromContext: (Date, Duration, Duration, Context) => Option[Date]) = Dynamic(requirements, recheckAfter, fromContext)
   }
 
-  case class Condition[M <: Model: ModelCompanion: Uses](function: ModelFunction[M]) extends Standalone[M] {
+  case class Condition[M <: BaseModel: BaseModelCompanion: Uses](function: ModelFunction[M]) extends Standalone[M] {
     def unary_! = copy(function = NotFunction(function))
     
     def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
 
     def satisfiedBy(state: HMap[ModelKV]): Boolean = {
-      val companion = implicitly[ModelCompanion[M]]
+      val companion = implicitly[BaseModelCompanion[M]]
       import companion._
-      state.get(Key).exists(function)
+      state.get(Key).exists(exists(_, function))
     }
 
     def requires: Set[Requirement] = implicitly[Uses[M]].requirements

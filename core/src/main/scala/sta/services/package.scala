@@ -5,10 +5,10 @@ import android.content.{Intent, IntentFilter}
 import android.os.PatternMatcher
 import kj.android.common.Common
 import sta.common.Requirement
-import sta.model.Model
+import sta.model.{BaseModel, Model}
 
 package object services extends Common {
-  implicit def liftModel[M <: Model](m: M): Option[M] = Option(m)
+  implicit def liftModel[M <: BaseModel](m: M): Option[M] = Option(m)
 
   implicit def liftActionToRequirement(action: String): Requirement =
     new Requirement.IntentBased(new Intent(action))

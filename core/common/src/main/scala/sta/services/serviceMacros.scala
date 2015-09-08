@@ -6,7 +6,7 @@ import scala.annotation.StaticAnnotation
 import scala.concurrent.duration.Duration
 import scala.reflect.macros.blackbox
 import sta.common.{Requirement, Uses}
-import sta.model.Model
+import sta.model.BaseModel
 
 /** Marks intents that shouldn't be registered by a broadcast receiver,
   * but queried on a regular interval.
@@ -14,9 +14,9 @@ import sta.model.Model
 class manual(seq: (String, Duration)*) extends StaticAnnotation
 
 object ServiceMacros {
-  type SF = ServiceFragment[Model]
+  type SF = ServiceFragment[BaseModel]
 
-  case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], uses: Uses[Model])
+  case class RichService(actual: SF, manual: Option[Seq[(String, Duration)]], uses: Uses[BaseModel])
 
   def collect(enclosing: RulesExecutor): Seq[RichService] = macro ServiceMacrosImpl.collect
 }
@@ -29,9 +29,9 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
 
   private def Uses(tpe: Type) = appliedType(typeOf[Uses[_]].typeConstructor, tpe)
 
-  private def Uses = c.typeOf[Uses[Model]]
+  private def Uses = c.typeOf[Uses[BaseModel]]
 
-  private def ServiceFragment = c.typeOf[ServiceFragment[Model]]
+  private def ServiceFragment = c.typeOf[ServiceFragment[BaseModel]]
 
   def collect(enclosing: c.Expr[RulesExecutor]) = {
     val enclosingTpe = weakTypeOf[RulesExecutor]

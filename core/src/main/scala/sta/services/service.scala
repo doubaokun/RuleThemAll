@@ -15,7 +15,7 @@ import scala.util.Failure
 import shapeless.HMap
 import sta.common.Requirement
 import sta.model.triggers.Trigger
-import sta.model.{Model, ModelKV}
+import sta.model.{BaseModel, ModelKV}
 import sta.storage.{PlaintextStorage, RegistrationInfo}
 
 object STAService {
@@ -66,34 +66,42 @@ class STAService extends Service with RulesExecutor with Logging { root =>
 
   @inline implicit def ctx: Context = this
 
-  type SF = List[(IntentType, ServiceFragment[Model])]
+  type SF = List[(IntentType, ServiceFragment[BaseModel])]
 
   class ServicesMap private[STAService](rawMap: Map[Int, (Requirement, SF)]) {
+    @inline private def updateState(model: BaseModel) = {
+      import model._
+
+      var changed = false
+      val liftedModel = model.lift
+      rawState.update { state =>
+        state.get(companion.Key) match {
+          case Some(`liftedModel`) => state
+          case Some(other) =>
+            changed = true
+            state + (companion.Key -> model.mergeTo(other))
+          case None =>
+            changed = true
+            state + (companion.Key -> liftedModel)
+        }
+      }.fold(th => log.error("Error has occurred during updating state", th),
+          state => if (changed) for (rule <- storage.rules) {
+            rule.execute(state)
+          }
+        )
+    }
+
     private[this] val tasks: Map[String, Task[Unit]] = for {
-      (_, (req @ Requirement.IntentBased(intent), service)) <- rawMap
-      (Manual(interval), sf) <- service 
+      (_, (Requirement.IntentBased(intent), service)) <- rawMap
+      (Manual(interval), sf) <- service
     } yield {
       sf.logTag.tag -> Task.schedule(0.seconds, interval) {
-        sf(ctx, registerReceiver(null, intent)).foreach { model =>
-          var changed = false
-          import model.companion._
-          rawState.update { state =>
-            state.get(Key) match {
-              case Some(`model`) => state
-              case _ =>
-                changed = true
-                state + (Key -> model)
-            }
-          }.fold(th => log.error("Error has occurred during updating state", th),
-              state => if (changed) for (rule <- storage.rules if rule.requires.contains(req)) {
-                rule.execute(state)
-              })
-        }
+        sf(ctx, registerReceiver(null, intent)).foreach(updateState)
       }
     }
-    
+
     private[this] val runnable = {
-      val automatic = mutable.Map.empty[Int, List[ServiceFragment[Model]]]
+      val automatic = mutable.Map.empty[Int, List[ServiceFragment[BaseModel]]]
       for (
         (hash, (intent, service)) <- rawMap;
         (Automatic, sf) <- service
@@ -117,14 +125,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       sf <- services;
       model <- sf(context, intent)
     ) {
-      import model.companion._
-      rawState.update { state =>
-        state.get(Key) match {
-          case Some(`model`) => state
-          case _ => state + (Key -> model)
-        }
-      }.fold(th => log.error("Error has occurred during updating state", th),
-          state => storage.rules.foreach(_.execute(state)))
+      updateState(model)
     }
 
     def stopTasks(): Boolean = {

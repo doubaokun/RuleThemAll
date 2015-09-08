@@ -4,11 +4,11 @@ import scala.language.experimental.macros
 import scala.language.implicitConversions
 import scala.reflect.macros.blackbox
 import spire.algebra.Order
-import sta.model.Model
+import sta.model.BaseModel
 
-abstract class ModelFunction[-M <: Model] extends (M => Boolean)
+abstract class ModelFunction[M <: BaseModel] extends (M => Boolean)
 
-abstract class HashBasedFunction[V, M <: Model] extends ModelFunction[M] {
+abstract class HashBasedFunction[V, M <: BaseModel] extends ModelFunction[M] {
   def v: V
 
   final override def hashCode() = v.hashCode()
@@ -20,7 +20,7 @@ abstract class HashBasedFunction[V, M <: Model] extends ModelFunction[M] {
 }
 
 object ModelFunction {
-  implicit def materializeModelFunction[M <: Model](f: M => Boolean): ModelFunction[M] = macro ModelFunctionImpl.makeInstance[M]
+  implicit def materializeModelFunction[M <: BaseModel](f: M => Boolean): ModelFunction[M] = macro ModelFunctionImpl.makeInstance[M]
 }
 
 private[triggers] class ModelFunctionImpl(val c: blackbox.Context) {
@@ -29,7 +29,7 @@ private[triggers] class ModelFunctionImpl(val c: blackbox.Context) {
   
   // TODO add rewrite to EqualFunction cases like:
   // (_.present), where `present: Boolean`
-  def makeInstance[M <: Model: WeakTypeTag](f: Tree): Tree = {
+  def makeInstance[M <: BaseModel: WeakTypeTag](f: Tree): Tree = {
     val tpeM = weakTypeOf[M]
 
     def Order(tpe: Type) = q"implicitly[${appliedType(typeOf[Order[_]].typeConstructor, tpe.widen)}]"

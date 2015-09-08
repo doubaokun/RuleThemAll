@@ -16,7 +16,7 @@ trait CalendarModels {
   @action(Intent.ACTION_PROVIDER_CHANGED)
   @data(CalendarContract.CONTENT_URI)
   case class CalendarEvent(availability: CalendarEvent.Availability,
-    title: String, description: String, location: String) extends Model(CalendarEvent)
+    title: String, description: String, location: String) extends Model[CalendarEvent](CalendarEvent)
 
   implicit object CalendarEvent extends ModelCompanion[CalendarEvent] {
     sealed abstract class State(dateColumn: String) extends ModelEnumEntry {

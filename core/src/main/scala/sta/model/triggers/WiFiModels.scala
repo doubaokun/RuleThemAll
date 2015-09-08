@@ -7,7 +7,7 @@ import sta.model._
 
 trait WiFiModels {
   @category("wifi")
-  sealed abstract class WiFi(companion: ModelCompanion[WiFi]) extends Model(companion)
+  sealed abstract class WiFi(companion: ModelCompanion[WiFi]) extends Model[WiFi](companion)
 
   @action(WifiManager.WIFI_STATE_CHANGED_ACTION)
   sealed abstract class WiFiState extends WiFi(WiFiState) with FromIntEntry

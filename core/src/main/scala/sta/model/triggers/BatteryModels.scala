@@ -10,7 +10,7 @@ import sta.model._
 trait BatteryModels {
 
   @category("battery")
-  sealed abstract class BatteryLike(companion: ModelCompanion[BatteryLike]) extends Model(companion)
+  sealed abstract class BatteryLike(companion: ModelCompanion[BatteryLike]) extends Model[BatteryLike](companion)
 
   sealed abstract class PowerState extends BatteryLike(PowerState) with ModelEnumEntry
   implicit object PowerState extends ModelCompanion[PowerState] with Enum[PowerState] {

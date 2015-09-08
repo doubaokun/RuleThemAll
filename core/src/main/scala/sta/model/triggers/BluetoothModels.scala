@@ -7,7 +7,7 @@ import sta.model.{FromIntEntry, FromInt, ModelCompanion, Model}
 
 trait BluetoothModels {
   @category("bluetooth")
-  sealed abstract class Bluetooth(companion: ModelCompanion[Bluetooth]) extends Model(companion)
+  sealed abstract class Bluetooth(companion: ModelCompanion[Bluetooth]) extends Model[Bluetooth](companion)
 
   @action(BluetoothAdapter.ACTION_STATE_CHANGED)
   sealed abstract class BluetoothState extends Bluetooth(BluetoothState) with FromIntEntry
