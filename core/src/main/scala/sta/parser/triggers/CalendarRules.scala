@@ -33,7 +33,7 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
   def Main: P[Trigger.Condition[_ <: CalendarEvent]] = title | description | location | availability
 
   override lazy val Rule: P[Trigger] = {
-    (Main.map(Seq(_)) | ("(" ~ Main.rep(min = 1, sep = ",") ~ ")").?.map(_.getOrElse(Seq.empty))) ~!
+    (Main.map(Seq(_)) | ("(" ~ Main.rep(min = 1, sep = ",") ~ ")").?.map(_.getOrElse(Seq.empty))) ~
       mapParser(State.namesToValuesMap) map { case (conditions, state) =>
       Trigger.Timer.dynamic(24.hours, Uses.materializeUses[CalendarEvent].requirements) {
         case (from, bias, window, ctx) => state.find(from, bias, window, ctx, conditions: _*)
