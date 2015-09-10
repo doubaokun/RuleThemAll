@@ -4,7 +4,7 @@ import scala.language.existentials
 import android.content.{Context, Intent}
 import cats.std.all._
 import cats.syntax.all._
-import java.util.{UUID, Date}
+import java.util.{Date, UUID}
 import kj.android.cron.CronExpression
 import scala.concurrent.duration.Duration
 import scala.util.Try
@@ -29,7 +29,7 @@ sealed abstract class Trigger {
       }
       case Right(branches) => cross += branches
     }
-    cross.result().sequence.map { branches =>
+    cross.result().sequenceU.map { branches =>
       Trigger.Branch(
         timers = timers.result() ++ branches.flatMap(_.timers),
         conditions = triggers.result() ++ branches.flatMap(_.conditions)
@@ -73,7 +73,14 @@ object Trigger {
   }
 
   sealed abstract class Timer extends Standalone[Nothing] {
-    def fireAt(context: Context, waitTime: Duration): Option[Date]
+    /** Returns date at which rest of [[sta.model.Rule]] triggers should be checked.
+      *
+      * Note that:
+      *  - `None` means that further execution of rule should be suppressed
+      *  - `Some(date, true)` means that timer should be fired again at given `date`
+      *  - `Some(date, false)` means that at given `date` rest of triggers should be checked
+      */
+    def fireAt(context: Context, waitTime: Duration): Option[(Date, Boolean)]
 
     def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
   }
@@ -85,7 +92,7 @@ object Trigger {
       def fireAt(context: Context, waitTime: Duration) = {
         val from = new Date
         from.setTime(from.getTime + waitTime.toMillis)
-        expr.nextDate(from)
+        expr.nextDate(from).map(_ -> false)
       }
     }
 
@@ -94,8 +101,8 @@ object Trigger {
       def fireAt(context: Context, waitTime: Duration) = {
         val from = new Date
         from.setTime(from.getTime + waitTime.toMillis)
-        fromContext(from, waitTime, recheckAfter, context).orElse {
-          Some(new Date(from.getTime + recheckAfter.toMillis))
+        fromContext(from, waitTime, recheckAfter, context).map(_ -> false).orElse {
+          Some(new Date(from.getTime + recheckAfter.toMillis) -> true)
         }
       }
     }
@@ -124,7 +131,7 @@ object Trigger {
 
   case class Condition[M <: BaseModel: BaseModelCompanion: Uses](function: ModelFunction[M]) extends Standalone[M] {
     def unary_! = copy(function = NotFunction(function))
-    
+
     def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
 
     def satisfiedBy(state: HMap[ModelKV]): Boolean = {

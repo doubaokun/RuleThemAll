@@ -68,14 +68,14 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     alarmManager: AlarmManager, waitTime: Duration)(implicit ctx: Context): Unit = {
     val dates = for {
       timer <- branch.timers
-      date <- timer.fireAt(context = ctx, waitTime = waitTime)
+      (date, partial) <- timer.fireAt(context = ctx, waitTime = waitTime)
     } yield {
       date.setTime(date.getTime - (date.getTime % (1000 * 60))) // we only want minute precision
-      date
+        (date, partial)
     }
     if (dates.length == branch.timers.length) {
-      val date = dates.minBy(_.getTime)
-      if (dates.exists(_ != date))
+      val (date, partial) = dates.minBy(_._1.getTime)
+      if (partial || dates.exists(d => d._2 || d._1 != date))
         Trigger.Timer.setAction(intent, name, branchId, partial = true)
       else
         Trigger.Timer.setAction(intent, name, branchId, partial = false)

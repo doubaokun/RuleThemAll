@@ -10,7 +10,7 @@ object Dependencies {
     val paradise = "2.1.0-M5"
 
     object lib {
-      val cats = "0.1.2"
+      val cats = "0.2.0"
       val fastparse = "0.2.1"
       val shapeless = "2.2.0"
       val spire = "0.9.1"
