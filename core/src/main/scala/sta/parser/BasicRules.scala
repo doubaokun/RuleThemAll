@@ -79,7 +79,7 @@ trait BasicRules extends WhitespaceSkip {
   )
 
   lazy val Integer: P[SafeLong] = P(
-    ("-".? ~ ("0" | (digit19 ~ digit.rep))).! map (SafeLong(_))
+    ("-".? ~ ("0" | (digit19 ~ digit.rep))).! map (s => SafeLong(BigInt(s)))
   )
 
   lazy val Float: P[Float] = {

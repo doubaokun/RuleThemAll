@@ -179,7 +179,7 @@ trait BasicRulesSpec { this: FlatSpec with PropertyChecks with Matchers with Par
         Gen.nonEmptyNumStr,
         Gen.nonEmptyNumStr.suchThat(_ != "0").map('-' + _)
       )) { _num =>
-        val num = SafeLong(_num)
+        val num = SafeLong(BigInt(_num))
         BasicParser(_.Integer).parse(num.toString()).get.value should ===(num)
       }
     }

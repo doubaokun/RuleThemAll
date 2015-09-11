@@ -12,12 +12,12 @@ object Dependencies {
     object lib {
       val cats = "0.2.0"
       val fastparse = "0.2.1"
-      val shapeless = "2.2.0"
-      val spire = "0.9.1"
+      val shapeless = "2.2.5"
+      val spire = "0.10.1"
     }
 
     object tests {
-      val scalacheck = "1.12.4"
+      val scalacheck = "1.12.5"
       val scalatest = "2.2.5"
       val scalameter = "0.7"
     }
