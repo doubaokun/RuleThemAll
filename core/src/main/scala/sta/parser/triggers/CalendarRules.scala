@@ -36,7 +36,7 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
     (Main.map(Seq(_)) | ("(" ~ Main.rep(min = 1, sep = ",") ~ ")").?.map(_.getOrElse(Seq.empty))) ~
       mapParser(State.namesToValuesMap) map { case (conditions, state) =>
       Trigger.Timer.dynamic(24.hours, Uses.materializeUses[CalendarEvent].requirements) {
-        case (from, bias, window, ctx) => state.find(from, bias, window, ctx, conditions: _*)
+        case (from, window, ctx) => state.find(from, window, ctx, conditions: _*)
       }
     }
   }

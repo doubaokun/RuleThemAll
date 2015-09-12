@@ -20,7 +20,7 @@ trait CalendarModels {
 
   implicit object CalendarEvent extends ModelCompanion[CalendarEvent] {
     sealed abstract class State(dateColumn: String) extends ModelEnumEntry {
-      def find(from: Date, beginBias: Duration, timeWindow: Duration, ctx: Context,
+      def find(from: Date, timeWindow: Duration, ctx: Context,
         conditions: Trigger.Condition[_ <: CalendarEvent]*): Option[Date] = {
         import CalendarContract._
 
@@ -33,7 +33,7 @@ trait CalendarModels {
         val projection = Array(EventsColumns.TITLE, EventsColumns.DESCRIPTION,
           EventsColumns.EVENT_LOCATION, EventsColumns.AVAILABILITY, Instances.BEGIN, Instances.END)
         val query = s"( $dateColumn >= ? ) AND ( $dateColumn <= ? )"
-        val args = Array((begin - beginBias.toMillis).toString, end.toString)
+        val args = Array((begin - 60.seconds.toMillis).toString, end.toString)
         val order = s"$dateColumn ASC"
         val cursor = ctx.getContentResolver.query(uri, projection, query, args, order)
 

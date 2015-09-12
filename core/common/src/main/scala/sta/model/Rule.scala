@@ -69,10 +69,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     val dates = for {
       timer <- branch.timers
       (date, partial) <- timer.fireAt(context = ctx, waitTime = waitTime)
-    } yield {
-      date.setTime(date.getTime - (date.getTime % (1000 * 60))) // we only want minute precision
-      (date, partial)
-    }
+    } yield (date, partial)
     if (dates.length == branch.timers.length) {
       val (date, partial) = dates.minBy(_._1.getTime)
       if (partial || dates.exists(d => d._2 || d._1 != date))

@@ -6,6 +6,7 @@ import cats.std.all._
 import cats.syntax.all._
 import java.util.{Date, UUID}
 import kj.android.cron.CronExpression
+import kj.android.logging.{LogTag, Logging}
 import scala.concurrent.duration.Duration
 import scala.util.Try
 import shapeless.HMap
@@ -89,7 +90,12 @@ object Trigger {
     def requires: Set[Requirement]
   }
 
-  sealed abstract class Timer extends Standalone[Nothing] {
+  sealed abstract class Timer extends Standalone[Nothing] with Logging {
+    override implicit lazy val logTag: LogTag = {
+      val name = s"Timer.${this.getClass.getSimpleName}"
+      new LogTag(name.substring(0, math.min(name.length, 23)))
+    }
+
     /** Returns date at which rest of [[Branch]] conditions should be checked.
       *
       * Note that:
@@ -97,7 +103,18 @@ object Trigger {
       *  - `Some(date, true)` means that timer should be fired again at given `date`
       *  - `Some(date, false)` means that at given `date` rest of triggers should be checked
       */
-    def fireAt(context: Context, waitTime: Duration): Option[(Date, Boolean)]
+    def fireAt(context: Context, waitTime: Duration): Option[(Date, Boolean)] = {
+      val from = new Date
+      from.setTime(from.getTime + waitTime.toMillis)
+      val date = fireAt(from, context).flatMap { case (d, flag) =>
+        d.setTime(d.getTime - (d.getTime % (1000 * 60))) // we only want minute precision
+        if (d.before(from)) fireAt(d, context) else Some(d -> flag)
+      }
+      log.info(s"Fire at $date")
+      date
+    }
+
+    protected def fireAt(from: Date, context: Context): Option[(Date, Boolean)]
 
     protected def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
   }
@@ -105,15 +122,9 @@ object Trigger {
   object Timer {
     /** Returns date based on the [[kj.android.cron.CronExpression]]. */
     case class CronBased private[Timer](expr: CronExpression) extends Timer {
-      def requires: Set[Requirement] = Set.empty
+      protected def fireAt(from: Date, context: Context) = expr.nextDate(from).map(_ -> false)
 
-      def fireAt(context: Context, waitTime: Duration) = {
-        val from = new Date
-        from.setTime(from.getTime + waitTime.toMillis)
-        val d = expr.nextDate(from).map(_ -> false)
-        android.util.Log.i("Timer.CronBased", s"$d")
-        d
-      }
+      def requires: Set[Requirement] = Set.empty
     }
 
     /** Returns date that can be dynamically designated.
@@ -121,22 +132,17 @@ object Trigger {
       * @param requires set of [[sta.common.Requirement]] that can influence timer behaviour
       * @param recheckAfter duration after which timer should be checked again
       * @param fromContext function that accepts four arguments:
-      *                     - `date` that is current time shifted with `waitTime`
-      *                     - `waitTime`
+      *                     - `date` that is current time
       *                     - `timeWindow` that is equal to the [[recheckAfter]] field
       *                     - `context` that is [[android.content.Context]]
       *                    and returns date when timer is fulfilled.
       */
     case class Dynamic private[Timer](requires: Set[Requirement], recheckAfter: Duration,
-      fromContext: (Date, Duration, Duration, Context) => Option[Date]) extends Timer {
-      def fireAt(context: Context, waitTime: Duration) = {
-        val from = new Date
-        from.setTime(from.getTime + waitTime.toMillis)
-        val d = fromContext(from, waitTime, recheckAfter, context).map(_ -> false).orElse {
+      fromContext: (Date, Duration, Context) => Option[Date]) extends Timer {
+      protected def fireAt(from: Date, context: Context) = {
+        fromContext(from, recheckAfter, context).map(_ -> false).orElse {
           Some(new Date(from.getTime + recheckAfter.toMillis) -> true)
         }
-        android.util.Log.i("Timer.Dynamic", s"$d")
-        d
       }
     }
 
@@ -158,7 +164,7 @@ object Trigger {
     def apply(expr: CronExpression): Timer = CronBased(expr)
 
     def dynamic(recheckAfter: Duration, requirements: Set[Requirement] = Set.empty)
-      (fromContext: (Date, Duration, Duration, Context) => Option[Date]) =
+      (fromContext: (Date, Duration, Context) => Option[Date]) =
       Dynamic(requirements, recheckAfter, fromContext)
   }
 

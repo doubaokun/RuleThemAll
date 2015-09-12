@@ -1,7 +1,6 @@
 package sta.parser.triggers
 
 import fastparse.noApi._
-import kj.android.concurrent.Task
 import sta.model.triggers.Trigger
 
 object TimeRules extends TriggerParser[Nothing] {

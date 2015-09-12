@@ -1,8 +1,12 @@
 package kj.android.concurrent
 
+import android.content.Context
+import android.os.PowerManager
 import java.util.Date
 import java.util.concurrent.{FutureTask, ScheduledFuture}
+import kj.android.common.SystemServices._
 import kj.android.cron.CronExpression
+import kj.android.logging.LogTag
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Promise}
 import scala.util.Try
@@ -14,6 +18,14 @@ trait Task[T] {
 }
 
 object Task {
+  def runWithWakeLock[T](body: => T)(implicit ctx: Context, logTag: LogTag, ec: ExecutionContext): Unit = {
+    val lock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, logTag.tag)
+    apply {
+      lock.acquire()
+      body
+    }.run(_ => lock.release())
+  }
+  
   def apply[T](body: => T)(implicit ec: ExecutionContext): Task[T] =
     new Task[T] {
       private[this] val promise = Promise[T]()
@@ -69,33 +81,5 @@ object Task {
           promise.future.onComplete(handler)
         }
       }
-    }
-
-  def repeat[T](expression: CronExpression, minWaitTime: Long = 60000)(body: => T)
-    (implicit ec: ScheduledExecutionContext): Task[T] =
-    new Task[T] {
-      @volatile private[this] var scheduled: ScheduledFuture[_] = null
-
-      @inline private def nextDelay(wait: Boolean): Option[Duration] = {
-        val from = new Date()
-        if (wait) from.setTime(from.getTime + minWaitTime)
-        expression.nextDate(from).map(d => (d.getTime - System.currentTimeMillis()).millis)
-      }
-
-      private def runRepeatedly(handler: Try[T] => Unit, wait: Boolean): Unit = {
-        val promise = Promise[T]()
-        nextDelay(wait).foreach(d =>
-          scheduled = Scheduler.scheduleOnce(d) {
-            promise.tryComplete(Try(body))
-            promise.future.onComplete(handler)
-          }
-        )
-        promise.future.onSuccess { case _ => runRepeatedly(handler, wait = true) }
-      }
-
-      def cancel(mayInterruptIfRunning: Boolean): Boolean =
-        scheduled != null && scheduled.cancel(mayInterruptIfRunning)
-
-      def run(handler: Try[T] => Unit): Unit = runRepeatedly(handler, wait = false)
     }
 }

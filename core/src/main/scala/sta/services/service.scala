@@ -165,7 +165,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       (Manual(interval), sf) <- service
     } yield {
       sf.logTag.tag -> Task.schedule(0.seconds, interval) {
-        sf(registerReceiver(null, intent)).foreach(updateState)
+        sf(registerReceiver(null, intent, null, handler)).foreach(updateState)
       }
     }
 
@@ -187,12 +187,21 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       new ServicesMap(rawMap.map(f))
     }
 
-    def run(context: Context, intent: Intent) = for (
-      services <- runnable.get(intent.filterHashCode());
-      sf <- services;
-      model <- sf(intent)
+    def run(intent: Intent) = Task.runWithWakeLock {
+      for (
+        services <- runnable.get(intent.filterHashCode());
+        sf <- services;
+        model <- sf(intent)
+      ) {
+        updateState(model)
+      }
+    }
+
+    def runAllTasks(forRequirements: Set[Requirement])(implicit context: Context) = for (
+      (req @ Requirement.IntentBased(intent), services) <- rawMap if forRequirements.contains(req);
+      (_, sf) <- services
     ) {
-      updateState(model)
+      sf(registerReceiver(null, intent, null, handler)).foreach(updateState)
     }
 
     def stopTasks(): Boolean = {
@@ -254,7 +263,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
   private[this] val requestProcessor = new Messenger(handler)
 
   private[this] val stateProcessor = new BroadcastReceiver {
-    def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(context, intent)
+    def onReceive(context: Context, intent: Intent): Unit = rawServices.get.run(intent)
   }
 
   private def registerStateProcessor(intents: Seq[Intent], unregisterFirst: Boolean): Unit = {
@@ -272,13 +281,12 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       intent match {
         case Trigger.Timer(ruleName, branchId, partial) =>
           log.info(s"Handling timer $intent")
-          val lock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, logTag.tag)
-          Task {
-            lock.acquire()
+          Task.runWithWakeLock {
             for (rule <- storage.get(ruleName)) {
+              rawServices.get.runAllTasks(rule.requires)
               rule.executeBranch(branchId, intent, rawState.get, !partial)
             }
-          }.run(_ => lock.release())
+          }
         case _ =>
           log.warn(s"Unknown $intent", new RuntimeException)
       }
@@ -315,11 +323,11 @@ class STAService extends Service with RulesExecutor with Logging { root =>
   override def onDestroy(): Unit = {
     super.onDestroy()
 
-    looper.quit()
-    stopForeground(true)
-    unregisterReceiver(stateProcessor)
     timers.cancelAll()
     rawServices.get.stopTasks()
+    unregisterReceiver(stateProcessor)
+    looper.quit()
+    stopForeground(true)
   }
 
   def onBind(intent: Intent): IBinder = requestProcessor.getBinder

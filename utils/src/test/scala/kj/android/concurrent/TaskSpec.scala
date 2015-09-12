@@ -54,32 +54,4 @@ class TaskSpec extends FlatSpec with Matchers {
     bodyCounter.get() should === (1)
     handlerCounter.get() should === (1)
   }
-
-  "Task.repeat" should "fire task repeatedly on every date that matches cron expression" taggedAs Slow in {
-    val bodyCounter = new AtomicInteger(0)
-    val handlerCounter = new AtomicInteger(0)
-    val expr = CronExpression(
-      minute = CronExpression.Range(0, 59),
-      hour = CronExpression.Range(0, 23),
-      dayOfMonth = CronExpression.Range(1, 31),
-      month = CronExpression.Range(1, 12),
-      dayOfWeek = CronExpression.Range(0, 6),
-      year = None
-    )
-    val task = Task.repeat(expr) {
-      bodyCounter.incrementAndGet()
-    }
-
-    task.run(_ => handlerCounter.incrementAndGet())
-    Thread.sleep(1000)
-    task.cancel(true)
-    bodyCounter.get() should === (1)
-    handlerCounter.get() should === (1)
-
-    task.run(_ => handlerCounter.incrementAndGet())
-    Thread.sleep(61000)
-    task.cancel(true)
-    bodyCounter.get() should === (3)
-    handlerCounter.get() should === (3)
-  }
 }
