@@ -6,19 +6,26 @@ import scala.reflect.macros.blackbox
 import spire.algebra.Order
 import sta.model.BaseModel
 
+/** Base for all functions that predicates over [[BaseModel]]. */
 abstract class ModelFunction[M <: BaseModel] extends (M => Boolean)
 
+/** Special version of model predicate that can be checked using hash code. */
 abstract class HashBasedFunction[V, M <: BaseModel] extends ModelFunction[M] {
   def v: V
 
   final override def hashCode() = v.hashCode()
 
   final override def equals(o: Any): Boolean = o match {
-    case mf: HashBasedFunction[V, M] =>  v.equals(mf.v)
+    case mf: HashBasedFunction[_, _] =>  v.equals(mf.v)
     case _ => false
   }
 }
 
+/** Materializes specific [[ModelFunction]] instance from the general predicate.
+  *
+  * Note that you should only create specific [[ModelFunction]] instances by hand only
+  * if you notice that this function returns nonoptimal instances.
+  */
 object ModelFunction {
   implicit def materializeModelFunction[M <: BaseModel](f: M => Boolean): ModelFunction[M] = macro ModelFunctionImpl.makeInstance[M]
 }
@@ -27,8 +34,8 @@ private[triggers] class ModelFunctionImpl(val c: blackbox.Context) {
   import c.universe._
   import org.scalamacros.resetallattrs._
   
-  // TODO add rewrite to EqualFunction cases like:
-  // (_.present), where `present: Boolean`
+  // TODO add rewrite to EqualFunction cases like (_.present), where `present: Boolean`
+  // TODO add split of multiple ands (`&&`) and ors (`||`) of conditions into atomic ones
   def makeInstance[M <: BaseModel: WeakTypeTag](f: Tree): Tree = {
     val tpeM = weakTypeOf[M]
 

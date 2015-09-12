@@ -174,7 +174,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       (Manual(interval), sf) <- service
     } yield {
       sf.logTag.tag -> Task.schedule(0.seconds, interval) {
-        sf(ctx, registerReceiver(null, intent)).foreach(updateState)
+        sf(registerReceiver(null, intent)).foreach(updateState)
       }
     }
 
@@ -199,7 +199,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
     def run(context: Context, intent: Intent) = for (
       services <- runnable.get(intent.filterHashCode());
       sf <- services;
-      model <- sf(context, intent)
+      model <- sf(intent)
     ) {
       updateState(model)
     }

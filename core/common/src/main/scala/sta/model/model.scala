@@ -4,9 +4,17 @@ import scala.language.higherKinds
 import enumeratum.{EnumEntry , Enum}
 import java.lang.{Enum => JEnum}
 
+/** Marker for specific models in the state map. */
 class ModelKV[+K, +V]
 
+/** Base for all models that are part of the rules state. */
 sealed abstract class BaseModel(val companion: BaseModelCompanion[BaseModel]) { self =>
+  /** Recursive type alias that denotes self type.
+    *
+    * Note that this notation is weaker than using recursive generic param, but since this class
+    * it sealed and its implementations are using generics anyway that shouldn't matter.
+    * In return we get rid of writing BaseModel[_] in other parts of code.
+    */
   type Self <: BaseModel { type Self = self.Self }
 
   def lift: companion.R[Self]
@@ -16,18 +24,20 @@ sealed abstract class BaseModel(val companion: BaseModelCompanion[BaseModel]) { 
   implicit def ev: ModelKV[companion.Key.type, companion.R[Self]] = new ModelKV
 }
 
+/** Denotes model that have single, or no instance in the rules state. */
 abstract class Model[M <: Model[M]](override val companion: ModelCompanion[M])
   extends BaseModel(companion) { self: M =>
-  type Self = M
+  final type Self = M
 
   def lift: companion.R[M] = this
 
   def mergeTo(seq: companion.R[Self]): companion.R[Self] = this
 }
 
+/** Denotes model that can have multiple instances in the rules state. */
 abstract class MultiModel[M <: MultiModel[M]](override val companion: MultiModelCompanion[M])
   extends BaseModel(companion) { self: M =>
-  type Self = M
+  final type Self = M
 
   def lift: companion.R[M] = List(this)
 
