@@ -118,22 +118,13 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       msg.what match {
         case LOAD => msg.getData.getStringArray(URI).foreach { path =>
           val RegistrationInfo(toAdd, toRemove, rules) = storage.register(new File(path))
-          rules.foreach { rule =>
-            for (intents <- timers.get(rule.name); intent <- intents) cancelAlarm(intent)
-            timers += (rule.name -> rule.setTimers(timerIntent))
-          }
+          rules.foreach(timers += _)
           if (toAdd.nonEmpty || toRemove.nonEmpty) update(onAdd(toAdd, toRemove))
         }
         case UNLOAD =>
           val ruleNames = msg.getData.getStringArray(NAME)
           val toRemove = storage.unregister(ruleNames: _*)
-          ruleNames.foreach { ruleName =>
-            for (
-              intents <- timers.get(ruleName);
-              intent <- intents
-            ) cancelAlarm(intent)
-            timers -= ruleName
-          }
+          ruleNames.foreach(timers -= _)
           if (toRemove.nonEmpty) update(onRemove(toRemove))
         case other => log.warn(s"Unknown message received: $other")
       }
@@ -191,7 +182,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
     }
 
     def iterator: Iterator[(Requirement, SF)] = rawMap.iterator
-    
+
     def map(f: ((Requirement, SF)) => (Requirement, SF)): ServicesMap = {
       new ServicesMap(rawMap.map(f))
     }
@@ -250,20 +241,15 @@ class STAService extends Service with RulesExecutor with Logging { root =>
     smallIcon = ctx.getApplicationInfo.icon
   )
 
-  private[this] lazy val storage = new PlaintextStorage
+  private[this] implicit lazy val storage = new PlaintextStorage
 
   private[this] lazy val rawServices = Atomic(ServicesMap())
 
+  private[this] lazy val timers = new TimerMap
+
   private[this] val rawState = Atomic(HMap.empty[ModelKV])
 
-  private[this] val timers = mutable.Map.empty[String, Seq[Intent]]
-
   private[this] var started = false
-
-  private def timerIntent = new Intent(ctx, classOf[STAService])
-
-  private def cancelAlarm(intent: Intent) =
-    alarmManager.cancel(PendingIntent.getService(ctx, 0, intent, PendingIntent.FLAG_ONE_SHOT))
 
   private[this] val requestProcessor = new Messenger(handler)
 
@@ -310,6 +296,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
 
     appInfo
     storage
+    timers
 
     val services = rawServices.get
     registerStateProcessor(services.iterator.collect {
@@ -318,14 +305,10 @@ class STAService extends Service with RulesExecutor with Logging { root =>
     services.runTasks()
 
     Task {
-      for (rule <- storage.rules) {
-        timers += (rule.name -> rule.setTimers(timerIntent))
-      }
+      storage.rules.foreach(timers += _)
 
       val state = rawState.get
-      for (rule <- storage.startupRules) {
-        rule.execute(state)
-      }
+      storage.startupRules.foreach(_.execute(state))
     }.run(_ => ())
   }
 
@@ -335,15 +318,11 @@ class STAService extends Service with RulesExecutor with Logging { root =>
     looper.quit()
     stopForeground(true)
     unregisterReceiver(stateProcessor)
-    timers.valuesIterator.flatten.foreach(cancelAlarm)
+    timers.cancelAll()
     rawServices.get.stopTasks()
   }
 
   def onBind(intent: Intent): IBinder = requestProcessor.getBinder
 
-  // TODO reset timers selectively
-  def resetTimers(): Unit = timers.foreach { case (rule, intents) =>
-    intents.foreach(cancelAlarm)
-    storage.get(rule).foreach(r => timers += (rule -> r.setTimers(timerIntent)))
-  }
+  def resetTimers(requirements: Set[Requirement]): Unit = requirements.foreach(timers.reset)
 }

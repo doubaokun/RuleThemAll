@@ -8,7 +8,7 @@ import cats.data.Validated._
 import cats.data.{NonEmptyList => NEL, Validated}
 import cats.std.all._
 import cats.syntax.all._
-import java.util.UUID
+import java.util.{Date, UUID}
 import kj.android.common.{Toast, Notify, AppInfo}
 import kj.android.common.SystemServices._
 import kj.android.logging._
@@ -64,54 +64,57 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     }
   }
 
-  private def setTimer(branch: Branch, branchId: UUID, intent: Intent,
-    alarmManager: AlarmManager, waitTime: Duration)(implicit ctx: Context): Unit = {
+  private def setAlarm(branch: Branch, branchId: UUID, intent: Intent,
+    alarmManager: AlarmManager, waitTime: Duration)(implicit ctx: Context): Option[PendingIntent] = {
     val dates = for {
       timer <- branch.timers
       (date, partial) <- timer.fireAt(context = ctx, waitTime = waitTime)
     } yield {
       date.setTime(date.getTime - (date.getTime % (1000 * 60))) // we only want minute precision
-        (date, partial)
+      (date, partial)
     }
     if (dates.length == branch.timers.length) {
       val (date, partial) = dates.minBy(_._1.getTime)
       if (partial || dates.exists(d => d._2 || d._1 != date))
-        Trigger.Timer.setAction(intent, name, branchId, partial = true)
+        Trigger.Timer.prepareIntent(intent, name, branchId, partial = true)
       else
-        Trigger.Timer.setAction(intent, name, branchId, partial = false)
-      alarmManager.setExact(AlarmManager.RTC_WAKEUP, date.getTime,
-        PendingIntent.getService(ctx, 0, intent, PendingIntent.FLAG_ONE_SHOT))
-    }
+        Trigger.Timer.prepareIntent(intent, name, branchId, partial = false)
+      val pending = PendingIntent.getService(ctx, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+      alarmManager.setExact(AlarmManager.RTC_WAKEUP, date.getTime, pending)
+      Some(pending)
+    } else None
   }
 
   def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
     if (direct.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
     else executed = false
   }
-
-  def setTimers(intent: Intent)(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Seq[Intent] =  {
-    val manager = alarmManager
-    withTimer.map { case (id, branch) =>
-      setTimer(branch, id, intent, manager, 0.millis)
-      intent
-    }(collection.breakOut)
-  }
   
   def executeBranch(branchId: UUID, intent: Intent, state: HMap[ModelKV],
     timerFullyExecuted: Boolean)(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo) = {
     val branch = withTimer.get(branchId)
-    branch.foreach(setTimer(_, branchId, intent, alarmManager, 60.seconds))
+    branch.foreach(setAlarm(_, branchId, intent, alarmManager, 60.seconds))
     if (timerFullyExecuted && branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
     else if (timerFullyExecuted) executed = false
   }
 
-  lazy val requires: Set[Requirement] = {
-    val requirements = Set.newBuilder[Requirement]
-    for (branch <- branches) {
-      for (condition <- branch.conditions) requirements ++= condition.requires
-      for (timer <- branch.timers) requirements ++= timer.requires
-    }
-    requirements.result()
+  lazy val requires: Set[Requirement] = branches.flatMap(_.requires)(collection.breakOut)
+
+  def setAlarms(base: Intent)(implicit ctx: Context): Seq[PendingIntent] =  {
+    val manager = alarmManager
+    withTimer.flatMap { case (id, branch) =>
+      setAlarm(branch, id, base.cloneFilter(), manager, Duration.Zero)
+    }(collection.breakOut)
+  }
+
+  def setAlarmsFor(requirement: Requirement, base: Intent)(implicit ctx: Context): Seq[PendingIntent] = {
+    val manager = alarmManager
+    withTimer.flatMap {
+      case (id, branch) if branch.requires.contains(requirement) =>
+        setAlarm(branch, id, base.cloneFilter(), manager, Duration.Zero)
+      case _ =>
+        Nil
+    }(collection.breakOut)
   }
 
   override def hashCode(): Int = name.hashCode

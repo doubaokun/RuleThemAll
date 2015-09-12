@@ -8,7 +8,7 @@ class CalendarService(root: RulesExecutor) extends ServiceFragment[CalendarEvent
   final val handle: PF = {
     case intent if intent.getAction == Intent.ACTION_PROVIDER_CHANGED &&
       intent.getData == Uses.dataOf[CalendarEvent] =>
-      root.resetTimers()
+      root.resetTimers(implicitly[Uses[CalendarEvent]].requirements)
       None
   }
 }

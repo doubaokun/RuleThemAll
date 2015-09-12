@@ -45,7 +45,10 @@ object Trigger {
   /** Denotes set of conditions with set of timers that
     * indicates date when such conditions should be fulfilled.
     */
-  case class Branch(timers: Seq[Timer] = Seq.empty, conditions: Seq[Condition[_]] = Seq.empty)
+  case class Branch(timers: Seq[Timer] = Seq.empty, conditions: Seq[Condition[_]] = Seq.empty) {
+    lazy val requires: Set[Requirement] =
+      (timers.flatMap(_.requires) ++ conditions.flatMap(_.requires))(collection.breakOut)
+  }
 
   def empty = Empty
 
@@ -107,7 +110,9 @@ object Trigger {
       def fireAt(context: Context, waitTime: Duration) = {
         val from = new Date
         from.setTime(from.getTime + waitTime.toMillis)
-        expr.nextDate(from).map(_ -> false)
+        val d = expr.nextDate(from).map(_ -> false)
+        android.util.Log.i("Timer.CronBased", s"$d")
+        d
       }
     }
 
@@ -127,15 +132,16 @@ object Trigger {
       def fireAt(context: Context, waitTime: Duration) = {
         val from = new Date
         from.setTime(from.getTime + waitTime.toMillis)
-        fromContext(from, waitTime, recheckAfter, context).map(_ -> false).orElse {
+        val d = fromContext(from, waitTime, recheckAfter, context).map(_ -> false).orElse {
           Some(new Date(from.getTime + recheckAfter.toMillis) -> true)
         }
+        android.util.Log.i("Timer.Dynamic", s"$d")
+        d
       }
     }
 
-    def setAction(intent: Intent, rule: String, branchId: UUID, partial: Boolean): Unit = {
+    def prepareIntent(intent: Intent, rule: String, branchId: UUID, partial: Boolean): Unit =
       intent.setAction(s"sta.rule.timer/$rule/$branchId").putExtra("partial", partial)
-    }
 
     def unapply(intent: Intent): Option[(String, UUID, Boolean)] = {
       Option(intent.getAction).filter(_.startsWith("sta.rule.timer/")).flatMap { str =>
