@@ -16,7 +16,7 @@ lazy val utils = project.in(file("utils")).settings(
   )
 ).settings(androidBuildAar ++ commonSettings ++ androidSettings: _*)
 
-lazy val `core-common` = project.in(file("core/common")).settings(
+lazy val core = project.in(file("core")).settings(
   libraryDependencies ++= Seq(
     enumeratum,
     fastparse,
@@ -35,11 +35,11 @@ lazy val `core-common` = project.in(file("core/common")).settings(
     _ / "sta" / "services" / "serviceMacros"
   )
 
-lazy val core = project.in(file("core")).settings(
+lazy val app = project.in(file("app")).settings(
   libraryDependencies ++= Seq(
     `android-support-v4`
   )
-).settings(libAndroidSettings: _*).dependsOnLocal(`core-common`, utils).excludeFromLinting(
+).settings(libAndroidSettings: _*).dependsOnLocal(core, utils).excludeFromLinting(
     _ / "sta" / "model" / "actions" / **,
     _ / "sta" / "model" / "triggers" / **,
     _ / "sta" / "parser" / **,
@@ -50,9 +50,9 @@ lazy val core = project.in(file("core")).settings(
   )
 
 lazy val tests = project.in(file("tests")).settings(benchmarkSettings: _*)
-  .dependsOnLocal(core, `core-common`, utils)
+  .dependsOnLocal(app, core, utils)
 
 
-lazy val root = project.in(file(".")).aggregate(utils, `core-common`, core, tests).settings(Seq(
+lazy val root = project.in(file(".")).aggregate(utils, core, app, tests).settings(Seq(
   parallelExecution in Android := false
 ))
