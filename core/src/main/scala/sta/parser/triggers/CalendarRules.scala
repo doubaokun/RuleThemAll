@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 import sta.common.Uses
 import sta.model.triggers.Implicits._
 import sta.model.triggers.Trigger
+import sta.parser.TriggerParser
 
 object CalendarRules extends TriggerParser[CalendarEvent] {
   import CalendarEvent._
@@ -13,15 +14,15 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
   def Prefix: String = Uses.categoryOf[CalendarEvent]
 
   private def title: P[Trigger.Condition[CalendarEvent]] = {
-    "title" ~ matchStringParser[CalendarEvent](_.title)
+    "title" ~ matchStringParser(_.title)
   }
 
   private def description: P[Trigger.Condition[CalendarEvent]] = {
-    "description" ~ matchStringParser[CalendarEvent](_.description)
+    "description" ~ matchStringParser(_.description)
   }
 
   private def location: P[Trigger.Condition[CalendarEvent]] = {
-    "location" ~ matchStringParser[CalendarEvent](_.location)
+    "location" ~ matchStringParser(_.location)
   }
 
   private def availability: P[Trigger.Condition[CalendarEvent]] = {

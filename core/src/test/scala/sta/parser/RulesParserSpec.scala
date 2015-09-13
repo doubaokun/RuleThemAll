@@ -2,7 +2,8 @@ package sta.parser
 
 import scala.language.implicitConversions
 import java.io.InputStream
-import org.scalatest.{FlatSpec, Matchers}
+import org.robolectric.annotation.Config
+import org.scalatest.{RobolectricSuite, FlatSpec, Matchers}
 import spire.implicits._
 import sta.common.Uses._
 import sta.model.Rule
@@ -12,32 +13,9 @@ import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._
 import sta.tests.PropertyChecks
 
-class RulesParserSpec extends FlatSpec with PropertyChecks with Matchers with ParserHelpers with BasicRulesSpec {
+@Config(sdk = Array(19), manifest = Config.NONE)
+class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks with Matchers {
   implicit def loadInputStream(is: InputStream): String = io.Source.fromInputStream(is).mkString
-
-  percentRule()
-
-  byteRule()
-
-  unsignedIntRule()
-
-  intRule()
-
-  naturalRule()
-
-  integerRule()
-
-  floatRule()
-
-  decimalRule()
-
-  stringRule()
-
-  macAddressRule()
-
-  cronExpressionRule()
-
-  durationRule()
 
   behavior of "RulesParser"
 

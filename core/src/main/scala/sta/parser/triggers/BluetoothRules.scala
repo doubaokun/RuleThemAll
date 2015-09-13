@@ -5,6 +5,7 @@ import java.nio.charset.Charset
 import sta.common.Uses
 import sta.model.triggers.Trigger
 import sta.model.triggers.Implicits._
+import sta.parser.TriggerParser
 
 object BluetoothRules extends TriggerParser[Bluetooth] {
   import white._

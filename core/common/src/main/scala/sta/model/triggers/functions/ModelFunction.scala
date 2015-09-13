@@ -27,10 +27,10 @@ abstract class HashBasedFunction[V, M <: BaseModel] extends ModelFunction[M] {
   * if you notice that this function returns nonoptimal instances.
   */
 object ModelFunction {
-  implicit def materializeModelFunction[M <: BaseModel](f: M => Boolean): ModelFunction[M] = macro ModelFunctionImpl.makeInstance[M]
+  implicit def materializeModelFunction[M <: BaseModel](f: M => Boolean): ModelFunction[M] = macro ModelFunctionMacros.makeInstance[M]
 }
 
-private[triggers] class ModelFunctionImpl(val c: blackbox.Context) {
+private[triggers] class ModelFunctionMacros(val c: blackbox.Context) {
   import c.universe._
   import org.scalamacros.resetallattrs._
   

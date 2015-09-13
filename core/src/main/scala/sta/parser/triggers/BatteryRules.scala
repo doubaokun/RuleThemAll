@@ -4,6 +4,7 @@ import fastparse.noApi._
 import sta.common.Uses
 import sta.model.triggers.Trigger
 import sta.model.triggers.Implicits._
+import sta.parser.TriggerParser
 
 object BatteryRules extends TriggerParser[BatteryLike] {
   import Battery._

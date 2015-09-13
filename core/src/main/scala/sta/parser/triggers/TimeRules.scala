@@ -2,6 +2,7 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import sta.model.triggers.Trigger
+import sta.parser.TriggerParser
 
 object TimeRules extends TriggerParser[Nothing] {
   import white._

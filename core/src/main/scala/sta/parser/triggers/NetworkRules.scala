@@ -4,6 +4,7 @@ import fastparse.noApi._
 import sta.common.Uses
 import sta.model.triggers.Implicits._
 import sta.model.triggers.Trigger
+import sta.parser.TriggerParser
 
 object NetworkRules extends TriggerParser[Network] {
   import Network._

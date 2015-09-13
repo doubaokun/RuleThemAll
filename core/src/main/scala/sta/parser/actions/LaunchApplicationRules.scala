@@ -2,6 +2,7 @@ package sta.parser.actions
 
 import fastparse.noApi._
 import sta.model.actions.LaunchApplication
+import sta.parser.ActionParser
 
 object LaunchApplicationRules extends ActionParser[LaunchApplication] {
   import white._

@@ -5,7 +5,7 @@ import scala.collection.mutable
 import sta.model.BaseModel
 import sta.model.triggers._
 import sta.parser.BasicRules._
-import sta.parser.WhitespaceSkip
+import sta.parser.{TriggerParser, WhitespaceSkip}
 
 trait TriggerRules extends WhitespaceSkip {
   private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: BaseModel]]

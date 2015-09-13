@@ -5,7 +5,6 @@ import android.content._
 import android.net.Uri
 import android.os._
 import java.io.File
-import kj.android.common.SystemServices._
 import kj.android.common.{AppInfo, Notify}
 import kj.android.concurrent.ExecutionContext.Implicits._
 import kj.android.concurrent._
@@ -27,6 +26,10 @@ object STAService {
 
   val NAME = "sta.rule.name"
   val UNLOAD = 2
+
+  val LOAD_PLUGIN = 3
+
+  val UNLOAD_PLUGIN = 4
 
   def loadRules(from: Uri*): Message = {
     val bundle = new Bundle()

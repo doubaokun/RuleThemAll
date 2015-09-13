@@ -19,6 +19,7 @@ lazy val utils = project.in(file("utils")).settings(
 lazy val `core-common` = project.in(file("core/common")).settings(
   libraryDependencies ++= Seq(
     enumeratum,
+    fastparse,
     macrosExtra,
     reflect,
     spire
@@ -30,13 +31,13 @@ lazy val `core-common` = project.in(file("core/common")).settings(
     _ / "sta" / "model" / "model",
     _ / "sta" / "model" / "triggers" / "Trigger",
     _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
+    _ / "sta" / "parser" / *,
     _ / "sta" / "services" / "serviceMacros"
   )
 
 lazy val core = project.in(file("core")).settings(
   libraryDependencies ++= Seq(
-    `android-support-v4`,
-    fastparse
+    `android-support-v4`
   )
 ).settings(libAndroidSettings: _*).dependsOnLocal(`core-common`, utils).excludeFromLinting(
     _ / "sta" / "model" / "actions" / **,
