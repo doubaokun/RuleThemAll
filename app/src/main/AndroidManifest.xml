@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="sta.app"
-          android:sharedUserId="sta.app">
+          package="sta.app">
 
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="21" android:maxSdkVersion="22"/>
-
-    <permission
-            android:name="sta.PLUGIN"
-            android:protectionLevel="signature">
-    </permission>
 
     <!-- service maintenance -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
