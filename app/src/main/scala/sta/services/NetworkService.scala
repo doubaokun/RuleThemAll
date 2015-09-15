@@ -8,7 +8,7 @@ class NetworkService(implicit root: RulesExecutor) extends ServiceFragment[Netwo
   final val handle: PF = {
     case intent if intent.getAction == ConnectivityManager.CONNECTIVITY_ACTION =>
       for {
-        tpe <- Network.Connection.intValues.get(intent.extra[Int](ConnectivityManager.EXTRA_NETWORK_TYPE))
+        tpe <- Network.Connection.intValues.get(intent[Int](ConnectivityManager.EXTRA_NETWORK_TYPE))
         state <- Network.State.enumValues.get(connectivityManager.getNetworkInfo(tpe.intValue).getState)
       } yield Network(tpe, state)
   }

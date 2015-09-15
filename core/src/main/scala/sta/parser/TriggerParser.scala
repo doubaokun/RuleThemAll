@@ -7,7 +7,7 @@ import scala.reflect.macros.blackbox
 import sta.model.BaseModel
 import sta.model.triggers.Trigger
 
-abstract class TriggerParser[M <: BaseModel] extends BasicRules with WhitespaceSkip {
+abstract class TriggerParser[M <: BaseModel] extends BasicRules with WhitespaceSkip with Serializable {
   def matchStringParser(extractor: M => String): P[Trigger.Condition[M]] = macro TriggerParserMacros.matchStringParser[M]
 
   def Prefix: String

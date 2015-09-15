@@ -8,10 +8,10 @@ import java.io.File
 import kj.android.common.{AppInfo, Notify}
 import kj.android.concurrent.ExecutionContext.Implicits._
 import kj.android.concurrent._
-import kj.android.logging.Logging
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Failure
+import scala.util.control.NonFatal
 import shapeless.HMap
 import sta.common.Requirement
 import sta.model.triggers.Trigger
@@ -21,29 +21,19 @@ import sta.storage.{PlaintextStorage, RegistrationInfo}
 object STAService {
   val BACKGROUND_ACTION = "sta.background_action"
 
-  val URI = "sta.rule.path"
   val LOAD = 1
 
-  val NAME = "sta.rule.name"
   val UNLOAD = 2
 
-  val LOAD_PLUGIN = 3
-
-  val UNLOAD_PLUGIN = 4
-
   def loadRules(from: Uri*): Message = {
-    val bundle = new Bundle()
-    bundle.putStringArray(URI, from.map(_.getPath)(collection.breakOut))
     val msg = Message.obtain(null, LOAD)
-    msg.setData(bundle)
+    msg.obj = from.map(_.getPath).toArray
     msg
   }
 
   def unloadRules(names: String*): Message = {
-    val bundle = new Bundle()
-    bundle.putStringArray(NAME, names.toArray)
     val msg = Message.obtain(null, UNLOAD)
-    msg.setData(bundle)
+    msg.obj = names.toArray
     msg
   }
 
@@ -64,14 +54,9 @@ object STAService {
   }
 }
 
-class STAService extends Service with RulesExecutor with Logging { root =>
+class STAService extends RulesExecutor { root =>
 
   import sta.services.STAService._
-
-  private[this] val handlerThread = new HandlerThread(logTag.tag)
-  handlerThread.start()
-
-  private[this] val looper = handlerThread.getLooper
 
   private[this] val handler = new Handler(looper) {
     private def update(f: (Intent => Unit, (Intent, SF)) => (Intent, SF)): Unit = {
@@ -117,26 +102,26 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       }
     }
 
-    override def handleMessage(msg: Message): Unit = {
+    override def handleMessage(msg: Message): Unit = try {
       msg.what match {
-        case LOAD => msg.getData.getStringArray(URI).foreach { path =>
-          val RegistrationInfo(toAdd, toRemove, rules) = storage.register(new File(path))
-          rules.foreach(timers += _)
-          if (toAdd.nonEmpty || toRemove.nonEmpty) update(onAdd(toAdd, toRemove))
-        }
+        case LOAD =>
+          msg.obj.asInstanceOf[Array[String]].foreach { path =>
+            val RegistrationInfo(toAdd, toRemove, rules) = storage.register(new File(path))
+            rules.foreach(timers += _)
+            if (toAdd.nonEmpty || toRemove.nonEmpty) update(onAdd(toAdd, toRemove))
+          }
         case UNLOAD =>
-          val ruleNames = msg.getData.getStringArray(NAME)
+          val ruleNames = msg.obj.asInstanceOf[Array[String]]
           val toRemove = storage.unregister(ruleNames: _*)
           ruleNames.foreach(timers -= _)
           if (toRemove.nonEmpty) update(onRemove(toRemove))
-        case other => log.warn(s"Unknown message received: $other")
+        case other =>
+          log.warn(s"Unknown message received: $other")
       }
+    } catch {
+      case NonFatal(th) => log.error(s"Exception has occurred during handling message: $msg")
     }
   }
-
-  @inline implicit def ctx: Context = this
-
-  @inline implicit def ec = ExecutionContext.fromHandlerThread(handlerThread)
 
   type SF = List[(IntentType, ServiceFragment[BaseModel])]
 
@@ -295,7 +280,7 @@ class STAService extends Service with RulesExecutor with Logging { root =>
       }
     } else {
       startForeground(1, Notify.build(s"Monitoring",
-        intent.extra[PendingIntent].get(STAService.BACKGROUND_ACTION)))
+        intent.get[PendingIntent](STAService.BACKGROUND_ACTION)))
       started = true
     }
 
@@ -329,7 +314,6 @@ class STAService extends Service with RulesExecutor with Logging { root =>
     timers.cancelAll()
     rawServices.get.stopTasks()
     unregisterReceiver(stateProcessor)
-    looper.quit()
     stopForeground(true)
   }
 

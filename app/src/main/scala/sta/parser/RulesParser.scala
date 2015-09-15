@@ -2,7 +2,7 @@ package sta.parser
 
 import fastparse.core.SyntaxError
 import fastparse.noApi._
-import sta.model.Rule
+import sta.model.{BaseModel, Rule}
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
 import sta.parser.WhitespaceSkip._
@@ -52,4 +52,8 @@ object RulesParser extends RulesParser {
   }
 
   protected[sta] def parseSingle(input: String): Rule = Single.parse(input).get.value
+
+  override def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = super.addTriggerParser(parser)
+
+  override def addActionParser(parser: ActionParser[_ <: Action]): Unit = super.addActionParser(parser)
 }
