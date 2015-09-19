@@ -5,7 +5,7 @@ import org.robolectric.annotation.Config
 import org.scalatest.{FlatSpec, Matchers, RobolectricSuite}
 import sta.model.triggers.Implicits._
 
-@Config(sdk = Array(21), manifest = "core/src/test/AndroidManifest.xml")
+@Config(sdk = Array(21), manifest = "app/src/test/AndroidManifest.xml")
 class HeadsetServiceSpec extends FlatSpec with RobolectricSuite with Matchers {
 
   trait Service {

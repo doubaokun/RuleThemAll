@@ -86,9 +86,11 @@ object Settings {
     else Seq.empty
   }
 
-  def benchmarkSettings: Seq[Def.Setting[_]] =
+  def testsSettings: Seq[Def.Setting[_]] =
     androidBuild ++ androidSettings ++ Seq(
-      libraryDependencies ++= benchmarks, //++ tests,
+      libraryDependencies ++= benchmarks ++ tests,
+
+      debugIncludesTests in Android := true,
 
       fork in run := true,
       parallelExecution in test := false,
@@ -99,14 +101,24 @@ object Settings {
       ),
 
       proguardOptions in Android ++= Seq(
-        "-keep class sta.tests.benchmarks.**",
+        "-keep public class * extends junit.framework.TestCase",
+        "-keepclassmembers class * extends junit.framework.TestCase { *; }",
         "-keep class org.scalameter.**",
+        "-keep class sta.tests.benchmarks.**",
+
         "-keepattributes InnerClasses",
-        "-dontwarn org.scalameter.utils.**",
-        "-dontwarn org.apache.commons.math3.geometry.euclidean.**",
+
+        "-dontwarn com.google.common.collect.MinMaxPriorityQueue",
         "-dontwarn com.google.monitoring.runtime.instrumentation.**",
-        "-dontwarn sun.misc.Unsafe",
-        "-dontwarn com.google.common.collect.MinMaxPriorityQueue"
+        "-dontwarn org.apache.commons.math3.geometry.euclidean.**",
+        "-dontwarn org.scalacheck.**", // TODO
+        "-dontwarn org.scalameter.utils.**",
+        "-dontwarn org.scalatest.junit.**",
+        "-dontwarn org.scalatest.mock.**",
+        "-dontwarn org.scalatest.selenium.**",
+        "-dontwarn org.scalatest.tools.**",
+        "-dontwarn org.testng.**",
+        "-dontwarn sun.misc.Unsafe"
       )
     )
 
@@ -172,8 +184,6 @@ object Settings {
 
   private def stdProguardSettings = Seq (
     proguardOptions in Android ++= Seq(
-      "-keep public class * extends junit.framework.TestCase",
-      "-keepclassmembers class * extends junit.framework.TestCase { *; }",
       "-keepattributes Signature",
       "-dontwarn org.typelevel.discipline.**",
       "-dontwarn spire.macros.**"

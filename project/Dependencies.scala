@@ -18,8 +18,9 @@ object Dependencies {
 
     object tests {
       val scalacheck = "1.12.5"
-      val scalatest = "2.2.5"
       val scalameter = "0.7"
+      val scalamock = "3.2.2"
+      val scalatest = "2.2.5"
     }
   }
 
@@ -53,6 +54,7 @@ object Dependencies {
 
   val tests = Seq(
     "org.scalacheck" %% "scalacheck" % versions.tests.scalacheck,
+    "org.scalamock" %% "scalamock-scalatest-support" % versions.tests.scalamock,
     "org.scalatest" %% "scalatest" % versions.tests.scalatest
   )
 

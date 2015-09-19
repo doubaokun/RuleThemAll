@@ -8,7 +8,7 @@ import java.lang.{Enum => JEnum}
 class ModelKV[+K, +V]
 
 /** Base for all models that are part of the rules state. */
-sealed abstract class BaseModel(val companion: BaseModelCompanion[BaseModel]) { self =>
+sealed abstract class BaseModel(val companion: BaseModelCompanion[BaseModel]) extends Serializable { self =>
   /** Recursive type alias that denotes self type.
     *
     * Note that this notation is weaker than using recursive generic param, but since this class

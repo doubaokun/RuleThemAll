@@ -137,8 +137,8 @@ object Trigger {
       *                     - `context` that is [[android.content.Context]]
       *                    and returns date when timer is fulfilled.
       */
-    case class Dynamic private[Timer](requires: Set[Requirement], recheckAfter: Duration,
-      fromContext: (Date, Duration, Context) => Option[Date]) extends Timer {
+    case class Dynamic private[Timer](requires: Set[Requirement], recheckAfter: Duration)
+      (fromContext: (Date, Duration, Context) => Option[Date]) extends Timer {
       protected def fireAt(from: Date, context: Context) = {
         fromContext(from, recheckAfter, context).map(_ -> false).orElse {
           Some(new Date(from.getTime + recheckAfter.toMillis) -> true)
@@ -165,7 +165,7 @@ object Trigger {
 
     def dynamic(recheckAfter: Duration, requirements: Set[Requirement] = Set.empty)
       (fromContext: (Date, Duration, Context) => Option[Date]) =
-      Dynamic(requirements, recheckAfter, fromContext)
+      Dynamic(requirements, recheckAfter)(fromContext)
   }
 
   /** Standalone condition that gets model from a state and check it with [[ModelFunction]]. */

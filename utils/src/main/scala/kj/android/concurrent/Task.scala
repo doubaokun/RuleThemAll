@@ -2,10 +2,8 @@ package kj.android.concurrent
 
 import android.content.Context
 import android.os.PowerManager
-import java.util.Date
 import java.util.concurrent.{FutureTask, ScheduledFuture}
 import kj.android.common.SystemServices._
-import kj.android.cron.CronExpression
 import kj.android.logging.LogTag
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Promise}

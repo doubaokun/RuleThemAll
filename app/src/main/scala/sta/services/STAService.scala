@@ -54,11 +54,11 @@ object STAService {
   }
 }
 
-class STAService extends RulesExecutor { root =>
+class STAService extends RulesExecutor with PluginHandler { root =>
 
   import sta.services.STAService._
 
-  private[this] val handler = new Handler(looper) {
+  private[this] val handler = new Handler(mainLooper) {
     private def update(f: (Intent => Unit, (Intent, SF)) => (Intent, SF)): Unit = {
       val intents = Seq.newBuilder[Intent]
       rawServices.update { services =>
@@ -119,35 +119,13 @@ class STAService extends RulesExecutor { root =>
           log.warn(s"Unknown message received: $other")
       }
     } catch {
-      case NonFatal(th) => log.error(s"Exception has occurred during handling message: $msg")
+      case NonFatal(th) => log.error(s"Exception has occurred during handling message: $msg", th)
     }
   }
 
   type SF = List[(IntentType, ServiceFragment[BaseModel])]
 
   class ServicesMap private[STAService](rawMap: Map[Requirement, SF]) {
-    @inline private def updateState(model: BaseModel) = {
-      import model._
-
-      var changed = false
-      val liftedModel = model.lift
-      rawState.update { state =>
-        state.get(companion.Key) match {
-          case Some(`liftedModel`) => state
-          case Some(other) =>
-            changed = true
-            state + (companion.Key -> model.mergeTo(other))
-          case None =>
-            changed = true
-            state + (companion.Key -> liftedModel)
-        }
-      }.fold(th => log.error("Error has occurred during updating state", th),
-          state => if (changed) for (rule <- storage.rules) {
-            rule.execute(state)
-          }
-        )
-    }
-
     private[this] val tasks: Map[String, Task[Unit]] = for {
       (Requirement.IntentBased(intent), service) <- rawMap
       (Manual(interval), sf) <- service
@@ -234,8 +212,8 @@ class STAService extends RulesExecutor { root =>
   }
 
   private[this] implicit lazy val appInfo = AppInfo(
-    name = ctx.getResources.getString(ctx.getApplicationInfo.labelRes),
-    smallIcon = ctx.getApplicationInfo.icon
+    name = getResources.getString(getApplicationInfo.labelRes),
+    smallIcon = getApplicationInfo.icon
   )
 
   private[this] implicit lazy val storage = new PlaintextStorage
@@ -264,8 +242,9 @@ class STAService extends RulesExecutor { root =>
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
-    if (started) {
+    log.info("Starting service")
 
+    if (started) {
       intent match {
         case Trigger.Timer(ruleName, branchId, partial) =>
           log.info(s"Handling timer $intent")
@@ -279,8 +258,12 @@ class STAService extends RulesExecutor { root =>
           log.warn(s"Unknown $intent", new RuntimeException)
       }
     } else {
-      startForeground(1, Notify.build(s"Monitoring",
-        intent.get[PendingIntent](STAService.BACKGROUND_ACTION)))
+      try { // startForeground does not work with android instrumentation tests
+        startForeground(1, Notify.build(s"Monitoring",
+          intent.get[PendingIntent](STAService.BACKGROUND_ACTION)))
+      } catch {
+        case ex: NullPointerException =>
+      }
       started = true
     }
 
@@ -313,11 +296,38 @@ class STAService extends RulesExecutor { root =>
 
     timers.cancelAll()
     rawServices.get.stopTasks()
-    unregisterReceiver(stateProcessor)
-    stopForeground(true)
+    try {
+      unregisterReceiver(stateProcessor)
+      stopForeground(true)
+    } catch {
+      case ex: IllegalArgumentException =>
+      case ex: NullPointerException => // stopForeground does not work with android instrumentation tests
+    }
   }
 
   def onBind(intent: Intent): IBinder = requestProcessor.getBinder
 
   def resetTimers(requirements: Set[Requirement]): Unit = requirements.foreach(timers.reset)
+
+  def updateState(model: BaseModel) = {
+    import model._
+
+    var changed = false
+    val liftedModel = model.lift
+    rawState.update { state =>
+      state.get(companion.Key) match {
+        case Some(`liftedModel`) => state
+        case Some(other) =>
+          changed = true
+          state + (companion.Key -> model.mergeTo(other))
+        case None =>
+          changed = true
+          state + (companion.Key -> liftedModel)
+      }
+    }.fold(th => log.error("Error has occurred during updating state", th),
+        state => if (changed) for (rule <- storage.rules) {
+          rule.execute(state)
+        }
+      )
+  }
 }

@@ -1,27 +1,48 @@
 package sta.services
 
 import android.app.Service
-import android.content.Context
 import android.os.HandlerThread
-import kj.android.concurrent.ExecutionContext
+import cats.data.Validated
 import kj.android.logging.Logging
+import scala.collection.concurrent.TrieMap
+import scala.util.control.NonFatal
 import sta.common.Requirement
+import sta.model.{BaseModel, Rule}
+import sta.model.actions.Action
 
 abstract class RulesExecutor extends Service with Logging {
-  private[this] val handlerThread = new HandlerThread(logTag.tag)
-  handlerThread.start()
+  private[this] val mainThread = new HandlerThread(s"${logTag.tag}-Main")
+  mainThread.start()
 
-  protected[this] val looper = handlerThread.getLooper
+  protected[this] val mainLooper = mainThread.getLooper
 
-  @inline implicit def ctx: Context = this
+  private[this] val actionExecutors = TrieMap.empty[Class[_], Action => Option[Throwable]]
 
-  @inline implicit def ec = ExecutionContext.fromHandlerThread(handlerThread)
+  @inline implicit def self = this
 
   def resetTimers(requirements: Set[Requirement]): Unit
+
+  def updateState(model: BaseModel): Unit
+
+  protected def registerActionExecutor(clazz: Class[_], executor: Action => Option[Throwable]) = {
+    actionExecutors += (clazz -> executor)
+  }
+
+  def executeAction(action: Action): Rule#Result = {
+    actionExecutors.get(action.getClass).map { executor =>
+      executor(action).fold[Rule#Result](Validated.valid(()))(t => Validated.invalidNel(action.name -> t))
+    }.getOrElse {
+      try {
+        Validated.valid(action.execute())
+      } catch {
+        case NonFatal(t) => Validated.invalidNel(action.name -> t)
+      }
+    }
+  }
 
   override def onDestroy(): Unit = {
     super.onDestroy()
 
-    looper.quit()
+    mainLooper.quit()
   }
 }

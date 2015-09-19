@@ -1,0 +1,10 @@
+def example {
+    when (
+        or (
+            dummy,
+            calendar event starts
+        )
+    ) do {
+        show "Hello world!"
+    }
+}

@@ -41,7 +41,13 @@ class UsesSpec extends FlatSpec with RobolectricSuite with Matchers {
     categoryOf[Impl4.type] should ===("baseImpl")
   }
 
-  it should "collect all featuresfrom direct children" in new TestModels {
+  it should "generate empty Uses for Nothing" in new TestModels {
+    usedFeatures[Nothing].features shouldBe 'empty
+    usedFeatures[Nothing].requirements shouldBe 'empty
+  }
+
+
+  it should "collect all features from direct children" in new TestModels {
     usedFeatures[Base].features should ===(Set("a", "b", "c"))
     usedFeatures[Impl2.type].features should ===(Set("a", "b"))
     usedFeatures[BaseImpl].features should ===(Set("c", "d"))

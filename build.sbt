@@ -32,7 +32,13 @@ lazy val core = project.in(file("core")).settings(
     _ / "sta" / "model" / "triggers" / "Trigger",
     _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
     _ / "sta" / "parser" / *,
+    _ / "sta" / "services" / "RulesExecutor",
     _ / "sta" / "services" / "serviceMacros"
+  )
+
+lazy val plugin = project.in(file("plugin")).settings(libAndroidSettings: _*)
+  .dependsOnLocal(core, utils).excludeFromLinting(
+    _ / "sta" / "plugin" / "Plugin"
   )
 
 lazy val app = project.in(file("app")).settings(
@@ -50,7 +56,7 @@ lazy val app = project.in(file("app")).settings(
     _ / "sta" / "storage" / "PlaintextStorage"
   )
 
-lazy val tests = project.in(file("tests")).settings(benchmarkSettings: _*)
+lazy val tests = project.in(file("tests")).settings(testsSettings: _*)
   .dependsOnLocal(app, core, utils)
 
 lazy val root = project.in(file(".")).aggregate(utils, core, app, tests).settings(Seq(

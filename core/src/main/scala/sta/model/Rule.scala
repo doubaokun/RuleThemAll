@@ -19,18 +19,13 @@ import sta.common.Requirement
 import sta.model.actions.Action
 import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._
+import sta.services.RulesExecutor
 
 case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
   type Result = Validated[FailNEL, Success]
-
-  @inline private def executeAction(a: Action)(implicit ctx: Context): Result = try {
-    Validated.valid(a.execute())
-  } catch {
-    case NonFatal(t) => Validated.invalidNel(a.name -> t)
-  }
 
   private[this] var executed = false
 
@@ -44,13 +39,13 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     (directBuilder.result(), withTimerBuilder.result())
   }
 
-  private def executeRule(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
+  private def executeRule(implicit ctx: RulesExecutor, logTag: LogTag, appInfo: AppInfo): Unit = {
     if (!executed) {
       log.info(s"Executing actions in rule $name")
       implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
       val combine = (_: Unit, _: Unit) => ()
       val result = actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>
-        (acc |@| executeAction(action)) map combine
+        (acc |@| ctx.executeAction(action)) map combine
       }
       result.fold(
         errs => {
@@ -82,13 +77,13 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     } else None
   }
 
-  def execute(state: HMap[ModelKV])(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo): Unit = {
+  def execute(state: HMap[ModelKV])(implicit ctx: RulesExecutor, logTag: LogTag, appInfo: AppInfo): Unit = {
     if (direct.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
     else executed = false
   }
   
   def executeBranch(branchId: UUID, intent: Intent, state: HMap[ModelKV],
-    timerFullyExecuted: Boolean)(implicit ctx: Context, logTag: LogTag, appInfo: AppInfo) = {
+    timerFullyExecuted: Boolean)(implicit ctx: RulesExecutor, logTag: LogTag, appInfo: AppInfo) = {
     val branch = withTimer.get(branchId)
     branch.foreach(setAlarm(_, branchId, intent, alarmManager, 60.seconds))
     if (timerFullyExecuted && branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule

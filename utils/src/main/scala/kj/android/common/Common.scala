@@ -2,7 +2,7 @@ package kj.android.common
 
 import scala.language.implicitConversions
 import android.content.Intent
-import android.os.{Bundle, Message, Messenger}
+import android.os.{Parcelable, Bundle, Message, Messenger}
 import kj.android.logging.LogTag
 import scala.util.control.NonFatal
 
@@ -18,6 +18,11 @@ object Common {
   class RichBundle protected[Common] (private val data: Bundle) extends AnyVal {
     @inline def put[T <: Serializable](key: String, value: T): Bundle = {
       data.putSerializable(key, value)
+      data
+    }
+
+    @inline def putArray[T <: Parcelable](key: String, value: Array[T]): Bundle = {
+      data.putParcelableArray(key, value.asInstanceOf[Array[Parcelable]])
       data
     }
 
@@ -54,8 +59,8 @@ object Common {
       msg
     }
 
-    @inline def withSender(sender: Messenger): Message = {
-      msg.replyTo = sender
+    @inline def withID(id: Int): Message = {
+      msg.arg1 = id
       msg
     }
   }
