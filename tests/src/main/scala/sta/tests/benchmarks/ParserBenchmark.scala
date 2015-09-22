@@ -4,14 +4,31 @@ import android.content.res.AssetManager
 import sta.parser.RulesParser
 
 class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
-  var content: String = null
-
-  override protected def bench[A](name: String, reps: Int)(snippet: => A): Unit = {
-    content = scala.io.Source.fromInputStream(assetManager.open(s"benchmarks/$name")).mkString
-    super.bench(name, reps)(snippet)
+  def withFile(filename: String)(f: String => Unit): Unit = {
+    f(scala.io.Source.fromInputStream(assetManager.open(s"benchmarks/$filename")).mkString)
   }
 
-  bench("simple", 50) {
-    RulesParser.parse(content)
+  withFile("single.rule") { content =>
+    bench("single", 50) {
+      RulesParser.parse(content)
+    }
+
+    bench("single.single", 50) {
+      RulesParser.parseSingle(content)
+    }
+
+    bench("single.traced", 50) {
+      RulesParser.tracedParse(content)
+    }
+  }
+
+  withFile("multiple.rule") { content =>
+    bench("multiple", 50) {
+      RulesParser.parse(content)
+    }
+
+    bench("multiple.traced", 50) {
+      RulesParser.tracedParse(content)
+    }
   }
 }

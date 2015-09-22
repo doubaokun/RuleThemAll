@@ -16,12 +16,12 @@ abstract class Benchmark extends Logging {
       new Measurer.Default
     } measure snippet
 
-    log.info(s"Time: $time [ms]")
+    log.info(s"Time for $name: $time")
 
     val memory = default() withMeasurer {
       new Measurer.MemoryFootprint
     } measure snippet
 
-    log.info(s"Memory: $memory [kB]")
+    log.info(s"Memory for $name: $memory")
   }
 }

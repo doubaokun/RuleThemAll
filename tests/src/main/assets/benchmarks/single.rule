@@ -1,4 +1,4 @@
-def simple {
+def single {
     when (
         battery (
             plugged ac
