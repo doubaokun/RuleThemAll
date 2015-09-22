@@ -46,7 +46,7 @@ object Trigger {
   /** Denotes set of conditions with set of timers that
     * indicates date when such conditions should be fulfilled.
     */
-  case class Branch(timers: Seq[Timer] = Seq.empty, conditions: Seq[Condition[_]] = Seq.empty) {
+  case class Branch(conditions: Seq[Condition[_]] = Seq.empty, timers: Seq[Timer] = Seq.empty) {
     lazy val requires: Set[Requirement] =
       (timers.flatMap(_.requires) ++ conditions.flatMap(_.requires))(collection.breakOut)
   }

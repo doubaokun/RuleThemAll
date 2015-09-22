@@ -5,31 +5,29 @@ import fastparse.noApi._
 import sta.model.{BaseModel, Rule}
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
-import sta.parser.WhitespaceSkip._
+import sta.parser.Extras._
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 
-sealed abstract class RulesParser extends WhitespaceSkip with ActionRules with TriggerRules {
+sealed abstract class RulesParser extends Extras with ActionRules with TriggerRules {
   import white._
 
-  private def alphaNum = CharIn(('0' to '9') ++ ('a' to 'z') ++ ('A' to 'Z'))
+  def Name: P[String] = P((CharPred(_.isLetter) ~~ ("_" ~~ CharPred(_.isLetterOrDigit)).?).repX(1).! ~~ !"_")
 
-  def Name: P[String] = P((alphaNum ~ ("_" ~ alphaNum).?).repX(1).!)
+  def Branches: P[Seq[Trigger.Branch]] = P("(" ~ Triggers.map(_.flatten) ~ ")")
 
-  def Branches: P[Seq[Trigger.Branch]] = P("(" ~ MainT.map(_.flatten) ~ ")")
-
-  def Action: P[Seq[Action]] = P("{" ~ MainA.repX(1, sep = (WL ~~ NoTrace(";") ~~ WL) | WL) ~ "}")
+  def Actions: P[Seq[Action]] = P("{" ~ Action.repX(1, sep = (WS0 ~~ NoTrace(";") ~~ WS0) | WS1) ~ "}")
 
   def Definition: P[Rule] = P(
-    ("def" ~ Name ~ {
-      "{" ~ ("when" ~! Branches).?.map(_.getOrElse(Trigger.empty.flatten)) ~ "do" ~! Action ~ "}"
+    ("def".withWS ~ Name ~ {
+      "{" ~ ("when" ~! Branches).?.map(_.getOrElse(Trigger.empty.flatten)) ~ "do" ~! Actions ~ "}"
     }) map (v => Rule(v._1, v._2._1, v._2._2))
   )
 
   def Root: P[Seq[Rule]] = P(Start ~ Definition.rep(1) ~ End)
-  
-  def TracedRoot: P[Seq[(Rule, Int)]] = P(Start ~ (Definition ~ Index).rep(1) ~ End)
-  
+
+  def TracedRoot: P[Seq[(Rule, Int)]] = P(Start ~ (Definition ~~ Index).rep(1) ~ End)
+
   def Single: P[Rule] = P(Start ~ Definition ~ End)
 }
 

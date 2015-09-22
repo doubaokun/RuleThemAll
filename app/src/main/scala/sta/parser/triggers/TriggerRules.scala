@@ -4,10 +4,9 @@ import fastparse.noApi._
 import scala.collection.mutable
 import sta.model.BaseModel
 import sta.model.triggers._
-import sta.parser.BasicRules._
-import sta.parser.{TriggerParser, WhitespaceSkip}
+import sta.parser.{TriggerParser, Extras}
 
-trait TriggerRules extends WhitespaceSkip {
+trait TriggerRules extends Extras {
   private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: BaseModel]]
   parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, HeadsetRules,
     NetworkRules, TimeRules, WiFiRules)
@@ -22,31 +21,28 @@ trait TriggerRules extends WhitespaceSkip {
 
   import white._
 
-  final def MainT: P[Trigger] = {
+  final def Triggers: P[Trigger] = {
     def twoOrMore(of: P[Trigger]) = "(" ~ of.rep(2, sep = ",") ~ ")"
 
     val triggers = {
       def single(trigger: TriggerParser[_ <: BaseModel]) = {
         val main = P(trigger.Rule)(trigger.Prefix)
-        val main2toN = twoOrMore(main)
 
-        val conditions = main | ("(" ~ (
-          ("or" ~! main2toN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-            ("and" ~! main2toN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-            (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*)))
-          ) ~ ")")
+        val conditions = main |
+          ("(" ~ (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) ~ ")")
 
-        trigger.Prefix.lWS ~! conditions
+        trigger.Prefix.splitWS.withWS ~! conditions
       }
 
       P(parsers.tail.foldLeft(single(parsers.head))(_ | single(_)))
     }
-    lazy val combined2ToN = P(twoOrMore(triggers | all))
-    lazy val combined: P[Trigger] = P(triggers | all)
+    lazy val logicOps: P[Trigger] = P(
+      ("and" ~! twoOrMore(nested) map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+        ("or" ~! twoOrMore(nested) map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*)))
+    )
+    lazy val nested: P[Trigger] = P(triggers | logicOps)
     lazy val all: P[Trigger] = P(
-      ("or" ~! combined2ToN map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-        ("and" ~! combined2ToN map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-        (combined.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*)))
+      nested.rep(1, sep = ",").map(ts => Trigger(ts.head, ts.tail: _*)) | logicOps
     )
 
     all

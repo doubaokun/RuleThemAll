@@ -13,26 +13,26 @@ object BluetoothRules extends TriggerParser[Bluetooth] {
   def Prefix: String = Uses.categoryOf[Bluetooth]
 
   def state: P[Trigger.Condition[BluetoothState]] = {
-    mapParser(BluetoothState.namesToValuesMap) map (v => Trigger.Condition[BluetoothState](_ == v))
+    mapParser(BluetoothState.namesToValuesMap).map(v => Trigger.Condition[BluetoothState](_ == v))
   }
 
   def connection: P[Trigger.Condition[BluetoothConnection]] = {
     lazy val Name = String.filter(_.getBytes(Charset.forName("UTF-8")).length <= 248)
 
-    P("connected" ~ "to" ~ ((MacAddress map (v => Trigger.Condition[BluetoothConnection] {
+    P("connected".withWS ~ "to".withWS ~ (MacAddress.map(v => Trigger.Condition[BluetoothConnection] {
         case BluetoothConnection.Connected(_, address) => v == address
         case _ => false
-      })) | (Name map (v => Trigger.Condition[BluetoothConnection] {
+      }) | (Name map (v => Trigger.Condition[BluetoothConnection] {
         case BluetoothConnection.Connected(name, _) => v == name
         case _ => false
-      }))) | ("disconnected" ~ "from" ~ (
-      (MacAddress map (v => Trigger.Condition[BluetoothConnection] {
+      }))) | ("disconnected".withWS ~ "from".withWS ~ (
+      MacAddress.map(v => Trigger.Condition[BluetoothConnection] {
         case BluetoothConnection.Disconnected => true
         case BluetoothConnection.Connected(_, address) => v != address
-      })) | (Name map (v => Trigger.Condition[BluetoothConnection] {
+      }) | Name.map(v => Trigger.Condition[BluetoothConnection] {
         case BluetoothConnection.Disconnected => true
         case BluetoothConnection.Connected(name, _) => v != name
-      }))))
+      })))
     )
   }
 

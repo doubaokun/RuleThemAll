@@ -18,13 +18,13 @@ object WiFiRules extends TriggerParser[WiFi] {
   def connection: P[Trigger.Condition[WiFiConnection]] = {
     lazy val SSID = String.filter(_.length <= 32)
 
-    P("connected" ~ "to" ~ ((MacAddress map (v => Trigger.Condition[WiFiConnection] {
+    P("connected".withWS ~ "to".withWS ~ ((MacAddress map (v => Trigger.Condition[WiFiConnection] {
         case WiFiConnection.Connected(_, bssid) => v == bssid
         case _ => false
       })) | (SSID map (v => Trigger.Condition[WiFiConnection] {
         case WiFiConnection.Connected(ssid, _) => v == ssid
         case _ => false
-      }))) | ("disconnected" ~ "from" ~ (
+      }))) | ("disconnected".withWS ~ "from".withWS ~ (
       (MacAddress map (v => Trigger.Condition[WiFiConnection] {
         case WiFiConnection.Disconnected => true
         case WiFiConnection.Connected(_, bssid) => v != bssid

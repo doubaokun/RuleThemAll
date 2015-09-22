@@ -14,19 +14,19 @@ object CalendarRules extends TriggerParser[CalendarEvent] {
   def Prefix: String = Uses.categoryOf[CalendarEvent]
 
   private def title: P[Trigger.Condition[CalendarEvent]] = {
-    "title" ~ matchStringParser(_.title)
+    "title".withWS ~ matchStringParser(_.title)
   }
 
   private def description: P[Trigger.Condition[CalendarEvent]] = {
-    "description" ~ matchStringParser(_.description)
+    "description".withWS ~ matchStringParser(_.description)
   }
 
   private def location: P[Trigger.Condition[CalendarEvent]] = {
-    "location" ~ matchStringParser(_.location)
+    "location".withWS ~ matchStringParser(_.location)
   }
 
   private def availability: P[Trigger.Condition[CalendarEvent]] = {
-    "availability" ~ "is" ~ mapParser(Availability.namesToValuesMap) map (v =>
+    "availability".withWS ~ "is".withWS ~ mapParser(Availability.namesToValuesMap) map (v =>
       Trigger.Condition[CalendarEvent](_.availability == v)
     )
   }

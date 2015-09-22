@@ -1,14 +1,13 @@
 package sta.parser
 
-import scala.language.{higherKinds, implicitConversions}
 import fastparse.all._
 import kj.android.cron.{CronExpression => Cron}
 import scala.concurrent.duration.{Duration => ScalaDuration, _}
 import scala.util.Try
 import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
-import sta.parser.WhitespaceSkip._
+import sta.parser.Extras._
 
-trait BasicRules extends WhitespaceSkip {
+trait BasicRules extends Extras {
   private def digit = P(CharIn('0' to '9').!)
 
   private def digit19 = P(CharIn('1' to '9').!)
@@ -16,9 +15,6 @@ trait BasicRules extends WhitespaceSkip {
   private def hexDigit = P(CharIn(('0' to '9') ++ ('a' to 'f') ++ ('A' to 'F')))
 
   private def variations(str: String): P[Unit] = s"${str}s" | str | s"${str.head}"
-
-  implicit def parserExtras[T](parser: Parser[T]): BasicRules.ParserExtras[T] =
-    new BasicRules.ParserExtras[T](parser)
 
   sealed abstract class Converter[T](radix: Int, conv: (String, Int) => T) {
     def unapply(s: String): Option[T] = Try(conv(s, radix)).toOption
@@ -35,8 +31,6 @@ trait BasicRules extends WhitespaceSkip {
   private object ToDouble {
     def unapply(s: String): Option[Double] = Try(java.lang.Double.parseDouble(s)).toOption
   }
-
-  implicit def liftToParser(str: String): BasicRules.LiftToParser = new BasicRules.LiftToParser(str)
 
   lazy val Percent: P[UByte] = P(
     ("0" | "100" | (digit19 ~ digit.?)).! ~ "%" map ((s: String) => UByte(s.toByte))
@@ -120,7 +114,7 @@ trait BasicRules extends WhitespaceSkip {
       hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ !(hexDigit | ":")).!)
 
   def mapParser[T](map: Map[String, T]): P[T] = {
-    def makeRule(kv: (String, T)): P[T] = kv._1.lWS map (_ => kv._2)
+    def makeRule(kv: (String, T)): P[T] = kv._1.splitWS.map(_ => kv._2)
 
     if (map.isEmpty) Fail
     else map.tail.foldLeft(makeRule(map.head)) {
@@ -162,23 +156,8 @@ trait BasicRules extends WhitespaceSkip {
   }
 
   lazy val Duration: P[ScalaDuration] = P(
-    (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WL) ~ variations("second") map (_.toInt.seconds)) |
-      (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WL) ~ variations("minute") map (_.toInt.minutes)) |
-      (UnsignedInt.filter(_.toInt <= 23) ~ NoCut(WL) ~ variations("hour") map (_.toInt.hours))
+    (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WS0) ~ variations("second") map(_.toInt.seconds)) |
+      (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WS0) ~ variations("minute") map (_.toInt.minutes)) |
+      (UnsignedInt.filter(_.toInt <= 23) ~ NoCut(WS0) ~ variations("hour") map (_.toInt.hours))
   )
-}
-
-object BasicRules extends WhitespaceSkip {
-  implicit class LiftToParser(val str: String) extends AnyVal {
-    def lWS: Parser[Unit] = {
-      val splitted = str.split("\\s+")
-      splitted.tail.foldLeft(splitted.head: P[Unit]) { _ ~ NoCut(WL) ~ _ }
-    }
-
-    def l: Parser[Unit] = wspStr(str)
-  }
-
-  class ParserExtras[T](private val parser: Parser[T]) extends AnyVal {
-    def withFilter(p: T => Boolean) = parser.filter(p)
-  }
 }

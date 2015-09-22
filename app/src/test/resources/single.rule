@@ -1,0 +1,13 @@
+
+def first_rule {
+    when (
+        or (
+            battery plugged ac,
+            battery level > 50%
+        ),
+        headset connected
+    ) do {
+        set sound profile to vibrate
+        turn wifi on
+    }
+}

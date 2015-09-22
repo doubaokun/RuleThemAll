@@ -17,7 +17,7 @@ trait ActionRules {
     parsers -= parser
   }
 
-  final def MainA: P[Action] = {
+  final def Action: P[Action] = {
     parsers.tail.foldLeft(parsers.head.Rule.asInstanceOf[P[Action]]) {
       case (acc, p) => acc | p.Rule.asInstanceOf[P[Action]]
     }
