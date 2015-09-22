@@ -1,6 +1,6 @@
 // android
 
-addSbtPlugin("com.hanhuy.sbt" % "android-sdk-plugin" % "1.4.14")
+addSbtPlugin("com.hanhuy.sbt" % "android-sdk-plugin" % "1.4.15")
 
 // linting
 
