@@ -19,7 +19,7 @@ sealed abstract class RulesParser extends Extras with ActionRules with TriggerRu
   def Actions: P[Seq[Action]] = P("{" ~ Action.repX(1, sep = (WS0 ~~ NoTrace(";") ~~ WS0) | WS1) ~ "}")
 
   def Definition: P[Rule] = P(
-    ("def".withWS ~ Name ~ {
+    ("rule".withWS ~ Name ~ {
       "{" ~ ("when" ~! Branches).?.map(_.getOrElse(Trigger.empty.flatten)) ~ "do" ~! Actions ~ "}"
     }) map (v => Rule(v._1, v._2._1, v._2._2))
   )
@@ -29,6 +29,22 @@ sealed abstract class RulesParser extends Extras with ActionRules with TriggerRu
   def TracedRoot: P[Seq[(Rule, Int)]] = P(Start ~ (Definition ~~ Index).rep(1) ~ End)
 
   def Single: P[Rule] = P(Start ~ Definition ~ End)
+
+  override final def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
+    super.addActionParser(parser)
+  }
+
+  override final def removeActionParser(parser: ActionParser[_ <: Action]): Unit = {
+    super.removeActionParser(parser)
+  }
+
+  override final def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
+    super.addTriggerParser(parser)
+  }
+
+  override final def removeTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
+    super.removeTriggerParser(parser)
+  }
 }
 
 object RulesParser extends RulesParser {
@@ -49,8 +65,4 @@ object RulesParser extends RulesParser {
   }
 
   protected[sta] def parseSingle(input: String): Rule = Single.parse(input).get.value
-
-  override def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = super.addTriggerParser(parser)
-
-  override def addActionParser(parser: ActionParser[_ <: Action]): Unit = super.addActionParser(parser)
 }

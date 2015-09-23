@@ -42,27 +42,27 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   behavior of "RulesParser"
 
   it should "return error on malformed input" in {
-    RulesParser.parse("defe{do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rulee{do{set sound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e_{do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule e_{do{set sound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def _e{do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule _e{do{set sound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e_1_{do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule e_1_{do{set sound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def 1e{do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule 1e{do{set sound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e{do{setsound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule e{do{setsound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e{do{set soundprofile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule e{do{set soundprofile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e{do{set sound profileto silent}}").isLeft should === (true)
+    RulesParser.parse("rule e{do{set sound profileto silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e{when()do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule e{when()do{set sound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e{when(batteryplugged ac)do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule e{when(batteryplugged ac)do{set sound profile to silent}}").isLeft should === (true)
 
-    RulesParser.parse("def e{when(battery pluggedac)do{set sound profile to silent}}").isLeft should === (true)
+    RulesParser.parse("rule e{when(battery pluggedac)do{set sound profile to silent}}").isLeft should === (true)
   }
 
   it should "parse rule with no conditions" in {
@@ -73,7 +73,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
     ) :: Nil
     val actual = RulesParser.parse(
       """
-        |def empty{do{set sound profile to silent}}
+        |rule empty{do{set sound profile to silent}}
       """.stripMargin)
 
     compareRules(actual = actual.get, expected = expected)
@@ -93,7 +93,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       )
     ) :: Nil
     val actual = RulesParser.parse(
-      "def dense{when(or(battery level <= 70%,headset disconnected))do{set sound profile to silent;turn bluetooth off}}"
+      "rule dense{when(or(battery level <= 70%,headset disconnected))do{set sound profile to silent;turn bluetooth off}}"
     )
 
     compareRules(actual = actual.get, expected = expected)

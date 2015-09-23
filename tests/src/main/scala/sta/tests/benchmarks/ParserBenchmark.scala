@@ -1,34 +1,46 @@
 package sta.tests.benchmarks
 
 import android.content.res.AssetManager
+import org.scalameter.Quantity
 import sta.parser.RulesParser
 
 class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
   def withFile(filename: String)(f: String => Unit): Unit = {
     f(scala.io.Source.fromInputStream(assetManager.open(s"benchmarks/$filename")).mkString)
   }
+  
+  def run(): String = {
+    val builder = new StringBuilder
+    
+    withFile("single.rule") { content =>
+      builder ++= bench("single", 10) {
+        RulesParser.parse(content)
+      }
+      builder += '\n'
 
-  withFile("single.rule") { content =>
-    bench("single", 50) {
-      RulesParser.parse(content)
+      builder ++= bench("single.single", 10) {
+        RulesParser.parseSingle(content)
+      }
+      builder += '\n'
+
+      builder ++= bench("single.traced", 10) {
+        RulesParser.tracedParse(content)
+      }
+      builder += '\n'
     }
 
-    bench("single.single", 50) {
-      RulesParser.parseSingle(content)
+    withFile("multiple.rule") { content =>
+      builder ++= bench("multiple", 10) {
+        RulesParser.parse(content)
+      }
+      builder += '\n'
+
+      builder ++= bench("multiple.traced", 10) {
+        RulesParser.tracedParse(content)
+      }
+      builder += '\n'
     }
 
-    bench("single.traced", 50) {
-      RulesParser.tracedParse(content)
-    }
-  }
-
-  withFile("multiple.rule") { content =>
-    bench("multiple", 50) {
-      RulesParser.parse(content)
-    }
-
-    bench("multiple.traced", 50) {
-      RulesParser.tracedParse(content)
-    }
+    builder.result()
   }
 }

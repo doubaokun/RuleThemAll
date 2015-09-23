@@ -1,22 +1,22 @@
 package sta.tests
 
 import android.app.Activity
-import android.content.pm.ActivityInfo
-import android.os.{ StrictMode, Bundle }
+import android.os.Bundle
+import android.view.View
+import kj.android.logging.Logging
 import sta.tests.benchmarks.ParserBenchmark
 
-class BenchmarkActivity extends Activity {
+class BenchmarkActivity extends Activity with Logging {
   override def onCreate(savedInstanceState: Bundle): Unit = {
     super.onCreate(savedInstanceState)
-    if (getRequestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
-      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
-    else
-      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
 
-    StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build())
+    setContentView(R.layout.activity_benchmark)
+  }
 
-    new ParserBenchmark(getResources.getAssets)
-
-    finish()
+  def runParserBenchmark(view: View): Unit = {
+    log.info("Running ParserBenchmark")
+    new BenchmarkTask(this, R.id.parserBenchmark,
+      () => new ParserBenchmark(getResources.getAssets).run()
+    ).execute()
   }
 }

@@ -1,4 +1,4 @@
-def charger_connected {
+rule charger_connected {
     when (
         battery power connected
     ) do {
@@ -7,7 +7,7 @@ def charger_connected {
     }
 }
 
-def charger_disconnected {
+rule charger_disconnected {
     when (
         battery power disconnected
     ) do {
@@ -16,7 +16,7 @@ def charger_disconnected {
     }
 }
 
-def music_player {
+rule music_player {
     when (
         headset connected,
         network connected
@@ -28,7 +28,7 @@ def music_player {
     }
 }
 
-def no_music_player {
+rule no_music_player {
     when (
         headset disconnected
     ) do {
@@ -38,7 +38,7 @@ def no_music_player {
     }
 }
 
-def work_meeting {
+rule work_meeting {
     when (
         or (
             calendar event (
@@ -51,7 +51,7 @@ def work_meeting {
     }
 }
 
-def no_work_meeting {
+rule no_work_meeting {
     when (
         or (
             calendar event (

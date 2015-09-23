@@ -1,4 +1,4 @@
-def single {
+rule single {
     when (
         battery (
             plugged ac

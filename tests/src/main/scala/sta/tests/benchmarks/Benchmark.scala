@@ -5,7 +5,7 @@ import org.scalameter.Key._
 import org.scalameter._
 
 abstract class Benchmark extends Logging {
-  protected def bench[A](name: String, reps: Int)(snippet: => A): Unit = {
+  protected def bench[A](name: String, reps: Int)(snippet: => A): String = {
     def default() = config(
       preJDK7 -> true,
       exec.maxWarmupRuns -> reps,
@@ -23,5 +23,10 @@ abstract class Benchmark extends Logging {
     } measure snippet
 
     log.info(s"Memory for $name: $memory")
+
+    f"""Results for $name
+       |    Time: ${time.value}%.2f [${time.units}]
+       |    Memory: ${memory.value}%.2f [${memory.units}]
+    """.stripMargin
   }
 }
