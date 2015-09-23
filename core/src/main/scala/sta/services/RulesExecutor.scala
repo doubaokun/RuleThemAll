@@ -13,7 +13,6 @@ import sta.model.actions.Action
 abstract class RulesExecutor extends Service with Logging {
   private[this] val mainThread = new HandlerThread(s"${logTag.tag}-Main")
   mainThread.start()
-
   protected[this] val mainLooper = mainThread.getLooper
 
   private[this] val actionExecutors = TrieMap.empty[Class[_], Action => Option[Throwable]]
@@ -24,8 +23,12 @@ abstract class RulesExecutor extends Service with Logging {
 
   def updateState(model: BaseModel): Unit
 
-  protected def registerActionExecutor(clazz: Class[_], executor: Action => Option[Throwable]) = {
+  protected def registerActionExecutor(clazz: Class[_], executor: Action => Option[Throwable]): Unit = {
     actionExecutors += (clazz -> executor)
+  }
+
+  protected def removeActionExecutor(clazz: Class[_]): Unit = {
+    actionExecutors -= clazz
   }
 
   def executeAction(action: Action): Rule#Result = {

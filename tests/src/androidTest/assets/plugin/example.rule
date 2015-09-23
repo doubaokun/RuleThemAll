@@ -1,7 +1,7 @@
 rule example {
     when (
         or (
-            dummy,
+            dummy available,
             calendar event starts
         )
     ) do {

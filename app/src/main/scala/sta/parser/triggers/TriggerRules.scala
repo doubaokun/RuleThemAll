@@ -7,16 +7,21 @@ import sta.model.triggers._
 import sta.parser.{TriggerParser, Extras}
 
 trait TriggerRules extends Extras {
-  private val parsers = mutable.LinkedHashSet.empty[TriggerParser[_ <: BaseModel]]
-  parsers ++= Seq(BatteryRules, BluetoothRules, CalendarRules, HeadsetRules,
-    NetworkRules, TimeRules, WiFiRules)
+  private[this] val parsers = mutable.HashMap.empty[String, TriggerParser[_ <: BaseModel]]
+  addTriggerParser(BatteryRules)
+  addTriggerParser(BluetoothRules)
+  addTriggerParser(CalendarRules)
+  addTriggerParser(HeadsetRules)
+  addTriggerParser(NetworkRules)
+  addTriggerParser(TimeRules)
+  addTriggerParser(WiFiRules)
 
   protected def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
-    parsers += parser
+    parsers += (parser.Prefix -> parser)
   }
 
-  protected def removeTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
-    parsers -= parser
+  protected def removeTriggerParser(parserPrefix: String): Unit = {
+    parsers -= parserPrefix
   }
 
   import white._
@@ -34,7 +39,7 @@ trait TriggerRules extends Extras {
         trigger.Prefix.splitWS.withWS ~! conditions
       }
 
-      P(parsers.tail.foldLeft(single(parsers.head))(_ | single(_)))
+      P(parsers.valuesIterator.drop(1).foldLeft(single(parsers.head._2))(_ | single(_)))
     }
     lazy val logicOps: P[Trigger] = P(
       ("and" ~! twoOrMore(nested) map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |

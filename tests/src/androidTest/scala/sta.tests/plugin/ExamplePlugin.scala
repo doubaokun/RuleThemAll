@@ -37,6 +37,6 @@ object ExamplePlugin {
 
     def Prefix: String = "dummy"
 
-    def Main: P[Standalone[_ <: Dummy]] = P(Pass map (_ => Trigger.Condition[Dummy](_ == Dummy())))
+    def Main: P[Standalone[_ <: Dummy]] = P("available" push Trigger.Condition[Dummy](_ == Dummy()))
   }
 }

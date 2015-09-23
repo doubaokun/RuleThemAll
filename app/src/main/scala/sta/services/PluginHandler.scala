@@ -1,12 +1,14 @@
 package sta.services
 
 import android.content._
-import android.content.pm.{ServiceInfo, PackageManager}
+import android.content.pm.{PackageManager, ServiceInfo}
 import android.os._
 import android.util.SparseArray
 import java.util.UUID
-import java.util.concurrent.{TimeUnit, CountDownLatch}
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import kj.android.common.Common
+import kj.android.concurrent.ExecutionContext.Implicits._
+import kj.android.concurrent.Task
 import kj.android.logging.Logging
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -79,6 +81,8 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
   }
 
   private[this] val plugins = new SparseArray[PluginConnection]()
+  private[this] val pluginActionParsers = new SparseArray[Class[_]]()
+  private[this] val pluginTriggerParsers = new SparseArray[String]()
 
   private[this] val pluginHandler = new Handler(pluginLooper) {
     override def handleMessage(msg: Message): Unit = try {
@@ -94,11 +98,15 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
           bindService(launchIntent, conn, Context.BIND_IMPORTANT)
           conn.latch.await()
 
-          for (tpe <- msg.get[Class[_]](ACTION_TYPE)) {
-            root.registerActionExecutor(tpe, conn.executeAction)
+          msg.get[ActionParser[Action]](ACTION_PARSER).foreach { p =>
+            registerActionExecutor(p.actionClass, conn.executeAction)
+            pluginActionParsers.put(id, p.actionClass)
+            RulesParser.addActionParser(p)
           }
-          msg.get[ActionParser[Action]](ACTION_PARSER).foreach(RulesParser.addActionParser)
-          msg.get[TriggerParser[BaseModel]](TRIGGER_PARSER).foreach(RulesParser.addTriggerParser)
+          msg.get[TriggerParser[BaseModel]](TRIGGER_PARSER).foreach { p =>
+            pluginTriggerParsers.put(id, p.Prefix)
+            RulesParser.addTriggerParser(p)
+          }
           plugins.put(id, conn)
 
           pluginLock.get(id).countDown()
@@ -117,7 +125,9 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
           val id = msg.arg1
           log.info(s"Updating state with model received by plugin: ${plugins.get(id).connectedTo}")
 
-          msg.get[BaseModel](MODEL).foreach(updateState)
+          msg.get[BaseModel](MODEL).foreach(m => Task.runWithWakeLock {
+            updateState(m)
+          })
         case RESET_TIMERS =>
           val id = msg.arg1
           log.info(s"Resetting timers requested by plugin: ${plugins.get(id).connectedTo}")
@@ -178,17 +188,28 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
       val id = name.hashCode()
       val conn = plugins.get(id)
 
+      def clean(): Unit = {
+        plugins.remove(id)
+        Option(pluginActionParsers.get(id)).foreach { clazz =>
+          removeActionExecutor(clazz)
+          RulesParser.removeActionParser(clazz)
+        }
+        pluginActionParsers.remove(id)
+        Option(pluginTriggerParsers.get(id)).foreach(RulesParser.removeTriggerParser)
+        pluginTriggerParsers.remove(id)
+      }
+
       lock(id, 20.seconds) {
         unbindService(conn)
       }({
         log.info(s"Plugin $name deregistered")
-        plugins.remove(id)
+        clean()
       }, { th =>
         log.error(s"Exception during deregistering plugin: $name", th)
-        plugins.remove(id)
+        clean()
       },{
         log.warn(s"Forcing removal of unresponsive plugin: $name")
-        plugins.remove(id)
+        clean()
       })
     }
   }

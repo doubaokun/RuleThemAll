@@ -34,16 +34,16 @@ sealed abstract class RulesParser extends Extras with ActionRules with TriggerRu
     super.addActionParser(parser)
   }
 
-  override final def removeActionParser(parser: ActionParser[_ <: Action]): Unit = {
-    super.removeActionParser(parser)
+  override final def removeActionParser(parserClass: Class[_]): Unit = {
+    super.removeActionParser(parserClass)
   }
 
   override final def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
     super.addTriggerParser(parser)
   }
 
-  override final def removeTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
-    super.removeTriggerParser(parser)
+  override final def removeTriggerParser(parserPrefix: String): Unit = {
+    super.removeTriggerParser(parserPrefix)
   }
 }
 

@@ -15,13 +15,6 @@ abstract class TriggerParser[M <: BaseModel] extends BasicRules with Extras with
   def Main: P[Trigger.Standalone[_ <: M]]
 
   lazy val Rule: P[Trigger] = Main
-
-  override final def equals(o: Any): Boolean = o match {
-    case p: TriggerParser[_] => p.Prefix.split("\\s+").mkString(" ") == Prefix.split("\\s+").mkString(" ")
-    case _ => false
-  }
-
-  override final def hashCode(): Int = Prefix.split("\\s+").mkString(" ").hashCode
 }
 
 private[parser] class TriggerParserMacros(val c: blackbox.Context) {

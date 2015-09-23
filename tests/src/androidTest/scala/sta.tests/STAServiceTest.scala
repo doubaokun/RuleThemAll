@@ -7,6 +7,7 @@ import android.test.ServiceTestCase
 import android.util.SparseArray
 import java.io.{File, FileOutputStream}
 import org.scalatest.Matchers
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.reflect.{ClassTag, classTag}
 import spire.syntax.literals._
@@ -14,6 +15,9 @@ import sta.common.Uses
 import sta.model.triggers.Implicits._
 import sta.model.triggers.Trigger
 import sta.model.triggers.Trigger.Branch
+import sta.parser.RulesParser
+import sta.parser.actions.ActionRules
+import sta.parser.triggers.TriggerRules
 import sta.services.{PluginHandler, STAService}
 import sta.storage.RulesStorage
 import sta.tests.plugin.ExamplePlugin
@@ -60,10 +64,22 @@ class STAServiceTest extends ServiceTestCase[STAService](classOf[STAService]) wi
       "sta$services$PluginHandler$$plugins", getService)
     plugins.size should === (0)
 
+    // remember amount of trigger amd action parsers
+    val actionParsers = callPrivateMethod[ActionRules, mutable.HashMap[_, _]](
+      "sta$parser$actions$ActionRules$$parsers", RulesParser
+    )
+    val triggerParsers = callPrivateMethod[TriggerRules, mutable.HashMap[_, _]](
+      "sta$parser$triggers$TriggerRules$$parsers", RulesParser
+    )
+    val actionParsersSize = actionParsers.size
+    val triggerParsersSize = triggerParsers.size
+
     // load plugin
     val add = new Intent(Intent.ACTION_PACKAGE_ADDED).setData(Uri.parse(s"package:$pkg"))
     pluginUpdater.onReceive(getSystemContext, add)
-    plugins.size should ===(1)
+    plugins.size should === (1)
+    actionParsers.size should === (actionParsersSize + 1)
+    triggerParsers.size should === (triggerParsersSize + 1)
 
     // load rule
     val files = {
@@ -117,5 +133,7 @@ class STAServiceTest extends ServiceTestCase[STAService](classOf[STAService]) wi
     val remove = new Intent(Intent.ACTION_PACKAGE_REMOVED).setData(Uri.parse(s"package:$pkg"))
     pluginUpdater.onReceive(getSystemContext, remove)
     plugins.size should ===(0)
+    actionParsers.size should === (actionParsersSize)
+    triggerParsers.size should === (triggerParsersSize)
   }
 }

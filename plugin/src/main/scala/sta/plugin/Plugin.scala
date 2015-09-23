@@ -6,7 +6,6 @@ import android.os._
 import java.util.UUID
 import kj.android.common.Common
 import kj.android.logging.Logging
-import scala.reflect.{ClassTag, classTag}
 import scala.util.control.NonFatal
 import sta.common.Requirement
 import sta.model.BaseModel
@@ -14,7 +13,7 @@ import sta.model.actions.Action
 import sta.parser.{ActionParser, TriggerParser}
 import sta.services.RulesExecutor
 
-class Plugin[A <: Action: ClassTag, M <: BaseModel] extends Service with Common with Logging { ctx =>
+class Plugin[A <: Action, M <: BaseModel] extends Service with Common with Logging { ctx =>
   import Plugin._
 
   @inline private def remote(block: => Unit) = try {
@@ -58,10 +57,7 @@ class Plugin[A <: Action: ClassTag, M <: BaseModel] extends Service with Common 
     log.info(s"Registering plugin")
     val name = new ComponentName(this, this.getClass)
     val data = new Bundle()
-    actionParser.foreach { p =>
-      data.putSerializable(ACTION_PARSER, p)
-      data.putSerializable(ACTION_TYPE, actionClass)
-    }
+    actionParser.foreach(data.putSerializable(ACTION_PARSER, _))
     triggerParser.foreach(data.putSerializable(TRIGGER_PARSER, _))
     data.putSerializable(TOKEN, token)
     replyTo.send(Message.obtain(null, REGISTER, name).withData(data))
@@ -70,8 +66,6 @@ class Plugin[A <: Action: ClassTag, M <: BaseModel] extends Service with Common 
   def actionParser: Option[ActionParser[A]] = None
 
   def triggerParser: Option[TriggerParser[M]] = None
-
-  final def actionClass: Class[_] = classTag[A].runtimeClass
 
   final def update(model: M): Unit = remote {
     log.info("Updating state")
@@ -130,7 +124,6 @@ object Plugin {
   val REGISTER = 1
   val TOKEN = "sta.plugin.token"
   val ACTION_PARSER = "sta.parser.action"
-  val ACTION_TYPE = "sta.action.type"
   val TRIGGER_PARSER = "sta.parser.trigger"
 
   val DEREGISTER = 2

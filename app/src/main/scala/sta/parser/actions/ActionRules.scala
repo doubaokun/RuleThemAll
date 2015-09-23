@@ -6,19 +6,21 @@ import sta.model.actions.Action
 import sta.parser.ActionParser
 
 trait ActionRules {
-  private val parsers = mutable.LinkedHashSet.empty[ActionParser[_ <: Action]]
-  parsers ++= Seq(LaunchApplicationRules, SetToRules, TurnOnOffRules)
+  private[this] val parsers = mutable.HashMap.empty[Class[_], ActionParser[_ <: Action]]
+  addActionParser(LaunchApplicationRules)
+  addActionParser(SetToRules)
+  addActionParser(TurnOnOffRules)
 
   protected def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
-    parsers += parser
+    parsers += (parser.actionClass -> parser)
   }
 
-  protected def removeActionParser(parser: ActionParser[_ <: Action]): Unit = {
-    parsers -= parser
+  protected def removeActionParser(parserClass: Class[_]): Unit = {
+    parsers -= parserClass
   }
 
   final def Action: P[Action] = {
-    parsers.tail.foldLeft(parsers.head.Rule.asInstanceOf[P[Action]]) {
+    parsers.valuesIterator.drop(1).foldLeft(parsers.head._2.Rule.asInstanceOf[P[Action]]) {
       case (acc, p) => acc | p.Rule.asInstanceOf[P[Action]]
     }
   }
