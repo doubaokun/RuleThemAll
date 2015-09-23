@@ -1,15 +1,16 @@
 package sta.parser
 
-import fastparse.core.SyntaxError
+import fastparse.core.Result
 import fastparse.noApi._
-import sta.model.{BaseModel, Rule}
+import sta.model.Rule
 import sta.model.actions.Action
 import sta.model.triggers.Trigger
 import sta.parser.Extras._
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 
-sealed abstract class RulesParser extends Extras with ActionRules with TriggerRules {
+object RulesParser extends Extras with ActionRules with TriggerRules {
+
   import white._
 
   def Name: P[String] = P((CharPred(_.isLetter) ~~ ("_" ~~ CharPred(_.isLetterOrDigit)).?).repX(1).! ~~ !"_")
@@ -24,45 +25,16 @@ sealed abstract class RulesParser extends Extras with ActionRules with TriggerRu
     }) map (v => Rule(v._1, v._2._1, v._2._2))
   )
 
-  def Root: P[Seq[Rule]] = P(Start ~ Definition.rep(1) ~ End)
+  def Multi: P[Seq[Rule]] = P(Start ~ Definition.rep(1) ~ End)
 
-  def TracedRoot: P[Seq[(Rule, Int)]] = P(Start ~ (Definition ~~ Index).rep(1) ~ End)
+  /** Parses multiple rules from input annotated with index where the rule ends. */
+  def AnnotatedMulti: P[Seq[(Rule, Int)]] = P(Start ~ (Definition ~~ Index).rep(1) ~ End)
 
   def Single: P[Rule] = P(Start ~ Definition ~ End)
 
-  override final def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
-    super.addActionParser(parser)
+  /** Returns initialized version of selected parser. */
+  def cached[T](selector: this.type => P[T]): String => Result[T] = {
+    val parser = selector(this)
+    str => parser.parse(str)
   }
-
-  override final def removeActionParser(parserClass: Class[_]): Unit = {
-    super.removeActionParser(parserClass)
-  }
-
-  override final def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
-    super.addTriggerParser(parser)
-  }
-
-  override final def removeTriggerParser(parserPrefix: String): Unit = {
-    super.removeTriggerParser(parserPrefix)
-  }
-}
-
-object RulesParser extends RulesParser {
-  def parse(input: String): Either[SyntaxError, Seq[Rule]] = {
-    try {
-      Right(Root.parse(input).get.value)
-    } catch {
-      case se: SyntaxError => Left(se)
-    }
-  }
-  
-  def tracedParse(input: String): Either[SyntaxError, Seq[(Rule, Int)]] = {
-    try {
-      Right(TracedRoot.parse(input).get.value)
-    } catch {
-      case se: SyntaxError => Left(se)
-    }
-  }
-
-  protected[sta] def parseSingle(input: String): Rule = Single.parse(input).get.value
 }

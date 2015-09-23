@@ -11,34 +11,48 @@ class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
   
   def run(): String = {
     val builder = new StringBuilder
-    
+
+    val singleParser = RulesParser.cached(_.Single).andThen(_.get)
+    val multiParser = RulesParser.cached(_.Multi).andThen(_.get)
+    val annotatedMultiParser = RulesParser.cached(_.AnnotatedMulti).andThen(_.get)
+
     withFile("single.rule") { content =>
-      builder ++= bench("single", 10) {
-        RulesParser.parse(content)
-      }
-      builder += '\n'
+      builder ++= "|------------------|\n"
+      builder ++= "| File single.rule |\n"
+      builder ++= "|------------------|\n"
 
-      builder ++= bench("single.single", 10) {
-        RulesParser.parseSingle(content)
+      builder ++= "  "
+      builder ++= bench("Single parser", 25) {
+        singleParser(content)
       }
-      builder += '\n'
 
-      builder ++= bench("single.traced", 10) {
-        RulesParser.tracedParse(content)
+      builder ++= "\n  "
+      builder ++= bench("Multi parser", 25) {
+        multiParser(content)
       }
-      builder += '\n'
+
+      builder ++= "\n  "
+      builder ++= bench("AnnotatedMulti parser", 25) {
+        annotatedMultiParser(content)
+      }
+      builder ++= "\n"
     }
 
     withFile("multiple.rule") { content =>
-      builder ++= bench("multiple", 10) {
-        RulesParser.parse(content)
-      }
-      builder += '\n'
+      builder ++= "|--------------------|\n"
+      builder ++= "| File multiple.rule |\n"
+      builder ++= "|--------------------|\n"
 
-      builder ++= bench("multiple.traced", 10) {
-        RulesParser.tracedParse(content)
+      builder ++= "  "
+      builder ++= bench("Multi parser", 25) {
+        multiParser(content)
       }
-      builder += '\n'
+
+      builder ++= "\n  "
+      builder ++= bench("AnnotatedMulti parser", 25) {
+        annotatedMultiParser(content)
+      }
+      builder ++= "\n"
     }
 
     builder.result()

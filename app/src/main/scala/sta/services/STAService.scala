@@ -105,11 +105,10 @@ class STAService extends RulesExecutor with PluginHandler { root =>
     override def handleMessage(msg: Message): Unit = try {
       msg.what match {
         case LOAD =>
-          msg.obj.asInstanceOf[Array[String]].foreach { path =>
-            val RegistrationInfo(toAdd, toRemove, rules) = storage.register(new File(path))
-            rules.foreach(timers += _)
-            if (toAdd.nonEmpty || toRemove.nonEmpty) update(onAdd(toAdd, toRemove))
-          }
+          val info = storage.register(msg.obj.asInstanceOf[Array[String]].map(new File(_)): _*)
+          info.addedRules.foreach(timers += _)
+          if (info.addedRequirements.nonEmpty || info.removedRequirements.nonEmpty)
+            update(onAdd(info.addedRequirements, info.removedRequirements))
         case UNLOAD =>
           val ruleNames = msg.obj.asInstanceOf[Array[String]]
           val toRemove = storage.unregister(ruleNames: _*)

@@ -20,13 +20,6 @@ import sta.tests.PropertyChecks
 class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks with Matchers {
   implicit def loadInputStream(is: InputStream): String = io.Source.fromInputStream(is).mkString
 
-  implicit class ParserResult(result: Either[SyntaxError, Seq[Rule]]) {
-    def get = result match {
-      case Left(th) => sys.error(th.toString())
-      case Right(seq) => seq
-    }
-  }
-  
   def compareRules(actual: Seq[Rule], expected: Seq[Rule]): Unit = {
     actual.size should === (expected.size)
     actual.zip(expected).foreach { case (actualRule, expectedRule) =>
@@ -42,27 +35,49 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   behavior of "RulesParser"
 
   it should "return error on malformed input" in {
-    RulesParser.parse("rulee{do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rulee{do{set sound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule e_{do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e_{do{set sound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule _e{do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule _e{do{set sound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule e_1_{do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e_1_{do{set sound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule 1e{do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule 1e{do{set sound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule e{do{setsound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e{do{setsound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule e{do{set soundprofile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e{do{set soundprofile to silent}}").get
+    }
 
-    RulesParser.parse("rule e{do{set sound profileto silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e{do{set sound profileto silent}}").get
+    }
 
-    RulesParser.parse("rule e{when()do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e{when()do{set sound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule e{when(batteryplugged ac)do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e{when(batteryplugged ac)do{set sound profile to silent}}").get
+    }
 
-    RulesParser.parse("rule e{when(battery pluggedac)do{set sound profile to silent}}").isLeft should === (true)
+    intercept[SyntaxError] {
+      RulesParser.Multi.parse("rule e{when(battery pluggedac)do{set sound profile to silent}}").get
+    }
   }
 
   it should "parse rule with no conditions" in {
@@ -71,13 +86,12 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       branches = Branch(Seq.empty, Seq.empty) :: Nil,
       actions = Seq(ChangeSoundProfile(ChangeSoundProfile.Mode.Silent))
     ) :: Nil
-    val actual = RulesParser.parse(
+    val actual = RulesParser.Multi.parse(
       """
         |rule empty{do{set sound profile to silent}}
-      """.stripMargin)
+      """.stripMargin).get.value
 
-    compareRules(actual = actual.get, expected = expected)
-    actual.get.size should === (1)
+    compareRules(actual = actual, expected = expected)
   }
 
   it should "parse dense script" in {
@@ -92,11 +106,11 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
         TurnOnOffDevice.Bluetooth(enable = false)
       )
     ) :: Nil
-    val actual = RulesParser.parse(
+    val actual = RulesParser.Multi.parse(
       "rule dense{when(or(battery level <= 70%,headset disconnected))do{set sound profile to silent;turn bluetooth off}}"
-    )
+    ).get.value
 
-    compareRules(actual = actual.get, expected = expected)
+    compareRules(actual = actual, expected = expected)
   }
 
   it should "parse scripts with single rule" in {
@@ -117,9 +131,9 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
         TurnOnOffDevice.WiFi(enable = true)
       )
     ) :: Nil
-    val actual = RulesParser.parse(getClass.getResourceAsStream("/single.rule"))
+    val actual = RulesParser.Multi.parse(getClass.getResourceAsStream("/single.rule")).get.value
 
-    compareRules(actual = actual.get, expected = expected)
+    compareRules(actual = actual, expected = expected)
   }
 
   it should "parse scripts with multiple rules" in {
@@ -154,8 +168,8 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
         SetSoundTo.Muted(SetSoundTo.StreamType.Notification, mute = false)
       )
     )  :: Nil
-    val actual = RulesParser.parse(getClass.getResourceAsStream("/multiple.rule"))
+    val actual = RulesParser.Multi.parse(getClass.getResourceAsStream("/multiple.rule")).get.value
 
-    compareRules(actual = actual.get, expected = expected)
+    compareRules(actual = actual, expected = expected)
   }
 }

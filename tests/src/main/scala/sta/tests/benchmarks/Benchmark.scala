@@ -24,7 +24,7 @@ abstract class Benchmark extends Logging {
 
     log.info(s"Memory for $name: $memory")
 
-    f"""Results for $name
+    f"""$name
        |    Time: ${time.value}%.2f [${time.units}]
        |    Memory: ${memory.value}%.2f [${memory.units}]
     """.stripMargin

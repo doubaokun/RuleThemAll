@@ -16,11 +16,11 @@ trait TriggerRules extends Extras {
   addTriggerParser(TimeRules)
   addTriggerParser(WiFiRules)
 
-  protected def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
+  def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
     parsers += (parser.Prefix -> parser)
   }
 
-  protected def removeTriggerParser(parserPrefix: String): Unit = {
+  def removeTriggerParser(parserPrefix: String): Unit = {
     parsers -= parserPrefix
   }
 
