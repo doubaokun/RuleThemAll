@@ -22,17 +22,17 @@ class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
       builder ++= "|------------------|\n"
 
       builder ++= "  "
-      builder ++= bench("Single parser", 25) {
+      builder ++= bench("Single parser", 100) {
         singleParser(content)
       }
 
       builder ++= "\n  "
-      builder ++= bench("Multi parser", 25) {
+      builder ++= bench("Multi parser", 100) {
         multiParser(content)
       }
 
       builder ++= "\n  "
-      builder ++= bench("AnnotatedMulti parser", 25) {
+      builder ++= bench("AnnotatedMulti parser", 100) {
         annotatedMultiParser(content)
       }
       builder ++= "\n"
@@ -44,12 +44,12 @@ class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
       builder ++= "|--------------------|\n"
 
       builder ++= "  "
-      builder ++= bench("Multi parser", 25) {
+      builder ++= bench("Multi parser", 100) {
         multiParser(content)
       }
 
       builder ++= "\n  "
-      builder ++= bench("AnnotatedMulti parser", 25) {
+      builder ++= bench("AnnotatedMulti parser", 100) {
         annotatedMultiParser(content)
       }
       builder ++= "\n"
