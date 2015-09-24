@@ -5,6 +5,7 @@ import scala.collection.mutable
 import sta.model.BaseModel
 import sta.model.triggers._
 import sta.parser.{TriggerParser, Extras}
+import sta.parser.Extras._
 
 trait TriggerRules extends Extras {
   private[this] val parsers = mutable.HashMap.empty[String, TriggerParser[_ <: BaseModel]]
@@ -31,12 +32,15 @@ trait TriggerRules extends Extras {
 
     val triggers = {
       def single(trigger: TriggerParser[_ <: BaseModel]) = {
-        val main = P(trigger.Rule)(trigger.Prefix)
+        val main = trigger.Rule
+        val singleErr = "single condition"
+        val multipleErr = """multiple conditions inside "(...)" separated by ",""""
 
-        val conditions = main |
-          ("(" ~ (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) ~ ")")
+        val conditions = P(Skip1 ~~ main)(singleErr) | P(
+          Skip0 ~~ "(" ~ (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) ~ ")"
+        )(multipleErr)
 
-        trigger.Prefix.splitWS.withWS ~! conditions
+        trigger.Prefix.splitWS ~~! conditions
       }
 
       P(parsers.valuesIterator.drop(1).foldLeft(single(parsers.head._2))(_ | single(_)))

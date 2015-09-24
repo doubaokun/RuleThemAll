@@ -29,7 +29,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
         actualBranch.timers should contain theSameElementsAs expectedBranch.timers
         actualBranch.conditions should contain theSameElementsAs expectedBranch.conditions
       }
-    }  
+    }
   }
 
   behavior of "RulesParser"
@@ -94,25 +94,6 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
     compareRules(actual = actual, expected = expected)
   }
 
-  it should "parse dense script" in {
-    val expected = Rule(
-      name = "dense",
-      branches = Seq(
-        Branch(conditions = List(Trigger.Condition[Battery](_.level <= ub"70"))),
-        Branch(conditions = List(Trigger.Condition[Headset](_ == Headset.withName("disconnected"))))
-      ),
-      actions = Seq(
-        ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),
-        TurnOnOffDevice.Bluetooth(enable = false)
-      )
-    ) :: Nil
-    val actual = RulesParser.Multi.parse(
-      "rule dense{when(or(battery level <= 70%,headset disconnected))do{set sound profile to silent;turn bluetooth off}}"
-    ).get.value
-
-    compareRules(actual = actual, expected = expected)
-  }
-
   it should "parse scripts with single rule" in {
     val expected = Rule(
       name = "first_rule",
@@ -169,6 +150,70 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       )
     )  :: Nil
     val actual = RulesParser.Multi.parse(getClass.getResourceAsStream("/multiple.rule")).get.value
+
+    compareRules(actual = actual, expected = expected)
+  }
+
+  it should "parse dense script" in {
+    val expected = Rule(
+      name = "dense",
+      branches = Seq(
+        Branch(conditions = List(Trigger.Condition[Battery](_.level <= ub"70"))),
+        Branch(conditions = List(Trigger.Condition[Headset](_ == Headset.withName("disconnected"))))
+      ),
+      actions = Seq(
+        ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),
+        TurnOnOffDevice.Bluetooth(enable = false)
+      )
+    ) :: Nil
+    val actual = RulesParser.Multi.parse(
+      "rule dense{when(or(battery level <= 70%,headset disconnected))do{set sound profile to silent;turn bluetooth off}}"
+    ).get.value
+
+    compareRules(actual = actual, expected = expected)
+  }
+
+  it should "ignore comments" in {
+    val expected = Rule(
+      name = "dense",
+      branches = Seq(
+        Branch(conditions = List(
+          Trigger.Condition[Headset](_ == Headset.withName("disconnected")),
+          Trigger.Condition[Battery](_.level > ub"80"),
+          Trigger.Condition[PowerState](_ == PowerState.withName("connected"))
+        ))
+      ),
+      actions = Seq(
+        ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),
+        TurnOnOffDevice.WiFi(enable = true),
+        TurnOnOffDevice.Bluetooth(enable = false)
+      )
+    ) :: Nil
+
+    val actual = RulesParser.Multi.parse(
+      """// this is a comment
+        |rule with_comments// this is another one
+        |{
+        |    when (
+        |        headset
+        |            disconnected,
+        |        battery(
+        |            level > 80%,
+        |            power connected
+        |        )
+        |        //
+        |        // network connected,
+        |        //time matches "* * * * *"
+        |        //
+        |    ) do {
+        |        set sound profile to silent/**/;turn wifi on
+        |        /* and this is a
+        |             multiline comment*/
+        |        turn bluetooth/*and a multiline comment in an unusual position*/ off/**/
+        |    //}
+        |}/**/}
+      """.stripMargin
+    ).get.value
 
     compareRules(actual = actual, expected = expected)
   }

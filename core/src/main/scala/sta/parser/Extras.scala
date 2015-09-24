@@ -1,8 +1,10 @@
 package sta.parser
 
 import scala.language.implicitConversions
+import fastparse.Implicits.Sequencer
 import fastparse.WhitespaceApi
 import fastparse.all._
+import fastparse.core.{Mutable, ParseCtx}
 
 trait Extras {
   lazy val white = Extras.white
@@ -16,7 +18,7 @@ trait Extras {
 
 object Extras {
   class Keyword(val keyword: String) extends AnyVal {
-    def withWS: Parser[Unit] = keyword ~ NoCut(WS1)
+    def withWS: Parser[Unit] = keyword ~ NoCut(Skip1)
 
     def splitWS: Parser[Unit] = {
       val splitted = keyword.split("\\s+")
@@ -29,16 +31,41 @@ object Extras {
   class ParserExtras[T](val parser: Parser[T]) extends AnyVal {
     def withFilter(p: T => Boolean) = parser.filter(p)
 
-    def withWS: Parser[T] = parser ~ NoCut(WS1)
+    def ~~![V, R](p: P[V])(implicit ev: Sequencer[T, V, R]): P[R] = parser ~! p
+
+    def withWS: Parser[T] = parser ~  NoCut(Skip1)
 
     def push[U](value: U): Parser[U] = parser.map(_ => value)
   }
 
-  def WS = NoTrace(" " | "\n" | "\r\n")
+  def WS = NoTrace(" " | "\n")
 
-  def WS0 = P(WS.rep)("\\s*")
+  def Comment = {
+    val inComment = new Parser[Unit] {
+      def parseRec(cfg: ParseCtx, index: Int) = {
+        var curr = index
+        val input = cfg.input
+        while(curr < input.length - 1 && input(curr) != '*' && input(curr + 1) != '/') {
+          input(curr + 1) match {
+            case '*' => curr += 1
+            case _ => curr += 2
+          }
+        }
+        success(cfg.success, (), curr, Nil, false)
+      }
+    }
+    val MultiLine = "/*" ~ inComment ~ "*/"
+    val SingleLine = "//" ~ CharsWhile(_ != '\n', min = 0)
+    NoTrace((MultiLine | SingleLine).rep(1))
+  }
 
-  def WS1 = P(WS.rep(1))("\\s+")
+  def WS0 = NoTrace(WS.rep)
 
-  lazy val white = WhitespaceApi.Wrapper(WS0)
+  def WS1 = P(WS.rep(1))("at least one whitespace")
+
+  def Skip0 = NoTrace(WS0 ~ (Comment ~ WS0).rep)
+
+  def Skip1 = P(WS1 ~ (Comment ~ WS0).rep)("at least one whitespace")
+
+  lazy val white = WhitespaceApi.Wrapper(Skip0)
 }

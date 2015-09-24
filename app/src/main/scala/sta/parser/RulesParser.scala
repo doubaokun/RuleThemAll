@@ -17,7 +17,9 @@ object RulesParser extends Extras with ActionRules with TriggerRules {
 
   def Branches: P[Seq[Trigger.Branch]] = P("(" ~ Triggers.map(_.flatten) ~ ")")
 
-  def Actions: P[Seq[Action]] = P("{" ~ Action.repX(1, sep = (WS0 ~~ NoTrace(";") ~~ WS0) | WS1) ~ "}")
+  def Actions: P[Seq[Action]] = P(
+    "{" ~ Action.repX(1, sep = Comment.? ~~ ((WS0 ~~ NoTrace(";") ~~ WS0) | WS1) ~~ Skip0) ~ "}"
+  )
 
   def Definition: P[Rule] = P(
     ("rule".withWS ~ Name ~ {
