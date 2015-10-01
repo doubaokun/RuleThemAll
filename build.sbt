@@ -31,16 +31,11 @@ lazy val core = project.in(file("core")).settings(
     _ / "sta" / "service" / "serviceMacros"
   )
 
-lazy val plugin = project.in(file("plugin")).settings(libAndroidSettings: _*)
-  .dependsOnLocal(core, utils).excludeFromLinting(
-    _ / "sta" / "plugin" / "Plugin"
-  )
-
 lazy val app = project.in(file("app")).settings(
   libraryDependencies ++= Seq(
     `android-support-v4`
   )
-).settings(libAndroidSettings: _*).dependsOnLocal(core, plugin, utils).excludeFromLinting(
+).settings(libAndroidSettings: _*).dependsOnLocal(core, utils).excludeFromLinting(
     _ / "sta" / "parser" / **,
     _ / "sta" / "service" / "PluginHandler",
     _ / "sta" / "service" / "STAService"
