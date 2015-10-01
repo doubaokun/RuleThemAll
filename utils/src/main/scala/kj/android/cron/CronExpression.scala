@@ -2,7 +2,7 @@ package kj.android.cron
 
 import java.util.{Arrays, Calendar, Date}
 
-case class CronExpression(minute: CronExpression.Value, hour: CronExpression.Value,
+final case class CronExpression(minute: CronExpression.Value, hour: CronExpression.Value,
   dayOfMonth: CronExpression.Value, month: CronExpression.Value,
   dayOfWeek: CronExpression.Value, year: Option[CronExpression.Value]) {
   require(minute.min >= 0 && minute.max <= 59)

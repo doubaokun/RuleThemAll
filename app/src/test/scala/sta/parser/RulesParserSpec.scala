@@ -98,14 +98,14 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
     val expected = Rule(
       name = "first_rule",
       branches = Seq(
-        Branch(List(
+        Branch(conditions = List(
           Trigger.Condition[Battery](_.plugged == Battery.Plugged.withName("ac")),
           Trigger.Condition[Headset](_ == Headset.withName("connected"))
-        )),
-        Branch(List(
+        ), timers = Nil),
+        Branch(conditions = List(
           Trigger.Condition[Battery](_.level > ub"50"),
           Trigger.Condition[Headset](_ == Headset.withName("connected"))
-        ))
+        ), timers = Nil)
       ),
       actions = Seq(
         ChangeSoundProfile(ChangeSoundProfile.Mode.Vibrate),
@@ -120,18 +120,22 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   it should "parse scripts with multiple rules" in {
     val expected = Rule(
       name = "charger_connected",
-      branches = Seq(Branch(List(Trigger.Condition[PowerState](_ == PowerState.withName("connected"))))),
+      branches = Seq(Branch(conditions = List(
+        Trigger.Condition[PowerState](_ == PowerState.withName("connected"))
+      ), timers = Nil)),
       actions = Seq(SetToSettings.brightness(UByte(100)), SetToSettings.timeout(Int.MaxValue))
     ) ::  Rule(
       name = "charger_disconnected",
-      branches = Seq(Branch(List(Trigger.Condition[PowerState](_ == PowerState.withName("disconnected"))))),
+      branches = Seq(Branch(conditions = List(
+        Trigger.Condition[PowerState](_ == PowerState.withName("disconnected"))
+      ), timers = Nil)),
       actions = Seq(SetToSettings.brightness(UByte(60)), SetToSettings.timeout(1.minute.toMillis.toInt))
     ) :: Rule(
       name = "music_player",
-      branches = Seq(Branch(List(
+      branches = Seq(Branch(conditions = List(
         Trigger.Condition[Headset](_ == Headset.withName("connected")),
         Trigger.Condition[Network](_.state == Network.State.withName("connected"))
-      ))),
+      ), timers = Nil)),
       actions = Seq(
         LaunchApplication.UsingAppName("Spotify"),
         SetSoundTo.Volume(SetSoundTo.StreamType.Music, UByte(70)),
@@ -140,9 +144,9 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       )
     ) :: Rule(
       name = "no_music_player",
-      branches = Seq(Branch(List(
+      branches = Seq(Branch(conditions = List(
         Trigger.Condition[Headset](_ == Headset.withName("disconnected"))
-      ))),
+      ), timers = Nil)),
       actions = Seq(
         SetSoundTo.Volume(SetSoundTo.StreamType.Music, UByte(30)),
         SetSoundTo.Volume(SetSoundTo.StreamType.Ring, UByte(100)),
@@ -158,8 +162,8 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
     val expected = Rule(
       name = "dense",
       branches = Seq(
-        Branch(conditions = List(Trigger.Condition[Battery](_.level <= ub"70"))),
-        Branch(conditions = List(Trigger.Condition[Headset](_ == Headset.withName("disconnected"))))
+        Branch(conditions = List(Trigger.Condition[Battery](_.level <= ub"70")), timers = Nil),
+        Branch(conditions = List(Trigger.Condition[Headset](_ == Headset.withName("disconnected"))), timers = Nil)
       ),
       actions = Seq(
         ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),
@@ -181,7 +185,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
           Trigger.Condition[Headset](_ == Headset.withName("disconnected")),
           Trigger.Condition[Battery](_.level > ub"80"),
           Trigger.Condition[PowerState](_ == PowerState.withName("connected"))
-        ))
+        ), timers = Nil)
       ),
       actions = Seq(
         ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),

@@ -37,13 +37,13 @@ object SetSoundTo {
     }
   }
 
-  case class Muted(streamType: StreamType, mute: Boolean) extends SetSoundTo {
+  final case class Muted(streamType: StreamType, mute: Boolean) extends SetSoundTo {
     def execute()(implicit ctx: Context): Unit = {
       audioManger.setStreamMute(streamType.intValue, mute)
     }
   }
 
-  case class Volume(streamType: StreamType, value: UByte) extends SetSoundTo {
+  final case class Volume(streamType: StreamType, value: UByte) extends SetSoundTo {
     def execute()(implicit ctx: Context): Unit = {
       val am = audioManger
       val max = am.getStreamMaxVolume(streamType.intValue)

@@ -150,35 +150,11 @@ object Settings {
       "-Yno-adapted-args",
       "-Ywarn-numeric-widen",
       "-Xfuture"
-      /*,
-      "-Ywarn-value-discard"
-      */
     )
   ) ++ wartremoverSettings ++ Seq(
-    wartremoverErrors ++= Seq(
-      Wart.Any,
-      Wart.Any2StringAdd,
-      Wart.DefaultArguments,
-      Wart.EitherProjectionPartial,
-      Wart.JavaConversions,
-      Wart.ListOps,
-      Wart.MutableDataStructures,
-      Wart.Nothing,
-      Wart.Null,
-      Wart.OptionPartial,
-      Wart.Product,
-      Wart.Return,
-      Wart.Serializable,
-      Wart.TryPartial,
-      Wart.Var
-      /*,
-      Wart.AsInstanceOf,
-      Wart.IsInstanceOf,
-      Wart.NoNeedForMonad,
-      Wart.NonUnitStatements,
-      Wart.Throw
-      */
-    ),
+    wartremoverErrors ++= Warts.allBut(Wart.NonUnitStatements, Wart.ExplicitImplicitTypes,
+      Wart.Any, Wart.Nothing, Wart.Product, Wart.Serializable, Wart.IsInstanceOf, Wart.AsInstanceOf,
+      Wart.Throw, Wart.NoNeedForMonad),
     wartremoverExcluded ++= sources(target.value / "android") ++
       sources(sourceDirectory.value / "test" / "scala")
   ) ++ ScalastylePlugin.projectSettings ++ Seq(

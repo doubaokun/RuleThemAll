@@ -13,6 +13,7 @@ package object service extends Common {
   implicit def liftActionToRequirement(action: String): Requirement =
     new Requirement.IntentBased(new Intent(action))
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Null"))
   implicit def intentToIntentFilter(intent: Intent): IntentFilter = {
     val f = new IntentFilter(intent.getAction)
     val uri = intent.getData

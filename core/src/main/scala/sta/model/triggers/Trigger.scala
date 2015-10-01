@@ -46,7 +46,7 @@ object Trigger {
   /** Denotes set of conditions with set of timers that
     * indicates date when such conditions should be fulfilled.
     */
-  case class Branch(conditions: Seq[Condition[_]] = Seq.empty, timers: Seq[Timer] = Seq.empty) {
+  final case class Branch(conditions: Seq[Condition[_]], timers: Seq[Timer]) {
     lazy val requires: Set[Requirement] =
       (timers.flatMap(_.requires) ++ conditions.flatMap(_.requires))(collection.breakOut)
   }
@@ -72,7 +72,7 @@ object Trigger {
   }
 
   /** Temporary trigger that denotes conjunction of conditions. */
-  case class And private[Trigger](triggers: Seq[Trigger]) extends Trigger {
+  final case class And private[Trigger](triggers: Seq[Trigger]) extends Trigger {
     protected def flatChildren: Seq[FlatResult] = triggers.flatMap(_.flatChildren)
   }
 
@@ -80,7 +80,7 @@ object Trigger {
     *
     * Note that each alternative results in separate [[Branch]].
     */
-  case class Or private[Trigger](triggers: Seq[Trigger]) extends Trigger {
+  final case class Or private[Trigger](triggers: Seq[Trigger]) extends Trigger {
     protected def flatChildren: Seq[FlatResult] =
       Seq(Right(triggers.flatMap(_.flatten)(collection.breakOut)))
   }
@@ -121,7 +121,7 @@ object Trigger {
 
   object Timer {
     /** Returns date based on the [[kj.android.cron.CronExpression]]. */
-    case class CronBased private[Timer](expr: CronExpression) extends Timer {
+    final case class CronBased private[Timer](expr: CronExpression) extends Timer {
       protected def fireAt(from: Date, context: Context) = expr.nextDate(from).map(_ -> false)
 
       def requires: Set[Requirement] = Set.empty
@@ -137,7 +137,7 @@ object Trigger {
       *                     - `context` that is [[android.content.Context]]
       *                    and returns date when timer is fulfilled.
       */
-    case class Dynamic private[Timer](requires: Set[Requirement], recheckAfter: Duration)
+    final case class Dynamic private[Timer](requires: Set[Requirement], recheckAfter: Duration)
       (fromContext: (Date, Duration, Context) => Option[Date]) extends Timer {
       protected def fireAt(from: Date, context: Context) = {
         fromContext(from, recheckAfter, context).map(_ -> false).orElse {
@@ -163,13 +163,14 @@ object Trigger {
 
     def apply(expr: CronExpression): Timer = CronBased(expr)
 
+    @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.DefaultArguments"))
     def dynamic(recheckAfter: Duration, requirements: Set[Requirement] = Set.empty)
       (fromContext: (Date, Duration, Context) => Option[Date]) =
       Dynamic(requirements, recheckAfter)(fromContext)
   }
 
   /** Standalone condition that gets model from a state and check it with [[ModelFunction]]. */
-  case class Condition[M <: BaseModel: BaseModelCompanion: Uses](function: ModelFunction[M])
+  final case class Condition[M <: BaseModel: BaseModelCompanion: Uses](function: ModelFunction[M])
     extends Standalone[M] {
     protected def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
 

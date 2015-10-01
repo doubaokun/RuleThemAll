@@ -25,14 +25,9 @@ lazy val core = project.in(file("core")).settings(
     spire
   )
 ).settings(libAndroidSettings: _*).dependsOnLocal(utils).excludeFromLinting(
-    _ / "sta" / "common" / "Requirement",
     _ / "sta" / "common" / "usesMacros",
-    _ / "sta" / "model" / "Rule",
-    _ / "sta" / "model" / "model",
-    _ / "sta" / "model" / "triggers" / "Trigger",
     _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
     _ / "sta" / "parser" / *,
-    _ / "sta" / "service" / "RulesExecutor",
     _ / "sta" / "service" / "serviceMacros"
   )
 
@@ -46,14 +41,9 @@ lazy val app = project.in(file("app")).settings(
     `android-support-v4`
   )
 ).settings(libAndroidSettings: _*).dependsOnLocal(core, plugin, utils).excludeFromLinting(
-    _ / "sta" / "model" / "actions" / **,
-    _ / "sta" / "model" / "triggers" / **,
     _ / "sta" / "parser" / **,
     _ / "sta" / "service" / "PluginHandler",
-    _ / "sta" / "service" / "STAService",
-    _ / "sta" / "service" / "TimerMap",
-    _ / "sta" / "service" / "package",
-    _ / "sta" / "storage" / "PlaintextStorage"
+    _ / "sta" / "service" / "STAService"
   )
 
 lazy val tests = project.in(file("tests")).settings(testsSettings: _*)

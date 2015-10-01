@@ -21,20 +21,21 @@ import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._
 import sta.service.RulesExecutor
 
-case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
+final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
   type Result = Validated[FailNEL, Success]
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Var"))
   private[this] var executed = false
 
   private[this] lazy val (direct, withTimer) = {
     val directBuilder = Seq.newBuilder[Branch]
     val withTimerBuilder = Map.newBuilder[UUID, Branch]
-    branches.foreach {
-      case d if d.timers.isEmpty => directBuilder += d
-      case t => withTimerBuilder += (UUID.randomUUID() -> t)
+    for(branch <- branches) {
+      if (branch.timers.isEmpty) directBuilder += branch
+      else withTimerBuilder += (UUID.randomUUID() -> branch)
     }
     (directBuilder.result(), withTimerBuilder.result())
   }
@@ -63,7 +64,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     alarmManager: AlarmManager, waitTime: Duration)(implicit ctx: Context): Option[PendingIntent] = {
     val dates = for {
       timer <- branch.timers
-      (date, partial) <- timer.fireAt(context = ctx, waitTime = waitTime)
+      (date, partial) <- timer.fireAt(context = ctx, waitTime = waitTime).toList
     } yield (date, partial)
     if (dates.length == branch.timers.length) {
       val (date, partial) = dates.minBy(_._1.getTime)
@@ -95,7 +96,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
   def setAlarms(base: Intent)(implicit ctx: Context): Seq[PendingIntent] =  {
     val manager = alarmManager
     withTimer.flatMap { case (id, branch) =>
-      setAlarm(branch, id, base.cloneFilter(), manager, Duration.Zero)
+      setAlarm(branch, id, base.cloneFilter(), manager, Duration.Zero).toList
     }(collection.breakOut)
   }
 
@@ -103,7 +104,7 @@ case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action
     val manager = alarmManager
     withTimer.flatMap {
       case (id, branch) if branch.requires.contains(requirement) =>
-        setAlarm(branch, id, base.cloneFilter(), manager, Duration.Zero)
+        setAlarm(branch, id, base.cloneFilter(), manager, Duration.Zero).toList
       case _ =>
         Nil
     }(collection.breakOut)

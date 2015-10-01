@@ -7,8 +7,9 @@ import scala.annotation.compileTimeOnly
 sealed abstract class Requirement extends Parcelable
 
 object Requirement {
-  @compileTimeOnly("dummy field")
-  lazy val CREATOR: Parcelable.Creator[Requirement] = null
+  @compileTimeOnly("This field is dummy and should not be accessed.")
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Null"))
+  val CREATOR: Parcelable.Creator[Requirement] = null
 
   class IntentBased(private val intent: Intent) extends Requirement {
     override final def hashCode(): Int = intent.filterHashCode()

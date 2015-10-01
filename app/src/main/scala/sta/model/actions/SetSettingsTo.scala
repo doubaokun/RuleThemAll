@@ -4,7 +4,7 @@ import android.content.Context
 import android.provider.Settings
 import spire.math.UByte
 
-case class SetToSettings(settings: (String, Int)*) extends SetTo {
+final case class SetToSettings(settings: (String, Int)*) extends SetTo {
   def execute()(implicit ctx: Context): Unit =
     settings.foreach { case (name, value) =>
       Settings.System.putInt(ctx.getContentResolver, name, value)

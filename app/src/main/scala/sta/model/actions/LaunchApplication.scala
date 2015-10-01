@@ -15,11 +15,11 @@ sealed abstract class LaunchApplication extends Action with Logging { this: Prod
 }
 
 object LaunchApplication {
-  case class FromPackage(pkg: String) extends LaunchApplication {
+  final case class FromPackage(pkg: String) extends LaunchApplication {
     def getAppPackage(pm: PackageManager): String = pkg
   }
 
-  case class UsingAppName(app: String) extends LaunchApplication {
+  final case class UsingAppName(app: String) extends LaunchApplication {
     def getAppPackage(pm: PackageManager): String = {
       val matches = pm.getInstalledApplications(0).iterator().asScala.filter(appInfo =>
         pm.getApplicationLabel(appInfo) == app

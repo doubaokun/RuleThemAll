@@ -1,7 +1,7 @@
 package sta.storage
 
 import android.content.Context
-import fastparse.core.{SyntaxError, Result}
+import fastparse.core.{Result, SyntaxError}
 import java.io._
 import kj.android.common.{AppInfo, Notify, Toast}
 import scala.collection.mutable
@@ -11,6 +11,7 @@ import sta.parser.RulesParser
 class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends RulesStorage {
   private[this] val rulesDir: File = ctx.getDir("rules", Context.MODE_PRIVATE)
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.MutableDataStructures"))
   private[this] val rawRules = {
     val map = mutable.Map.empty[String, Rule]
     val files = rulesDir.listFiles(new FilenameFilter {
@@ -25,6 +26,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     map
   }
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.MutableDataStructures"))
   private[this] val rawUses = {
     val map = mutable.Map.empty[Int, Int]
     for (
@@ -48,18 +50,17 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
           Notify(s"Failed to parse rules from ${from.getPath}", Some(logTag.tag)) // TODO add notification action
           Set.empty[Rule]
         case Result.Success(res, _) =>
-          var from = 0
-          val result: Set[Rule] = res.map { case (rule, trace) =>
-            val fos = new FileOutputStream(new File(rulesDir, s"${rule.name}.rule"))
-            try {
-              val s = input.substring(from, trace)
-              fos.write(s.trim.getBytes)
-            } finally {
-              fos.close()
-            }
-            from = trace
-            rule
-          }(collection.breakOut)
+          val result: Set[Rule] = res.foldLeft(Set.empty[Rule] -> 0) {
+            case ((set, idx), (rule, trace)) =>
+              val fos = new FileOutputStream(new File(rulesDir, s"${rule.name}.rule"))
+              try {
+                val s = input.substring(idx, trace)
+                fos.write(s.trim.getBytes)
+              } finally {
+                fos.close()
+              }
+              (set + rule, trace)
+          }._1
           result
       }
       rules

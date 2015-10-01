@@ -7,5 +7,5 @@ package object storage {
 }
 
 package storage {
-  case class RegistrationInfo(addedRequirements: Set[Int], removedRequirements: Set[Int], addedRules: Set[Rule])
+  final case class RegistrationInfo(addedRequirements: Set[Int], removedRequirements: Set[Int], addedRules: Set[Rule])
 }
