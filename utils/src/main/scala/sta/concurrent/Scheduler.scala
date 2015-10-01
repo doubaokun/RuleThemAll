@@ -1,4 +1,4 @@
-package kj.android.concurrent
+package sta.concurrent
 
 import java.util.concurrent._
 import scala.concurrent.duration.Duration

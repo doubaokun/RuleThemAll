@@ -1,8 +1,6 @@
 package sta.common
 
 import android.content.Intent
-import android.os.{Parcel, Parcelable}
-import scala.annotation.compileTimeOnly
 
 sealed abstract class Requirement extends Serializable
 

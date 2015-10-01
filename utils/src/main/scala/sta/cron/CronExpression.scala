@@ -1,4 +1,4 @@
-package kj.android.cron
+package sta.cron
 
 import java.util.{Arrays, Calendar, Date}
 

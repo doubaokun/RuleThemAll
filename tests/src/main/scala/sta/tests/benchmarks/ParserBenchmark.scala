@@ -1,7 +1,6 @@
 package sta.tests.benchmarks
 
 import android.content.res.AssetManager
-import org.scalameter.Quantity
 import sta.parser.RulesParser
 
 class ParserBenchmark(assetManager: AssetManager) extends Benchmark {

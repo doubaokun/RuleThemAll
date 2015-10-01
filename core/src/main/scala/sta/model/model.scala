@@ -1,7 +1,7 @@
 package sta.model
 
 import scala.language.higherKinds
-import enumeratum.{EnumEntry , Enum}
+import enumeratum.{Enum, EnumEntry}
 import java.lang.{Enum => JEnum}
 
 /** Marker for specific models in the state map. */

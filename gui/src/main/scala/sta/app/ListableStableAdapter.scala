@@ -3,15 +3,14 @@ package sta.app
 import android.view.{View, ViewGroup}
 import android.widget.BaseAdapter
 import java.util.concurrent.atomic.AtomicLong
-import kj.android.logging.Logging
 import macroid.FullDsl._
 import macroid._
 import macroid.util.SafeCast
 import macroid.viewable.Listable
-import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{GenSet, mutable}
 import scala.util.control.NonFatal
+import sta.logging.Logging
 
 class ListableStableAdapter[T <: AnyRef, W <: View](data: Set[T])(implicit ctx: ActivityContext,
   appCtx: AppContext, listable: Listable[T, W]) extends BaseAdapter with Logging {

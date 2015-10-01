@@ -6,9 +6,9 @@ import android.os._
 import android.util.SparseArray
 import java.util
 import java.util.concurrent.locks.ReentrantLock
-import kj.android.logging.Logging
 import scala.util.control.NonFatal
 import sta.common.{Common, Requirement}
+import sta.logging.Logging
 import sta.model.BaseModel
 import sta.model.actions.Action
 import sta.parser.{ActionParser, RulesParser, TriggerParser}

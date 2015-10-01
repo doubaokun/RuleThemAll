@@ -3,8 +3,9 @@ package sta.common
 import scala.language.implicitConversions
 import android.content.Intent
 import android.os.{Bundle, Message, Messenger, Parcelable}
-import kj.android.logging.{LogTag, Logger}
 import scala.util.control.NonFatal
+import sta.logging
+import sta.logging.LogTag
 
 trait Common {
   @inline implicit def toRichBundle(data: Bundle): Common.RichBundle = new Common.RichBundle(data)
@@ -30,7 +31,7 @@ object Common {
       data.get(key).asInstanceOf[T]
     } catch {
       case NonFatal(th) =>
-        Logger.error(s"Error during getting key $key from bundle", th)
+        logging.Logger.error(s"Error during getting key $key from bundle", th)
         throw th
     }
 
@@ -38,7 +39,7 @@ object Common {
       Option(data.get(key)).asInstanceOf[Option[T]]
     } catch {
       case NonFatal(th) =>
-        Logger.error(s"Error during getting key $key from bundle", th)
+        logging.Logger.error(s"Error during getting key $key from bundle", th)
         None
     }
   }

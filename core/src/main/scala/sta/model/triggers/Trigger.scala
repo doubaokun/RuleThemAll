@@ -5,14 +5,15 @@ import android.content.{Context, Intent}
 import cats.std.all._
 import cats.syntax.all._
 import java.util.{Date, UUID}
-import kj.android.cron.CronExpression
-import kj.android.logging.{LogTag, Logging}
 import scala.concurrent.duration.Duration
 import scala.util.Try
 import shapeless.HMap
 import sta.common.{Requirement, Uses}
+import sta.cron.CronExpression
+import sta.logging.Logging
 import sta.model._
 import sta.model.triggers.functions.ModelFunction
+import sta.{cron, logging}
 
 /** Base for all triggers either temporary or standalone. */
 sealed abstract class Trigger {
@@ -91,9 +92,9 @@ object Trigger {
   }
 
   sealed abstract class Timer extends Standalone[Nothing] with Logging {
-    override implicit lazy val logTag: LogTag = {
+    override implicit lazy val logTag: logging.LogTag = {
       val name = s"Timer.${this.getClass.getSimpleName}"
-      new LogTag(name.substring(0, math.min(name.length, 23)))
+      new logging.LogTag(name.substring(0, math.min(name.length, 23)))
     }
 
     /** Returns date at which rest of [[Branch]] conditions should be checked.
@@ -120,7 +121,7 @@ object Trigger {
   }
 
   object Timer {
-    /** Returns date based on the [[kj.android.cron.CronExpression]]. */
+    /** Returns date based on the [[cron.CronExpression]]. */
     final case class CronBased private[Timer](expr: CronExpression) extends Timer {
       protected def fireAt(from: Date, context: Context) = expr.nextDate(from).map(_ -> false)
 

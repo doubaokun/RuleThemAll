@@ -1,9 +1,7 @@
-package kj.android.concurrent
+package sta.concurrent
 
 import java.util.concurrent.atomic.AtomicInteger
-import kj.android.cron.CronExpression
-import org.scalatest.tagobjects.Slow
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.duration._
 
 class TaskSpec extends FlatSpec with Matchers {

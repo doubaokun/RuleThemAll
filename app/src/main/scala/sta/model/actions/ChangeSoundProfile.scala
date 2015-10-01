@@ -3,7 +3,7 @@ package sta.model.actions
 import android.content.Context
 import android.media.AudioManager
 import enumeratum.Enum
-import kj.android.common.SystemServices._
+import sta.common.SystemServices._
 import sta.model.FromIntEntry
 
 final case class ChangeSoundProfile(mode: ChangeSoundProfile.Mode) extends SetTo {

@@ -2,8 +2,8 @@ package sta.storage
 
 import android.content.Context
 import java.io.File
-import kj.android.logging.Logging
 import sta.common.AppInfo
+import sta.logging.Logging
 import sta.model.Rule
 
 abstract class RulesStorage extends Logging {

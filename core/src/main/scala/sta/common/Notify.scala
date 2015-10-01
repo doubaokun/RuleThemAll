@@ -2,9 +2,10 @@ package sta.common
 
 import android.app.{Notification, PendingIntent}
 import android.content.Context
-import kj.android.common.SystemServices._
 
 object Notify {
+  import SystemServices._
+
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.DefaultArguments"))
   def apply(txt: String, tag: Option[String] = None)(implicit ctx: Context, appInfo: AppInfo) = {
     val m = notificationManager

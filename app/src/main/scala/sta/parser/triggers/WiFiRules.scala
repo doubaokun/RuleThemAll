@@ -2,8 +2,8 @@ package sta.parser.triggers
 
 import fastparse.noApi._
 import sta.common.Uses
-import sta.model.triggers.Trigger
 import sta.model.triggers.Implicits._
+import sta.model.triggers.Trigger
 import sta.parser.TriggerParser
 
 object WiFiRules extends TriggerParser[WiFi] {

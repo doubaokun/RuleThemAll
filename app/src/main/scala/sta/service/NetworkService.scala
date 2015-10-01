@@ -1,7 +1,7 @@
 package sta.service
 
 import android.net.ConnectivityManager
-import kj.android.common.SystemServices._
+import sta.common.SystemServices._
 import sta.model.triggers.Implicits._
 
 class NetworkService(implicit root: RulesExecutor) extends ServiceFragment[Network] {

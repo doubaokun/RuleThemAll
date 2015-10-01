@@ -2,15 +2,15 @@ package sta.tests.plugin
 
 import android.content._
 import fastparse.noApi._
-import kj.android.logging.Logging
 import sta.common.Toast
+import sta.logging.Logging
+import sta.model.actions.Action
 import sta.model.triggers.Trigger
 import sta.model.triggers.Trigger.Standalone
-import sta.model.{ModelCompanion, Model}
-import sta.model.actions.Action
-import sta.parser.{TriggerParser, ActionParser}
+import sta.model.{Model, ModelCompanion}
+import sta.parser.{ActionParser, TriggerParser}
 import sta.plugin.Plugin
-import ExamplePlugin._
+import sta.tests.plugin.ExamplePlugin._
 
 class ExamplePlugin extends Plugin[ShowToast, Dummy] {
   override def actionParser: Option[ActionParser[ShowToast]] = Some(ToastActionParser)
@@ -33,7 +33,6 @@ object ExamplePlugin {
   }
   
   object DummyTriggerParser extends TriggerParser[Dummy] {
-    import white._
 
     def Prefix: String = "dummy"
 

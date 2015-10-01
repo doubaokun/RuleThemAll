@@ -4,7 +4,7 @@ import android.content.Context
 import fastparse.core.{Result, SyntaxError}
 import java.io._
 import scala.collection.mutable
-import sta.common.{Toast, Notify, AppInfo}
+import sta.common.{AppInfo, Notify, Toast}
 import sta.model.Rule
 import sta.parser.RulesParser
 

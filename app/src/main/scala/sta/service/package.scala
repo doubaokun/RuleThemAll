@@ -4,7 +4,7 @@ import scala.language.implicitConversions
 import android.content.{Intent, IntentFilter}
 import android.os.PatternMatcher
 import sta.common.{Common, Requirement}
-import sta.model.{BaseModel, Model}
+import sta.model.BaseModel
 
 package object service extends Common {
   implicit def liftModel[M <: BaseModel](m: M): Option[M] = Option(m)

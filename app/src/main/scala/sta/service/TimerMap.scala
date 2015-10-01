@@ -2,10 +2,9 @@ package sta.service
 
 import android.app.PendingIntent
 import android.content.{Context, Intent}
-import kj.android.common.SystemServices._
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
 import sta.common.Requirement
+import sta.common.SystemServices._
 import sta.model.Rule
 import sta.storage.RulesStorage
 

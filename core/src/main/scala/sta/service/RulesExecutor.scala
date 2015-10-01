@@ -3,12 +3,12 @@ package sta.service
 import android.app.Service
 import android.os.HandlerThread
 import cats.data.Validated
-import kj.android.logging.Logging
 import scala.collection.concurrent.TrieMap
 import scala.util.control.NonFatal
 import sta.common.Requirement
-import sta.model.{BaseModel, Rule}
+import sta.logging.Logging
 import sta.model.actions.Action
+import sta.model.{BaseModel, Rule}
 
 abstract class RulesExecutor extends Service with Logging {
   private[this] val mainThread = new HandlerThread(s"${logTag.tag}-Main")

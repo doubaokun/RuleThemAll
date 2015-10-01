@@ -2,11 +2,11 @@ package sta.parser
 
 import fastparse.all._
 import fastparse.core.SyntaxError
-import kj.android.cron.CronExpression
 import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.duration._
 import spire.math._
+import sta.cron.CronExpression
 import sta.tests.PropertyChecks
 
 class BasicRulesSpec extends FlatSpec with PropertyChecks with Matchers with ParserHelpers {
@@ -259,7 +259,7 @@ class BasicRulesSpec extends FlatSpec with PropertyChecks with Matchers with Par
       dayOfWeek = CronExpression.Range(0, 6),
       year = Some(CronExpression.Range(1970, 2099))
     )
-    val actual1 = BasicParser(_.CronExpression).parse(expr1).get.value
+    val actual1 = BasicParser(_.CronExpr).parse(expr1).get.value
     actual1 should ===(expected1)
 
     val expr2 = """"*/5 0-12/2 1,11,21,31 JAN-JUN/2 TUE-4""""
@@ -272,7 +272,7 @@ class BasicRulesSpec extends FlatSpec with PropertyChecks with Matchers with Par
       dayOfWeek = CronExpression.Range(2, 4),
       year = None
     )
-    val actual2 = BasicParser(_.CronExpression).parse(expr2).get.value
+    val actual2 = BasicParser(_.CronExpr).parse(expr2).get.value
     actual2.copy(dayOfMonth = CronExpression.Range(1, 31)) should
       ===(expected2.copy(dayOfMonth = CronExpression.Range(1, 31)))
     actual2.dayOfMonth shouldBe a[CronExpression.List]

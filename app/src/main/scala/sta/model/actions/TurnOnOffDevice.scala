@@ -2,7 +2,7 @@ package sta.model.actions
 
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
-import kj.android.common.SystemServices._
+import sta.common.SystemServices._
 
 sealed abstract class TurnOnOffDevice extends Action { this: Product =>
   def enable: Boolean

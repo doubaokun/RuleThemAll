@@ -2,7 +2,7 @@ package sta.parser.actions
 
 import fastparse.noApi._
 import scala.{Int => ScalaInt}
-import sta.model.actions.{SetSoundTo, SetToSettings, ChangeSoundProfile, SetTo}
+import sta.model.actions.{ChangeSoundProfile, SetSoundTo, SetTo, SetToSettings}
 import sta.parser.ActionParser
 
 object SetToRules extends ActionParser[SetTo] {

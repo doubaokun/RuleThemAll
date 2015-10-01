@@ -1,4 +1,4 @@
-package kj.android.concurrent
+package sta.concurrent
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec

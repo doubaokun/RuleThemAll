@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.BatteryManager
 import enumeratum.Enum
 import spire.math.UByte
-import sta.common.{category, action}
+import sta.common.{action, category}
 import sta.model._
 
 trait BatteryModels {

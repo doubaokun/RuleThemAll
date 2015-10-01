@@ -10,7 +10,6 @@ import org.scalatest.Matchers
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.reflect.{ClassTag, classTag}
-import spire.syntax.literals._
 import sta.common.Uses
 import sta.model.triggers.Implicits._
 import sta.model.triggers.Trigger

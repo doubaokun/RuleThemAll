@@ -1,13 +1,13 @@
-package kj.android.concurrent
+package sta.concurrent
 
 import android.content.Context
 import android.os.PowerManager
 import java.util.concurrent.{FutureTask, ScheduledFuture}
-import kj.android.common.SystemServices._
-import kj.android.logging.LogTag
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Promise}
+import scala.concurrent.{ExecutionContext => SExecutionContext, Promise}
 import scala.util.Try
+import sta.common.SystemServices._
+import sta.logging.LogTag
 
 trait Task[T] {
   def run(handler: Try[T] => Unit): Unit
@@ -16,7 +16,7 @@ trait Task[T] {
 }
 
 object Task {
-  def runWithWakeLock[T](body: => T)(implicit ctx: Context, logTag: LogTag, ec: ExecutionContext): Unit = {
+  def runWithWakeLock[T](body: => T)(implicit ctx: Context, logTag: LogTag, ec: SExecutionContext): Unit = {
     val lock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, logTag.tag)
     apply {
       lock.acquire()
@@ -24,7 +24,7 @@ object Task {
     }.run(_ => lock.release())
   }
   
-  def apply[T](body: => T)(implicit ec: ExecutionContext): Task[T] =
+  def apply[T](body: => T)(implicit ec: SExecutionContext): Task[T] =
     new Task[T] {
       private[this] val promise = Promise[T]()
 

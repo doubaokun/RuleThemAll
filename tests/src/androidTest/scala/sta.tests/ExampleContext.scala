@@ -2,7 +2,7 @@ package sta.tests
 
 import android.app.Service
 import android.content._
-import android.content.pm.{ResolveInfo, PackageInfo, PackageManager, ServiceInfo}
+import android.content.pm.{PackageInfo, PackageManager, ResolveInfo, ServiceInfo}
 import android.os.Handler
 import android.test.mock.MockPackageManager
 import java.util

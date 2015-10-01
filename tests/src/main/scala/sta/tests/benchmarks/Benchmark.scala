@@ -1,8 +1,8 @@
 package sta.tests.benchmarks
 
-import kj.android.logging.Logging
 import org.scalameter.Key._
 import org.scalameter._
+import sta.logging.Logging
 
 abstract class Benchmark extends Logging {
   protected def bench[A](name: String, reps: Int)(snippet: => A): String = {

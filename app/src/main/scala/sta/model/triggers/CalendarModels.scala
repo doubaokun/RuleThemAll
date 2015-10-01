@@ -7,7 +7,7 @@ import enumeratum.Enum
 import java.util.Date
 import scala.annotation.tailrec
 import scala.concurrent.duration._
-import sta.common.{data, category, action}
+import sta.common.{action, category, data}
 import sta.model._
 
 trait CalendarModels {

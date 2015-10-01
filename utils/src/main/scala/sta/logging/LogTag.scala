@@ -1,4 +1,4 @@
-package kj.android.logging
+package sta.logging
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox

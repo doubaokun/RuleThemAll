@@ -4,8 +4,8 @@ import fastparse.noApi._
 import scala.collection.mutable
 import sta.model.BaseModel
 import sta.model.triggers._
-import sta.parser.{TriggerParser, Extras}
 import sta.parser.Extras._
+import sta.parser.{Extras, TriggerParser}
 
 trait TriggerRules extends Extras {
   private[this] val parsers = mutable.HashMap.empty[String, TriggerParser[_ <: BaseModel]]

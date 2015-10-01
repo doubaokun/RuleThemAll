@@ -1,9 +1,9 @@
 package sta.model.triggers
 
-import android.bluetooth.{BluetoothAdapter, BluetoothManager}
+import android.bluetooth.BluetoothAdapter
 import enumeratum.Enum
 import sta.common.{action, category}
-import sta.model.{FromIntEntry, FromInt, ModelCompanion, Model}
+import sta.model.{FromInt, FromIntEntry, Model, ModelCompanion}
 
 trait BluetoothModels {
   @category("bluetooth")

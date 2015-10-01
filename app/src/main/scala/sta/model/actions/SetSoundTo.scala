@@ -3,8 +3,8 @@ package sta.model.actions
 import android.content.Context
 import android.media.AudioManager
 import enumeratum.Enum
-import kj.android.common.SystemServices._
 import spire.math.UByte
+import sta.common.SystemServices._
 import sta.model.FromIntEntry
 
 sealed abstract class SetSoundTo extends SetTo { this: Product => }

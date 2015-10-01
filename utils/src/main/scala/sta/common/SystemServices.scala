@@ -1,6 +1,6 @@
-package kj.android.common
+package sta.common
 
-import android.app.{NotificationManager, AlarmManager}
+import android.app.{AlarmManager, NotificationManager}
 import android.content.Context
 import android.media.AudioManager
 import android.net.ConnectivityManager

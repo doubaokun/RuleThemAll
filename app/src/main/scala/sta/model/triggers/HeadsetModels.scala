@@ -2,7 +2,7 @@ package sta.model.triggers
 
 import android.content.Intent
 import enumeratum.Enum
-import sta.common.{category, action}
+import sta.common.{action, category}
 import sta.model._
 
 trait HeadsetModels {

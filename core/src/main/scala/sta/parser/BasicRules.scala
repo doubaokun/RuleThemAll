@@ -1,10 +1,10 @@
 package sta.parser
 
 import fastparse.all._
-import kj.android.cron.{CronExpression => Cron}
 import scala.concurrent.duration.{Duration => ScalaDuration, _}
 import scala.util.Try
 import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
+import sta.cron.CronExpression
 import sta.parser.Extras._
 
 trait BasicRules extends Extras {
@@ -123,7 +123,7 @@ trait BasicRules extends Extras {
     }
   }
 
-  lazy val CronExpression: P[Cron] = {
+  lazy val CronExpr: P[CronExpression] = {
     def Value(min: Int, max: Int, abbreviations: Map[String, Int] = Map.empty) = {
       val ip = for {
         ToInt(v) <- digit.rep(1).! if v >= min && v <= max
@@ -132,11 +132,11 @@ trait BasicRules extends Extras {
         val ap = abbreviations.keys.tail.foldLeft(abbreviations.keys.head.!) { _ | _.! }
         ip | ap.map(abbreviations)
       } else ip
-      ("*" ~ "/" ~ ip).map(v => Cron.Range(min = min, max = max, step = v)) |
-      "*".!.map(_ => Cron.Range(min = min, max = max)) |
-        (p ~ "-" ~ p ~ "/" ~ ip).map(v => Cron.Range(min = v._1, max = v._2, step = v._3)) |
-        (p ~ "-" ~ p).map(v => Cron.Range(min = v._1, max = v._2)) |
-        p.rep(1, sep = ",").map(v => Cron.List(v.head, v.tail.sorted.distinct.toArray))
+      ("*" ~ "/" ~ ip).map(v => CronExpression.Range(min = min, max = max, step = v)) |
+      "*".!.map(_ => CronExpression.Range(min = min, max = max)) |
+        (p ~ "-" ~ p ~ "/" ~ ip).map(v => CronExpression.Range(min = v._1, max = v._2, step = v._3)) |
+        (p ~ "-" ~ p).map(v => CronExpression.Range(min = v._1, max = v._2)) |
+        p.rep(1, sep = ",").map(v => CronExpression.List(v.head, v.tail.sorted.distinct.toArray))
     }
 
     val months = Seq("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL",
@@ -144,7 +144,7 @@ trait BasicRules extends Extras {
     val daysOfWeak = Seq("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT").zipWithIndex.toMap
     P("\"" ~ Value(0, 59) ~ " " ~ Value(0, 23) ~ " " ~ Value(1, 31) ~ " " ~
       Value(1, 12, months) ~ " " ~ Value(0, 6, daysOfWeak) ~ (" " ~ Value(1970, 2099)).? ~ "\"" map {
-      case (minute, hour, dayOfMonth, month, dayOfWeek, year) => Cron(
+      case (minute, hour, dayOfMonth, month, dayOfWeek, year) => CronExpression(
         minute = minute,
         hour = hour,
         dayOfMonth = dayOfMonth,

@@ -1,7 +1,7 @@
 package sta.service
 
-import android.content.{Context, Intent, BroadcastReceiver}
-import kj.android.logging.Logging
+import android.content.{BroadcastReceiver, Context, Intent}
+import sta.logging.Logging
 
 class BootReceiver extends BroadcastReceiver with Logging {
   def onReceive(context: Context, intent: Intent): Unit = intent.getAction match {

@@ -4,10 +4,10 @@ import android.app.Service
 import android.content.Intent
 import android.os._
 import java.util
-import kj.android.logging.Logging
 import scala.collection.mutable
 import scala.util.control.NonFatal
 import sta.common.{Common, Requirement}
+import sta.logging.Logging
 import sta.model.BaseModel
 import sta.model.actions.Action
 import sta.parser.{ActionParser, TriggerParser}

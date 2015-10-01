@@ -1,6 +1,6 @@
-package kj.android.cron
+package sta.cron
 
-import java.util.{GregorianCalendar, Date}
+import java.util.{Date, GregorianCalendar}
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, Matchers}

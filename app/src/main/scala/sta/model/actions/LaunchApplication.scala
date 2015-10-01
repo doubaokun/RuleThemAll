@@ -2,8 +2,8 @@ package sta.model.actions
 
 import android.content.Context
 import android.content.pm.PackageManager
-import kj.android.logging.Logging
 import scala.collection.convert.decorateAsScala._
+import sta.logging.Logging
 
 sealed abstract class LaunchApplication extends Action with Logging { this: Product =>
   def getAppPackage(pm: PackageManager): String

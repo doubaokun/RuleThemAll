@@ -1,4 +1,4 @@
-package kj.android.logging
+package sta.logging
 
 trait Logging {
   implicit lazy val logTag = {

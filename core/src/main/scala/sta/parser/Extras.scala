@@ -4,7 +4,7 @@ import scala.language.implicitConversions
 import fastparse.Implicits.Sequencer
 import fastparse.WhitespaceApi
 import fastparse.all._
-import fastparse.core.{Mutable, ParseCtx}
+import fastparse.core.ParseCtx
 
 trait Extras {
   lazy val white = Extras.white

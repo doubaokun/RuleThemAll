@@ -1,6 +1,6 @@
-package kj.android
+package sta
 
-import java.util.concurrent.{Executors, ScheduledExecutorService, ScheduledThreadPoolExecutor, ThreadFactory}
+import java.util.concurrent.{Executors, ScheduledExecutorService, ScheduledThreadPoolExecutor}
 import scala.concurrent.{ExecutionContext => SExecutionContext}
 
 package object concurrent {

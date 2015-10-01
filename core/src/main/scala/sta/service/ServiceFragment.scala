@@ -1,7 +1,7 @@
 package sta.service
 
-import android.content.{Context, Intent}
-import kj.android.logging.Logging
+import android.content.Intent
+import sta.logging.Logging
 import sta.model.BaseModel
 
 /** Service fragment that is responsible for updating models of a given type.

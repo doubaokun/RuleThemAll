@@ -5,14 +5,14 @@ import android.content._
 import android.net.Uri
 import android.os._
 import java.io.File
-import kj.android.concurrent.ExecutionContext.Implicits._
-import kj.android.concurrent._
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
 import shapeless.HMap
-import sta.common.{Notify, AppInfo, Requirement}
+import sta.common.{AppInfo, Notify, Requirement}
+import sta.concurrent.{Task, Atomic}
+import sta.concurrent.ExecutionContext.Implicits._
 import sta.model.triggers.Trigger
 import sta.model.{BaseModel, ModelKV}
 import sta.storage.PlaintextStorage
