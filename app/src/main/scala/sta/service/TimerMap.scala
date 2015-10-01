@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.app.PendingIntent
 import android.content.{Context, Intent}
@@ -19,6 +19,10 @@ class TimerMap(implicit ctx: Context, storage: RulesStorage) {
   private[this] val byRequirement = TrieMap.empty[Requirement, Set[String]]
 
   def +=(rule: Rule): this.type = {
+    for (intents <- byRule.get(rule.name); intent <- intents) {
+      intent.cancel()
+      cancelAlarm(intent)
+    }
     val timers = rule.setAlarms(timerIntent)
     byRule += (rule.name -> timers)
     for(req <- rule.requires) {

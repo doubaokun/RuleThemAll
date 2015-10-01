@@ -1,6 +1,6 @@
-package sta.services
+package sta.service
 
-import android.net.{NetworkInfo, ConnectivityManager}
+import android.net.ConnectivityManager
 import kj.android.common.SystemServices._
 import sta.model.triggers.Implicits._
 

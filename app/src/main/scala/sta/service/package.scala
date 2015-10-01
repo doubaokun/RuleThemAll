@@ -7,7 +7,7 @@ import kj.android.common.Common
 import sta.common.Requirement
 import sta.model.{BaseModel, Model}
 
-package object services extends Common {
+package object service extends Common {
   implicit def liftModel[M <: BaseModel](m: M): Option[M] = Option(m)
 
   implicit def liftActionToRequirement(action: String): Requirement =

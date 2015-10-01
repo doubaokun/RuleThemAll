@@ -19,7 +19,7 @@ import sta.common.Requirement
 import sta.model.actions.Action
 import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._
-import sta.services.RulesExecutor
+import sta.service.RulesExecutor
 
 case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit

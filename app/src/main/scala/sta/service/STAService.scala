@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.app.{PendingIntent, Service}
 import android.content._
@@ -24,6 +24,11 @@ object STAService {
   val LOAD = 1
 
   val UNLOAD = 2
+
+  val LIST = 3
+  val SUBSCRIBE = 4
+  val UNSUBSCRIBE = 5
+  val names = "sta.rule.name"
 
   def loadRules(from: Uri*): Message = {
     val msg = Message.obtain(null, LOAD)
@@ -56,9 +61,11 @@ object STAService {
 
 class STAService extends RulesExecutor with PluginHandler { root =>
 
-  import sta.services.STAService._
+  import STAService._
 
   private[this] val handler = new Handler(mainLooper) {
+    private[this] val subscribers = mutable.Set.empty[Messenger]
+
     private def update(f: (Intent => Unit, (Intent, SF)) => (Intent, SF)): Unit = {
       val intents = Seq.newBuilder[Intent]
       rawServices.update { services =>
@@ -71,6 +78,7 @@ class STAService extends RulesExecutor with PluginHandler { root =>
         }
       }.fold(th => {
         log.error("Failed to update services", th)
+        throw th
       }, services => {
         services.runTasks()
         registerStateProcessor(intents.result(), unregisterFirst = true)
@@ -102,6 +110,17 @@ class STAService extends RulesExecutor with PluginHandler { root =>
       }
     }
 
+    private def listRules() = {
+      val rules = storage.allRules.map(_.name)
+      if (rules.nonEmpty) {
+        val reply = Message.obtain(null, LIST)
+        val bundle = new Bundle
+        bundle.putStringArray(names, rules.toArray)
+        reply.setData(bundle)
+        Some(reply)
+      } else None
+    }
+
     override def handleMessage(msg: Message): Unit = try {
       msg.what match {
         case LOAD =>
@@ -109,11 +128,28 @@ class STAService extends RulesExecutor with PluginHandler { root =>
           info.addedRules.foreach(timers += _)
           if (info.addedRequirements.nonEmpty || info.removedRequirements.nonEmpty)
             update(onAdd(info.addedRequirements, info.removedRequirements))
+          if (subscribers.nonEmpty) {
+            for (msg <- listRules(); subscriber <- subscribers) {
+              subscriber.send(msg)
+            }
+          }
         case UNLOAD =>
           val ruleNames = msg.obj.asInstanceOf[Array[String]]
           val toRemove = storage.unregister(ruleNames: _*)
           ruleNames.foreach(timers -= _)
           if (toRemove.nonEmpty) update(onRemove(toRemove))
+          if (subscribers.nonEmpty) {
+            for (msg <- listRules(); subscriber <- subscribers) {
+              subscriber.send(msg)
+            }
+          }
+        case LIST if msg.replyTo != null =>
+          listRules().foreach(msg.replyTo.send(_))
+        case SUBSCRIBE if msg.replyTo != null =>
+          subscribers += msg.replyTo
+          listRules().foreach(msg.replyTo.send(_))
+        case UNSUBSCRIBE if msg.replyTo != null =>
+          subscribers -= msg.replyTo
         case other =>
           log.warn(s"Unknown message received: $other")
       }
@@ -241,8 +277,6 @@ class STAService extends RulesExecutor with PluginHandler { root =>
   }
 
   override def onStartCommand(intent: Intent, flags: Int, startId: Int): Int = {
-    log.info("Starting service")
-
     if (started) {
       intent match {
         case Trigger.Timer(ruleName, branchId, partial) =>
@@ -257,6 +291,8 @@ class STAService extends RulesExecutor with PluginHandler { root =>
           log.warn(s"Unknown $intent", new RuntimeException)
       }
     } else {
+      log.info("Starting service")
+
       try { // startForeground does not work with android instrumentation tests
         startForeground(1, Notify.build(s"Monitoring",
           intent.get[PendingIntent](STAService.BACKGROUND_ACTION)))
@@ -298,6 +334,7 @@ class STAService extends RulesExecutor with PluginHandler { root =>
     try {
       unregisterReceiver(stateProcessor)
       stopForeground(true)
+      started = false
     } catch {
       case ex: IllegalArgumentException =>
       case ex: NullPointerException => // stopForeground does not work with android instrumentation tests

@@ -18,7 +18,7 @@ import sta.model.triggers.Trigger.Branch
 import sta.parser.RulesParser
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
-import sta.services.{PluginHandler, STAService}
+import sta.service.{PluginHandler, STAService}
 import sta.storage.RulesStorage
 import sta.tests.plugin.ExamplePlugin
 import sta.tests.plugin.ExamplePlugin.{Dummy, ShowToast}
@@ -59,9 +59,9 @@ class STAServiceTest extends ServiceTestCase[STAService](classOf[STAService]) wi
 
     // plugin list should be empty at first
     val pluginUpdater = callPrivateMethod[PluginHandler, BroadcastReceiver](
-      "sta$services$PluginHandler$$pluginUpdater", getService)
+      "sta$service$PluginHandler$$pluginUpdater", getService)
     val plugins = callPrivateMethod[PluginHandler, SparseArray[_]](
-      "sta$services$PluginHandler$$plugins", getService)
+      "sta$service$PluginHandler$$plugins", getService)
     plugins.size should === (0)
 
     // remember amount of trigger amd action parsers
@@ -98,7 +98,7 @@ class STAServiceTest extends ServiceTestCase[STAService](classOf[STAService]) wi
     }
     service.send(STAService.loadRules(files: _*))
     val storage = callPrivateField[STAService, RulesStorage](
-      "sta$services$STAService$$storage", getService)
+      "sta$service$STAService$$storage", getService)
     wait(30.seconds, 250.millis)(storage.allRules.nonEmpty)
     val rules = storage.allRules.toList
     rules.size should === (1)

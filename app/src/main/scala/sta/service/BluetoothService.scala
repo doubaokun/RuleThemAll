@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.bluetooth.{BluetoothAdapter, BluetoothDevice}
 import sta.model.triggers.Implicits._

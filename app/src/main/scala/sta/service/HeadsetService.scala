@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.content.Intent
 import sta.model.triggers.Implicits._

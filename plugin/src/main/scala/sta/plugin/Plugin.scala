@@ -11,7 +11,7 @@ import sta.common.Requirement
 import sta.model.BaseModel
 import sta.model.actions.Action
 import sta.parser.{ActionParser, TriggerParser}
-import sta.services.RulesExecutor
+import sta.service.RulesExecutor
 
 class Plugin[A <: Action, M <: BaseModel] extends Service with Common with Logging { ctx =>
   import Plugin._

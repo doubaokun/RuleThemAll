@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.net.NetworkInfo
 import android.net.wifi.{WifiInfo, WifiManager}

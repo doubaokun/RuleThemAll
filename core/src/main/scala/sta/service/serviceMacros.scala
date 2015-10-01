@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import scala.language.experimental.macros
 import scala.language.{dynamics, existentials, higherKinds}
@@ -36,7 +36,7 @@ private class ServiceMacrosImpl(val c: blackbox.Context) {
   def collect(enclosing: c.Expr[RulesExecutor]) = {
     val enclosingTpe = weakTypeOf[RulesExecutor]
     val services = for {
-      decl <- c.mirror.staticPackage("sta.services").typeSignature.decls
+      decl <- c.mirror.staticPackage("sta.service").typeSignature.decls
       inherited <- decl.typeSignature.baseClasses if
       !(inherited.typeSignature =:= decl.typeSignature) &&
         inherited.asType.toTypeConstructor =:= ServiceFragment.typeConstructor

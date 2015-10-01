@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.content.{Context, Intent, BroadcastReceiver}
 import kj.android.logging.Logging

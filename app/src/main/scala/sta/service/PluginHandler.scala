@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.content._
 import android.content.pm.{PackageManager, ServiceInfo}

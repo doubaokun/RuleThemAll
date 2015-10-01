@@ -1,4 +1,4 @@
-package sta.services
+package sta.service
 
 import android.app.Service
 import android.os.HandlerThread
