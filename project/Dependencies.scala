@@ -22,6 +22,10 @@ object Dependencies {
       val scalamock = "3.2.2"
       val scalatest = "2.2.5"
     }
+
+    object ui {
+      val macroid = "2.0.0-M4"
+    }
   }
 
   val repositories = Seq(
@@ -61,4 +65,11 @@ object Dependencies {
   val robolectricTests = Seq(
     "com.geteit" %% "robotest" % "0.12"
   )
+
+  val macroid = Seq(
+    "org.macroid" %% "macroid" % versions.ui.macroid,
+    "org.macroid" %% "macroid-viewable" % versions.ui.macroid
+  )
+
+  val `android-support` = "com.android.support" % "support-v4" % "21.0.0"
 }

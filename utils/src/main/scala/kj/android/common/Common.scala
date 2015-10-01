@@ -63,5 +63,10 @@ object Common {
       msg.arg1 = id
       msg
     }
+
+    @inline def withSender(sender: Messenger): Message = {
+      msg.replyTo = sender
+      msg
+    }
   }
 }

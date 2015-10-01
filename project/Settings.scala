@@ -46,9 +46,9 @@ object Settings {
           f <- files
           file <- f(sourceDirectory.value / "main" / "scala")
         } yield {
-          if (file.getName.matches(".*\\..*")) file
-          else new File(file.getParentFile, s"${file.getName}.scala")
-        })
+            if (file.getName.matches(".*\\..*")) file
+            else new File(file.getParentFile, s"${file.getName}.scala")
+          })
       )
     }
   }
@@ -75,7 +75,11 @@ object Settings {
   ) ++ stdProguardSettings
 
   def appAndroidSettings: Seq[Def.Setting[_]] = androidBuild ++ androidSettings ++
-    robolectricSettings ++ stdLibs ++ lintingSettings
+    robolectricSettings ++ lintingSettings ++ uiSettings ++ Seq(
+    wartremoverErrors := Warts.allBut(Wart.MutableDataStructures, Wart.Var,
+      Wart.DefaultArguments, Wart.ExplicitImplicitTypes, Wart.NonUnitStatements, Wart.Throw,
+      Wart.Any, Wart.Nothing, Wart.Null, Wart.Product, Wart.NoNeedForMonad/** TODO report bug */)
+  )
 
   def libAndroidSettings: Seq[Def.Setting[_]] = androidBuildAar ++ androidSettings ++
     robolectricSettings ++ stdLibs ++ lintingSettings
@@ -95,9 +99,11 @@ object Settings {
       fork in run := true,
       parallelExecution in test := false,
 
-      apkbuildExcludes in Android ++= Seq(
-        "META-INF/LICENSE.txt",
-        "META-INF/NOTICE.txt"
+      packagingOptions in Android := PackagingOptions(
+        excludes = Seq(
+          "META-INF/LICENSE.txt",
+          "META-INF/NOTICE.txt"
+        )
       ),
 
       proguardOptions in Android ++= Seq(
@@ -121,6 +127,17 @@ object Settings {
         "-dontwarn sun.misc.Unsafe"
       )
     )
+
+  private def uiSettings: Seq[Def.Setting[_]] = Seq(
+    resolvers += "jcenter" at "http://jcenter.bintray.com",
+    libraryDependencies ++= Seq(
+      `android-support`
+    ) ++ macroid.map(aar(_)),
+
+    proguardOptions in Android ++= Seq(
+      "-keep class macroid.IdGen"
+    )
+  )
 
   private def lintingSettings: Seq[Def.Setting[_]] = Seq(
     scalacOptions ++= Seq(
@@ -162,7 +179,7 @@ object Settings {
       Wart.Throw
       */
     ),
-    wartremoverExcluded ++= sources(target.value / "android-gen") ++
+    wartremoverExcluded ++= sources(target.value / "android") ++
       sources(sourceDirectory.value / "test" / "scala")
   ) ++ ScalastylePlugin.projectSettings ++ Seq(
     ScalastylePlugin.scalastyleFailOnError := true
@@ -182,7 +199,7 @@ object Settings {
     javaOptions in Test ++= Seq("-XX:MaxPermSize=2048M", "-XX:+CMSClassUnloadingEnabled")
   )
 
-  private def stdProguardSettings = Seq (
+  private def stdProguardSettings = Seq(
     proguardOptions in Android ++= Seq(
       "-keepattributes Signature",
       "-dontwarn org.typelevel.discipline.**",

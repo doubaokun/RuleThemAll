@@ -32,8 +32,8 @@ lazy val core = project.in(file("core")).settings(
     _ / "sta" / "model" / "triggers" / "Trigger",
     _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
     _ / "sta" / "parser" / *,
-    _ / "sta" / "services" / "RulesExecutor",
-    _ / "sta" / "services" / "serviceMacros"
+    _ / "sta" / "service" / "RulesExecutor",
+    _ / "sta" / "service" / "serviceMacros"
   )
 
 lazy val plugin = project.in(file("plugin")).settings(libAndroidSettings: _*)
@@ -49,16 +49,19 @@ lazy val app = project.in(file("app")).settings(
     _ / "sta" / "model" / "actions" / **,
     _ / "sta" / "model" / "triggers" / **,
     _ / "sta" / "parser" / **,
-    _ / "sta" / "services" / "PluginHandler",
-    _ / "sta" / "services" / "STAService",
-    _ / "sta" / "services" / "TimerMap",
-    _ / "sta" / "services" / "package",
+    _ / "sta" / "service" / "PluginHandler",
+    _ / "sta" / "service" / "STAService",
+    _ / "sta" / "service" / "TimerMap",
+    _ / "sta" / "service" / "package",
     _ / "sta" / "storage" / "PlaintextStorage"
   )
 
 lazy val tests = project.in(file("tests")).settings(testsSettings: _*)
   .dependsOnLocal(app, core, utils)
 
-lazy val root = project.in(file(".")).aggregate(utils, core, app, tests).settings(Seq(
+lazy val gui = project.in(file("gui")).settings(appAndroidSettings)
+  .dependsOnLocal(app, core, utils)
+
+lazy val root = project.in(file(".")).aggregate(utils, core, app, tests, gui).settings(Seq(
   parallelExecution in Android := false
 ))

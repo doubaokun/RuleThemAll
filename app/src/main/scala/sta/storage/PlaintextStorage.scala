@@ -16,12 +16,12 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     val files = rulesDir.listFiles(new FilenameFilter {
       def accept(dir: File, filename: String): Boolean = filename.endsWith(".rule")
     })
-    val parser = RulesParser.cached(_.Single).andThen(_.get.value)
+    lazy val parser = RulesParser.cached(_.Single).andThen(_.get.value)
     for (file <- files) {
       val rule = parser(io.Source.fromFile(file).mkString)
       map += (rule.name -> rule)
     }
-    Toast(s"${files.length} rules loaded")
+    if (files.nonEmpty) Toast(s"${files.length} rules loaded")
     map
   }
 
