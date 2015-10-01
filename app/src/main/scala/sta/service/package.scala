@@ -3,8 +3,7 @@ package sta
 import scala.language.implicitConversions
 import android.content.{Intent, IntentFilter}
 import android.os.PatternMatcher
-import kj.android.common.Common
-import sta.common.Requirement
+import sta.common.{Common, Requirement}
 import sta.model.{BaseModel, Model}
 
 package object service extends Common {

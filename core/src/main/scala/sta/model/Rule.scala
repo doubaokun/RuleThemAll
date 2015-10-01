@@ -1,21 +1,19 @@
 package sta.model
 
-import scala.language.implicitConversions
-import android.app.{PendingIntent, AlarmManager}
-import android.content.{Intent, Context}
+import android.app.{AlarmManager, PendingIntent}
+import android.content.{Context, Intent}
 import cats._
 import cats.data.Validated._
 import cats.data.{NonEmptyList => NEL, Validated}
 import cats.std.all._
 import cats.syntax.all._
-import java.util.{Date, UUID}
-import kj.android.common.{Toast, Notify, AppInfo}
+import java.util.UUID
 import kj.android.common.SystemServices._
 import kj.android.logging._
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
+import scala.language.implicitConversions
 import shapeless.HMap
-import sta.common.Requirement
+import sta.common.{Toast, Notify, AppInfo, Requirement}
 import sta.model.actions.Action
 import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._

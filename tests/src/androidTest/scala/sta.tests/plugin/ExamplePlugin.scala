@@ -2,8 +2,8 @@ package sta.tests.plugin
 
 import android.content._
 import fastparse.noApi._
-import kj.android.common.Toast
 import kj.android.logging.Logging
+import sta.common.Toast
 import sta.model.triggers.Trigger
 import sta.model.triggers.Trigger.Standalone
 import sta.model.{ModelCompanion, Model}

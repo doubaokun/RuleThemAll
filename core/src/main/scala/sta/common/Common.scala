@@ -1,9 +1,9 @@
-package kj.android.common
+package sta.common
 
 import scala.language.implicitConversions
 import android.content.Intent
-import android.os.{Parcelable, Bundle, Message, Messenger}
-import kj.android.logging.LogTag
+import android.os.{Bundle, Message, Messenger, Parcelable}
+import kj.android.logging.{LogTag, Logger}
 import scala.util.control.NonFatal
 
 trait Common {
@@ -30,7 +30,7 @@ object Common {
       data.get(key).asInstanceOf[T]
     } catch {
       case NonFatal(th) =>
-        android.util.Log.e(logTag.tag, s"Error during getting key $key from bundle", th)
+        Logger.error(s"Error during getting key $key from bundle", th)
         throw th
     }
 
@@ -38,7 +38,7 @@ object Common {
       Option(data.get(key)).asInstanceOf[Option[T]]
     } catch {
       case NonFatal(th) =>
-        android.util.Log.e(logTag.tag, s"Error during getting key $key from bundle", th)
+        Logger.error(s"Error during getting key $key from bundle", th)
         None
     }
   }

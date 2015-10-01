@@ -7,7 +7,6 @@ import android.os._
 import android.view.View
 import android.view.ViewGroup.LayoutParams
 import android.widget._
-import kj.android.common.Common
 import kj.android.logging.Logging
 import macroid.FullDsl._
 import macroid._
@@ -15,6 +14,7 @@ import macroid.contrib.{ListTweaks, TextTweaks}
 import macroid.viewable._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import sta.common.Common
 import sta.service.STAService
 
 class MainActivity extends Activity with Logging with Contexts[Activity] with IdGeneration with Common { root =>

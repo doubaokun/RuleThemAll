@@ -2,7 +2,6 @@ package kj.android.concurrent
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
-import scala.util.Try
 import scala.util.control.NonFatal
 
 sealed trait Atomic[T] {

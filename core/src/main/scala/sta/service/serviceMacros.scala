@@ -5,7 +5,7 @@ import scala.language.{dynamics, existentials, higherKinds}
 import scala.annotation.StaticAnnotation
 import scala.concurrent.duration.Duration
 import scala.reflect.macros.blackbox
-import sta.common.{Requirement, Uses}
+import sta.common.Uses
 import sta.model.BaseModel
 
 /** Marks intents that shouldn't be registered by a broadcast receiver,

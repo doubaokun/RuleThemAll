@@ -4,10 +4,9 @@ import android.app.Service
 import android.content.{ComponentName, Intent}
 import android.os._
 import java.util.UUID
-import kj.android.common.Common
 import kj.android.logging.Logging
 import scala.util.control.NonFatal
-import sta.common.Requirement
+import sta.common.{Common, Requirement}
 import sta.model.BaseModel
 import sta.model.actions.Action
 import sta.parser.{ActionParser, TriggerParser}

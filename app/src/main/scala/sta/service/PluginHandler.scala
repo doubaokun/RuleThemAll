@@ -6,13 +6,12 @@ import android.os._
 import android.util.SparseArray
 import java.util.UUID
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import kj.android.common.Common
 import kj.android.concurrent.ExecutionContext.Implicits._
 import kj.android.concurrent.Task
 import kj.android.logging.Logging
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import sta.common.Requirement
+import sta.common.{Common, Requirement}
 import sta.model.BaseModel
 import sta.model.actions.Action
 import sta.parser.{ActionParser, RulesParser, TriggerParser}

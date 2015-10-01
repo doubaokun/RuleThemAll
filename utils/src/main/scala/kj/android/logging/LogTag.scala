@@ -22,7 +22,7 @@ private class LogTagImpl(val c: blackbox.Context) {
     tag.tree match {
       case q"${t: String}" if t.length > 23 => q"new ${typeOf[LogTag]}(${t.substring(0, 23)})"
       case q"${t: String}" => q"new ${typeOf[LogTag]}($t)"
-      case _ => q"$tag.substring(0, scala.math.min($tag.length, 23))"
+      case _ => q"new ${typeOf[LogTag]}($tag.substring(0, scala.math.min($tag.length, 23)))"
     }
   }
 }

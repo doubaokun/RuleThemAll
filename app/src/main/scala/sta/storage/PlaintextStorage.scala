@@ -3,8 +3,8 @@ package sta.storage
 import android.content.Context
 import fastparse.core.{Result, SyntaxError}
 import java.io._
-import kj.android.common.{AppInfo, Notify, Toast}
 import scala.collection.mutable
+import sta.common.{Toast, Notify, AppInfo}
 import sta.model.Rule
 import sta.parser.RulesParser
 
