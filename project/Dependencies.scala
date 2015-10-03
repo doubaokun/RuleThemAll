@@ -1,5 +1,5 @@
+import Extras._
 import sbt._
-
 
 object Dependencies {
   object versions {
@@ -72,4 +72,6 @@ object Dependencies {
   )
 
   val `android-support` = "com.android.support" % "support-v4" % "21.0.0"
+
+  val rootTools = GithubRelease("Stericson/RootTools", "4.2", "RootTools.jar")
 }

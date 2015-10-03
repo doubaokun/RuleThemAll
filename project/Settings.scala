@@ -1,4 +1,5 @@
 import Dependencies._
+import Extras._
 import android.Keys._
 import android.Plugin._
 import java.io.FilenameFilter
@@ -6,7 +7,6 @@ import org.scalastyle.sbt.ScalastylePlugin
 import sbt.Keys._
 import sbt._
 import wartremover._
-
 
 object Settings {
   sealed trait Special
@@ -38,6 +38,10 @@ object Settings {
       project.settings(
         localProjects in Android ++= projects.map(p => LibraryProject(p.base)): _*
       ).dependsOn(projects.map(new ClasspathDependency(_, Some("compile->compile;test->test"))): _*)
+    }
+
+    def dependsOnExternal(projects: ExternalJar*): Project = {
+      project.settings(externalJars in Compile ++= projects)
     }
 
     def excludeFromLinting(files: (sbt.File => Seq[sbt.File])*): Project = {

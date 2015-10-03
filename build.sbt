@@ -1,4 +1,5 @@
 import Dependencies._
+import Extras._
 import Settings._
 
 
@@ -14,7 +15,8 @@ lazy val utils = project.in(file("utils")).settings(
   libraryDependencies ++= Seq(
     reflect
   )
-).settings(androidBuildAar ++ commonSettings ++ androidSettings: _*)
+).settings(androidBuildAar ++ commonSettings ++ androidSettings ++ externalJarsSettings: _*)
+  .dependsOnExternal(rootTools)
 
 lazy val core = project.in(file("core")).settings(
   libraryDependencies ++= Seq(
