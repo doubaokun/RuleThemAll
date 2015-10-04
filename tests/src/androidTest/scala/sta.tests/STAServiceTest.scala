@@ -1,6 +1,6 @@
 package sta.tests
 
-import android.content.{BroadcastReceiver, Intent}
+import android.content.{ServiceConnection, BroadcastReceiver, Intent}
 import android.net.Uri
 import android.os.Messenger
 import android.test.ServiceTestCase
@@ -9,12 +9,12 @@ import java.io.{File, FileOutputStream}
 import org.scalatest.Matchers
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.reflect.{ClassTag, classTag}
+import sta.common.Reflect._
 import sta.common.Uses
 import sta.model.triggers.Implicits._
 import sta.model.triggers.Trigger
 import sta.model.triggers.Trigger.Branch
-import sta.parser.RulesParser
+import sta.parser.{ActionParser, TriggerParser, RulesParser}
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 import sta.service.{PluginHandler, STAService}
@@ -33,18 +33,6 @@ class STAServiceTest extends ServiceTestCase[STAService](classOf[STAService]) wi
     loop(max)
   }
 
-  def callPrivateField[T: ClassTag, R](name: String, obj: Any) = {
-    val f = classTag[T].runtimeClass.getDeclaredField(name)
-    f.setAccessible(true)
-    f.get(obj).asInstanceOf[R]
-  }
-
-  def callPrivateMethod[T: ClassTag, R](name: String, obj: T, args: AnyRef*) = {
-    val m = classTag[T].runtimeClass.getDeclaredMethod(name)
-    m.setAccessible(true)
-    m.invoke(obj, args: _*).asInstanceOf[R]
-  }
-  
   def testServiceFlow(): Unit = {
     val pkg = "sta.tests"
     val ctx = new ExampleContext[ExamplePlugin](pkg, getSystemContext)
@@ -57,19 +45,17 @@ class STAServiceTest extends ServiceTestCase[STAService](classOf[STAService]) wi
     val service = new Messenger(binder)
 
     // plugin list should be empty at first
-    val pluginUpdater = callPrivateMethod[PluginHandler, BroadcastReceiver](
-      "sta$service$PluginHandler$$pluginUpdater", getService)
-    val plugins = callPrivateMethod[PluginHandler, SparseArray[_]](
-      "sta$service$PluginHandler$$plugins", getService)
+    val pluginUpdater = classOf[PluginHandler].reflect[BroadcastReceiver](getService)
+      .`sta$service$PluginHandler$$pluginUpdater`()
+    val plugins = classOf[PluginHandler].reflect[SparseArray[ServiceConnection]](getService)
+      .`sta$service$PluginHandler$$plugins`()
     plugins.size should === (0)
 
     // remember amount of trigger amd action parsers
-    val actionParsers = callPrivateMethod[ActionRules, mutable.HashMap[_, _]](
-      "sta$parser$actions$ActionRules$$parsers", RulesParser
-    )
-    val triggerParsers = callPrivateMethod[TriggerRules, mutable.HashMap[_, _]](
-      "sta$parser$triggers$TriggerRules$$parsers", RulesParser
-    )
+    val actionParsers = classOf[ActionRules].reflect[mutable.HashMap[Class[_], ActionParser[_]]](RulesParser)
+      .`sta$parser$actions$ActionRules$$parsers`()
+    val triggerParsers = classOf[TriggerRules].reflect[mutable.HashMap[String, TriggerParser[_]]](RulesParser)
+      .`sta$parser$triggers$TriggerRules$$parsers`()
     val actionParsersSize = actionParsers.size
     val triggerParsersSize = triggerParsers.size
 
@@ -96,8 +82,8 @@ class STAServiceTest extends ServiceTestCase[STAService](classOf[STAService]) wi
       }
     }
     service.send(STAService.loadRules(files: _*))
-    val storage = callPrivateField[STAService, RulesStorage](
-      "sta$service$STAService$$storage", getService)
+    val storage = classOf[STAService].reflect[RulesStorage](getService)
+      .`sta$service$STAService$$storage`
     wait(30.seconds, 250.millis)(storage.allRules.nonEmpty)
     val rules = storage.allRules.toList
     rules.size should === (1)

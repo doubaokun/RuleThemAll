@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="sta.tests">
 
-    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="21" android:maxSdkVersion="22" />
+    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="19" android:maxSdkVersion="23" />
 
     <!-- ScalaMeter -->
     <uses-permission android:name="android.permission.INTERNET"/>

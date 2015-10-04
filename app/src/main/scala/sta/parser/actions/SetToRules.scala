@@ -2,13 +2,14 @@ package sta.parser.actions
 
 import fastparse.noApi._
 import scala.{Int => ScalaInt}
-import sta.model.actions.{ChangeSoundProfile, SetSoundTo, SetTo, SetToSettings}
+import sta.model.actions._
 import sta.parser.ActionParser
 
 object SetToRules extends ActionParser[SetTo] {
   import white._
 
   def rules: Seq[(String, P[SetTo])] = Seq(
+    "location" -> mapParser(SetLocationTo.Mode.namesToValuesMap).map(SetLocationTo(_)),
     "brightness" -> Percent.map(SetToSettings.brightness),
     "screen timeout" -> (Duration.map(_.toMillis.toInt) |
       "never".push(ScalaInt.MaxValue)).map(SetToSettings.timeout),

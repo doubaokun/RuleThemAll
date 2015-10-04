@@ -1,5 +1,6 @@
 package sta.common
 
+import android.content.Context
 import android.net.Uri
 import com.stericson.RootShell.execution.Command
 import com.stericson.RootTools.RootTools
@@ -19,6 +20,10 @@ object Root {
       case (k, v: Uri) => s"--eu $k $v"
     }.mkString(" ")
     s"am broadcast -a $action $data"
+  }
+
+  def grantPermission(ctx: Context, permission: String): String = {
+    s"pm grant ${ctx.getPackageName} $permission"
   }
 
   def run(cmds: String*): Unit = {

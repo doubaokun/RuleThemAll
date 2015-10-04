@@ -20,6 +20,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     lazy val parser = RulesParser.cached(_.Single).andThen(_.get.value)
     for (file <- files) {
       val rule = parser(io.Source.fromFile(file).mkString)
+      rule.prepare()
       map += (rule.name -> rule)
     }
     if (files.nonEmpty) Toast(s"${files.length} rules loaded")
@@ -59,6 +60,7 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
               } finally {
                 fos.close()
               }
+              rule.prepare()
               (set + rule, trace)
           }._1
           result

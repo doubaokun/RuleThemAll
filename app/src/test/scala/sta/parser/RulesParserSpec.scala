@@ -109,7 +109,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       ),
       actions = Seq(
         ChangeSoundProfile(ChangeSoundProfile.Mode.Vibrate),
-        TurnOnOffDevice.WiFi(enable = true)
+        TurnOnOff.WiFi(enable = true)
       )
     ) :: Nil
     val actual = RulesParser.Multi.parse(getClass.getResourceAsStream("/single.rule")).get.value
@@ -167,7 +167,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       ),
       actions = Seq(
         ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),
-        TurnOnOffDevice.Bluetooth(enable = false)
+        TurnOnOff.Bluetooth(enable = false)
       )
     ) :: Nil
     val actual = RulesParser.Multi.parse(
@@ -189,8 +189,8 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       ),
       actions = Seq(
         ChangeSoundProfile(ChangeSoundProfile.Mode.Silent),
-        TurnOnOffDevice.WiFi(enable = true),
-        TurnOnOffDevice.Bluetooth(enable = false)
+        TurnOnOff.WiFi(enable = true),
+        TurnOnOff.Bluetooth(enable = false)
       )
     ) :: Nil
 

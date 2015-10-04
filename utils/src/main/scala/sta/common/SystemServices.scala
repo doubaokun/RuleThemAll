@@ -6,6 +6,7 @@ import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.PowerManager
+import android.telephony.TelephonyManager
 
 
 object SystemServices {
@@ -23,6 +24,9 @@ object SystemServices {
 
   @inline def powerManager(implicit ctx: Context) =
     ctx.getSystemService(Context.POWER_SERVICE).asInstanceOf[PowerManager]
+
+  @inline def telephonyManager(implicit ctx: Context)=
+    ctx.getSystemService(Context.TELEPHONY_SERVICE).asInstanceOf[TelephonyManager]
 
   @inline def wifiManager(implicit ctx: Context) =
     ctx.getSystemService(Context.WIFI_SERVICE).asInstanceOf[WifiManager]

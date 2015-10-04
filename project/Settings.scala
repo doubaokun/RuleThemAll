@@ -129,6 +129,14 @@ object Settings {
         "-dontwarn org.scalatest.tools.**",
         "-dontwarn org.testng.**",
         "-dontwarn sun.misc.Unsafe"
+      ),
+
+      proguardCache in Android ++= Seq(
+        "org.scalacheck",
+        "org.scalactic",
+        "org.scalameter",
+        "org.scalamock",
+        "org.scalatest"
       )
     )
 
@@ -136,10 +144,11 @@ object Settings {
     resolvers += "jcenter" at "http://jcenter.bintray.com",
     libraryDependencies ++= Seq(
       `android-support`
-    ) ++ macroid.map(aar(_)),
+    ) ++ macroid.map(aar),
 
-    proguardOptions in Android ++= Seq(
-      "-keep class macroid.IdGen"
+    proguardCache in Android ++= Seq(
+      "android.support",
+      "macroid"
     )
   )
 
@@ -189,8 +198,10 @@ object Settings {
     proguardCache in Android ++= Seq(
       "algebra",
       "cats",
+      "com.stericson",
       "fastparse",
-      "scala",
+      "org.brianmckenna.wartremover",
+      "org.scalacheck",
       "shapeless",
       "spire"
     )

@@ -13,13 +13,13 @@ import scala.concurrent.duration._
 import shapeless.HMap
 import sta.common.SystemServices._
 import sta.common.{AppInfo, Notify, Requirement, Toast}
-import sta.logging
+import sta.logging._
 import sta.model.actions.Action
 import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._
 import sta.service.RulesExecutor
 
-final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends logging.Logging {
+final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
@@ -38,7 +38,7 @@ final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[
     (directBuilder.result(), withTimerBuilder.result())
   }
 
-  private def executeRule(implicit ctx: RulesExecutor, logTag: logging.LogTag, appInfo: AppInfo): Unit = {
+  private def executeRule(implicit ctx: RulesExecutor, appInfo: AppInfo): Unit = {
     if (!executed) {
       log.info(s"Executing actions in rule $name")
       implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
@@ -49,7 +49,7 @@ final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[
       result.fold(
         errs => {
           (errs.head :: errs.tail).foreach { case (action, th) =>
-            logging.Logger.error(s"Error has occurred during running action $action in $name", th)
+            log.error(s"Error has occurred during running action $action in $name", th)
           }
           Notify(s"Failed to execute $name", Some(name)) // TODO add notification action
         }, _ => Toast(s"Rule $name executed successfully")
@@ -76,13 +76,15 @@ final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[
     } else None
   }
 
-  def execute(state: HMap[ModelKV])(implicit ctx: RulesExecutor, logTag: logging.LogTag, appInfo: AppInfo): Unit = {
+  def prepare()(implicit ctx: Context): Unit = actions.foreach(_.prepare())
+
+  def execute(state: HMap[ModelKV])(implicit ctx: RulesExecutor, appInfo: AppInfo): Unit = {
     if (direct.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
     else executed = false
   }
   
   def executeBranch(branchId: UUID, intent: Intent, state: HMap[ModelKV],
-    timerFullyExecuted: Boolean)(implicit ctx: RulesExecutor, logTag: logging.LogTag, appInfo: AppInfo) = {
+    timerFullyExecuted: Boolean)(implicit ctx: RulesExecutor, appInfo: AppInfo) = {
     val branch = withTimer.get(branchId)
     branch.foreach(setAlarm(_, branchId, intent, alarmManager, 60.seconds))
     if (timerFullyExecuted && branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
