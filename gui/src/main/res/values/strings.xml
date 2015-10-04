@@ -3,6 +3,6 @@
     <string name="app_name">Script \'Em All</string>
     <string name="app_service">App service</string>
     <string name="load_rules">Load rules</string>
-    <string name="load_rules_dialog">Please select file(s) to load</string>
     <string name="unload_rules">Remove rules</string>
+    <string name="rules_list">Loaded rules:</string>
 </resources>

@@ -73,6 +73,7 @@ object Settings {
 
   def androidSettings: Seq[Def.Setting[_]] = commonSettings ++ Seq(
     platformTarget in Android := versions.androidSDK,
+
     dexMaxHeap in Android := "2048m",
     transitiveAndroidLibs in Android := false,
     debugIncludesTests in Android := false
@@ -80,9 +81,7 @@ object Settings {
 
   def appAndroidSettings: Seq[Def.Setting[_]] = androidBuild ++ androidSettings ++
     robolectricSettings ++ lintingSettings ++ uiSettings ++ Seq(
-    wartremoverErrors := Warts.allBut(Wart.MutableDataStructures, Wart.Var,
-      Wart.DefaultArguments, Wart.ExplicitImplicitTypes, Wart.NonUnitStatements, Wart.Throw,
-      Wart.Any, Wart.Nothing, Wart.Null, Wart.Product, Wart.NoNeedForMonad/** TODO report bug */)
+    wartremoverErrors ~= (_.filterNot(w => Set(Wart.MutableDataStructures, Wart.Null, Wart.Var).contains(w)))
   )
 
   def libAndroidSettings: Seq[Def.Setting[_]] = androidBuildAar ++ androidSettings ++
@@ -121,7 +120,7 @@ object Settings {
         "-dontwarn com.google.common.collect.MinMaxPriorityQueue",
         "-dontwarn com.google.monitoring.runtime.instrumentation.**",
         "-dontwarn org.apache.commons.math3.geometry.euclidean.**",
-        "-dontwarn org.scalacheck.**", // TODO
+        "-dontwarn org.scalacheck.**",
         "-dontwarn org.scalameter.utils.**",
         "-dontwarn org.scalatest.junit.**",
         "-dontwarn org.scalatest.mock.**",
