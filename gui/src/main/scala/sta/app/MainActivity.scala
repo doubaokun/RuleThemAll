@@ -26,7 +26,7 @@ class MainActivity extends Activity with Logging with Contexts[Activity] with Id
   private[this] val sender = new Messenger(new Handler() {
     override def handleMessage(msg: Message): Unit = msg.what match {
       case STAService.LIST =>
-        for(arr <- msg.get[Array[String]](STAService.names)) {
+        for(arr <- msg.get[Array[String]](STAService.NAMES)) {
           rulesSource.swap(arr.toSet)
           runUi {
             if (!rulesSource.isEmpty) rawUnloadButton <~ enable else rawUnloadButton <~ disable

@@ -27,7 +27,7 @@ object STAService {
   val LIST = 3
   val SUBSCRIBE = 4
   val UNSUBSCRIBE = 5
-  val names = "sta.rule.name"
+  val NAMES = "sta.rule.name"
 
   def loadRules(from: Uri*): Message = {
     val msg = Message.obtain(null, LOAD)
@@ -109,15 +109,12 @@ class STAService extends RulesExecutor with PluginHandler { root =>
       }
     }
 
-    private def listRules() = {
-      val rules = storage.allRules.map(_.name)
-      if (rules.nonEmpty) {
-        val reply = Message.obtain(null, LIST)
-        val bundle = new Bundle
-        bundle.putStringArray(names, rules.toArray)
-        reply.setData(bundle)
-        Some(reply)
-      } else None
+    private def rulesMsg(names: Array[String]) = {
+      val reply = Message.obtain(null, LIST)
+      val bundle = new Bundle
+      bundle.putStringArray(NAMES, names)
+      reply.setData(bundle)
+      reply
     }
 
     override def handleMessage(msg: Message): Unit = try {
@@ -128,8 +125,9 @@ class STAService extends RulesExecutor with PluginHandler { root =>
           if (info.addedRequirements.nonEmpty || info.removedRequirements.nonEmpty)
             update(onAdd(info.addedRequirements, info.removedRequirements))
           if (subscribers.nonEmpty) {
-            for (msg <- listRules(); subscriber <- subscribers) {
-              subscriber.send(msg)
+            val all = storage.allRules.map(_.name).toArray
+            for (subscriber <- subscribers) {
+              subscriber.send(rulesMsg(all))
             }
           }
         case UNLOAD =>
@@ -138,15 +136,16 @@ class STAService extends RulesExecutor with PluginHandler { root =>
           ruleNames.foreach(timers -= _)
           if (toRemove.nonEmpty) update(onRemove(toRemove))
           if (subscribers.nonEmpty) {
-            for (msg <- listRules(); subscriber <- subscribers) {
-              subscriber.send(msg)
+            val all = storage.allRules.map(_.name).toArray
+            for (subscriber <- subscribers) {
+              subscriber.send(rulesMsg(all))
             }
           }
         case LIST if msg.replyTo != null =>
-          listRules().foreach(msg.replyTo.send(_))
+          msg.replyTo.send(rulesMsg(storage.allRules.map(_.name).toArray))
         case SUBSCRIBE if msg.replyTo != null =>
           subscribers += msg.replyTo
-          listRules().foreach(msg.replyTo.send(_))
+          msg.replyTo.send(rulesMsg(storage.allRules.map(_.name).toArray))
         case UNSUBSCRIBE if msg.replyTo != null =>
           subscribers -= msg.replyTo
         case other =>

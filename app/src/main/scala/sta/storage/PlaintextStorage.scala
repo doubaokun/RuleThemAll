@@ -4,14 +4,15 @@ import android.content.Context
 import fastparse.core.{Result, SyntaxError}
 import java.io._
 import scala.collection.mutable
+import scala.util.control.NonFatal
 import sta.common.{AppInfo, Notify, Toast}
 import sta.model.Rule
 import sta.parser.RulesParser
 
+@SuppressWarnings(Array("org.brianmckenna.wartremover.warts.MutableDataStructures"))
 class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends RulesStorage {
   private[this] val rulesDir: File = ctx.getDir("rules", Context.MODE_PRIVATE)
 
-  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.MutableDataStructures"))
   private[this] val rawRules = {
     val map = mutable.Map.empty[String, Rule]
     val files = rulesDir.listFiles(new FilenameFilter {
@@ -19,15 +20,19 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     })
     lazy val parser = RulesParser.cached(_.Single).andThen(_.get.value)
     for (file <- files) {
-      val rule = parser(io.Source.fromFile(file).mkString)
-      rule.prepare()
-      map += (rule.name -> rule)
+      try {
+        val rule = parser(io.Source.fromFile(file).mkString)
+        rule.prepare()
+        map += (rule.name -> rule)
+      } catch {
+        case NonFatal(th) =>
+          log.error(s"Invalid rule stored in ${file.getName}. That should not happen", th)
+      }
     }
     if (files.nonEmpty) Toast(s"${files.length} rules loaded")
     map
   }
 
-  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.MutableDataStructures"))
   private[this] val rawUses = {
     val map = mutable.Map.empty[Int, Int]
     for (
@@ -53,15 +58,22 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
         case Result.Success(res, _) =>
           val result: Set[Rule] = res.foldLeft(Set.empty[Rule] -> 0) {
             case ((set, idx), (rule, trace)) =>
-              val fos = new FileOutputStream(new File(rulesDir, s"${rule.name}.rule"))
               try {
-                val s = input.substring(idx, trace)
-                fos.write(s.trim.getBytes)
-              } finally {
-                fos.close()
+                rule.prepare()
+                val fos = new FileOutputStream(new File(rulesDir, s"${rule.name}.rule"))
+                try {
+                  val s = input.substring(idx, trace)
+                  fos.write(s.trim.getBytes)
+                } finally {
+                  fos.close()
+                }
+                (set + rule, trace)
+              } catch {
+                case NonFatal(th) =>
+                  log.error(s"Failed to preprocess rule ${rule.name}.", th)
+                  Notify(s"Failed to add rule ${rule.name}.", Some(logTag.tag)) // TODO add notification action
+                  (set, trace)
               }
-              rule.prepare()
-              (set + rule, trace)
           }._1
           result
       }
@@ -128,27 +140,30 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
   def unregister(names: String*): Set[Int] = synchronized {
     val removed = Set.newBuilder[Int]
     val parser = RulesParser.cached(_.Single).andThen(_.get.value)
-    names.foreach { name =>
+    val count = names.foldLeft(0) { (count, name) =>
       val file = new File(rulesDir, s"$name.rule")
-      val rule = parser(io.Source.fromFile(file).mkString)
+      if (file.exists()) {
+        val rule = parser(io.Source.fromFile(file).mkString)
 
-      rawRules -= rule.name
-      file.delete()
-      for (
-        requirement <- rule.requires;
-        count <- rawUses.get(requirement.hashCode())
-      ) {
-        count match {
-          case 1 =>
-            removed += requirement.hashCode()
-            rawUses -= requirement.hashCode()
-          case _ =>
-            rawUses += (requirement.hashCode() -> (count - 1))
+        rawRules -= rule.name
+        file.delete()
+        for (
+          requirement <- rule.requires;
+          count <- rawUses.get(requirement.hashCode())
+        ) {
+          count match {
+            case 1 =>
+              removed += requirement.hashCode()
+              rawUses -= requirement.hashCode()
+            case _ =>
+              rawUses += (requirement.hashCode() -> (count - 1))
+          }
         }
-      }
+        count + 1
+      } else count
     }
 
-    Toast(txt = s"${names.length} rules removed", length = Toast.Long)
+    if (count > 0) Toast(txt = s"$count rules removed", length = Toast.Long)
     removed.result()
   }
 }
