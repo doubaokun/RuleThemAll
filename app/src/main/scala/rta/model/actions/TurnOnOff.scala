@@ -3,6 +3,7 @@ package rta.model.actions
 import android.bluetooth.BluetoothAdapter
 import android.content.{Context, Intent}
 import android.net._
+import android.nfc.NfcAdapter
 import android.os.Build
 import android.provider.Settings
 import android.telephony.TelephonyManager
@@ -22,6 +23,10 @@ object TurnOnOff {
         putSettings("global", Settings.Global.AIRPLANE_MODE_ON, enable.toInt),
         sendBroadcast(Intent.ACTION_AIRPLANE_MODE_CHANGED, "state" -> true)
       )
+    }
+
+    override def prepare()(implicit ctx: Context): Unit = {
+      run(grantPermission(ctx, android.Manifest.permission.WRITE_SECURE_SETTINGS))
     }
   }
 
@@ -49,6 +54,22 @@ object TurnOnOff {
       if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT) {
         run(grantPermission(ctx, android.Manifest.permission.MODIFY_PHONE_STATE))
       }
+    }
+  }
+
+  final case class NFC(enable: Boolean) extends TurnOnOff {
+    import Reflect._
+    import Root._
+
+    def execute()(implicit ctx: Context): Unit = {
+      enable match {
+        case true => classOf[NfcAdapter].reflect[Boolean](NfcAdapter.getDefaultAdapter(ctx)).enable()
+        case false => classOf[NfcAdapter].reflect[Boolean](NfcAdapter.getDefaultAdapter(ctx)).disable()
+      }
+    }
+
+    override def prepare()(implicit ctx: Context): Unit = {
+      run(grantPermission(ctx, android.Manifest.permission.WRITE_SECURE_SETTINGS))
     }
   }
 

@@ -11,6 +11,7 @@ object TurnOnOffRules extends ActionParser[TurnOnOff] {
     "airplane" ~ "mode".push(TurnOnOff.AirplaneMode.apply _) |
       "bluetooth".push(TurnOnOff.Bluetooth.apply _) |
       "mobile" ~ "network".push(TurnOnOff.MobileNetwork.apply _) |
+      "nfc".push(TurnOnOff.NFC.apply _) |
       "wifi".push(TurnOnOff.WiFi.apply _)
   ) ~ ("on".push(true) | "off".push(false)) map {
     case (constructor, enable) => constructor(enable)
