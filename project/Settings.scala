@@ -113,7 +113,6 @@ object Settings {
         "-keep public class * extends junit.framework.TestCase",
         "-keepclassmembers class * extends junit.framework.TestCase { *; }",
         "-keep class org.scalameter.**",
-        "-keep class sta.tests.benchmarks.**",
 
         "-keepattributes InnerClasses",
 

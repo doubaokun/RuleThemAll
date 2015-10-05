@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Script \'Em All</string>
+    <string name="app_name">Rule \'Em All</string>
     <string name="app_service">App service</string>
     <string name="load_rules">Load rules</string>
     <string name="unload_rules">Remove rules</string>

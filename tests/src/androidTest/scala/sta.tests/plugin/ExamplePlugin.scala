@@ -1,16 +1,16 @@
-package sta.tests.plugin
+package rta.tests.plugin
 
 import android.content._
 import fastparse.noApi._
-import sta.common.Toast
-import sta.logging.Logging
-import sta.model.actions.Action
-import sta.model.triggers.Trigger
-import sta.model.triggers.Trigger.Standalone
-import sta.model.{Model, ModelCompanion}
-import sta.parser.{ActionParser, TriggerParser}
-import sta.plugin.Plugin
-import sta.tests.plugin.ExamplePlugin._
+import rta.common.Toast
+import rta.logging.Logging
+import rta.model.actions.Action
+import rta.model.triggers.Trigger
+import rta.model.triggers.Trigger.Standalone
+import rta.model.{Model, ModelCompanion}
+import rta.parser.{ActionParser, TriggerParser}
+import rta.plugin.Plugin
+import rta.tests.plugin.ExamplePlugin._
 
 class ExamplePlugin extends Plugin[ShowToast, Dummy] {
   override def actionParser: Option[ActionParser[ShowToast]] = Some(ToastActionParser)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Script \'Em All</string>
+    <string name="app_name">Rule \'Em All</string>
     <string name="benchmark_headline">Available benchmarks:</string>
     <string name="parser_benchmark">Parser</string>
 </resources>

@@ -1,4 +1,4 @@
-package sta.tests
+package rta.tests
 
 import android.app.Service
 import android.content._

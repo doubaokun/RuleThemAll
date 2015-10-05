@@ -3,7 +3,6 @@ import sbt._
 
 object Dependencies {
   object versions {
-    val app = "0.1"
     val androidSDK = "android-19"
     val androidSupport = "19.0.0"
     val scala = "2.11.7"

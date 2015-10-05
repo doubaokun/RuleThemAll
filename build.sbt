@@ -3,11 +3,9 @@ import Extras._
 import Settings._
 
 
-name := "Script 'Em All"
+name := "Rule 'Em All"
 
-organization := "sta"
-
-version := versions.app
+organization := "rta"
 
 commonSettings
 
@@ -27,10 +25,10 @@ lazy val core = project.in(file("core")).settings(
     spire
   )
 ).settings(libAndroidSettings: _*).dependsOnLocal(utils).excludeFromLinting(
-    _ / "sta" / "common" / "usesMacros",
-    _ / "sta" / "model" / "triggers" / "functions" / "ModelFunction",
-    _ / "sta" / "parser" / *,
-    _ / "sta" / "service" / "serviceMacros"
+    _ / "rta" / "common" / "usesMacros",
+    _ / "rta" / "model" / "triggers" / "functions" / "ModelFunction",
+    _ / "rta" / "parser" / *,
+    _ / "rta" / "service" / "serviceMacros"
   )
 
 lazy val app = project.in(file("app")).settings(
@@ -38,9 +36,9 @@ lazy val app = project.in(file("app")).settings(
     `android-support-v4`
   )
 ).settings(libAndroidSettings: _*).dependsOnLocal(core, utils).excludeFromLinting(
-    _ / "sta" / "parser" / **,
-    _ / "sta" / "service" / "PluginHandler",
-    _ / "sta" / "service" / "STAService"
+    _ / "rta" / "parser" / **,
+    _ / "rta" / "service" / "PluginHandler",
+    _ / "rta" / "service" / "RulesService"
   )
 
 lazy val tests = project.in(file("tests")).settings(testsSettings: _*)
