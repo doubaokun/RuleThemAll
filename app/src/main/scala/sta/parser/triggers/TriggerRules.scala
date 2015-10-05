@@ -7,7 +7,7 @@ import sta.model.triggers._
 import sta.parser.Extras._
 import sta.parser.{Extras, TriggerParser}
 
-trait TriggerRules extends Extras {
+trait TriggerRules {
   private[this] val parsers = mutable.HashMap.empty[String, TriggerParser[_ <: BaseModel]]
   addTriggerParser(BatteryRules)
   addTriggerParser(BluetoothRules)

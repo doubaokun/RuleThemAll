@@ -9,11 +9,14 @@ import sta.parser.Extras._
 import sta.parser.actions.ActionRules
 import sta.parser.triggers.TriggerRules
 
-object RulesParser extends Extras with ActionRules with TriggerRules {
+object RulesParser extends ActionRules with TriggerRules {
 
   import white._
 
-  def Name: P[String] = P((CharPred(_.isLetter) ~~ ("_" ~~ CharPred(_.isLetterOrDigit)).?).repX(1).! ~~ !"_")
+  def Name: P[String] = P(
+    (CharPred(c => c.isLetter | c == '_') ~~
+      CharsWhile(c => c.isLetterOrDigit | c == '_', min = 0)).!
+  )
 
   def Branches: P[Seq[Trigger.Branch]] = P("(" ~ Triggers.map(_.flatten) ~ ")")
 

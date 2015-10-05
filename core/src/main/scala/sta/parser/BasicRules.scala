@@ -7,7 +7,7 @@ import spire.math.{Natural => Nat, Rational, SafeLong, UByte, UInt}
 import sta.cron.CronExpression
 import sta.parser.Extras._
 
-trait BasicRules extends Extras {
+trait BasicRules {
   private def digit = P(CharIn('0' to '9').!)
 
   private def digit19 = P(CharIn('1' to '9').!)

@@ -1,6 +1,7 @@
 package sta.parser
 
 import scala.language.implicitConversions
+import fastparse.all._
 import fastparse.core.SyntaxError
 import java.io.InputStream
 import org.robolectric.annotation.Config
@@ -14,6 +15,7 @@ import sta.model.actions._
 import sta.model.triggers.Implicits._
 import sta.model.triggers.Trigger.Branch
 import sta.model.triggers._
+import sta.parser.Extras._
 import sta.tests.PropertyChecks
 
 @Config(sdk = Array(19), manifest = Config.NONE)
@@ -37,18 +39,6 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   it should "return error on malformed input" in {
     intercept[SyntaxError] {
       RulesParser.Multi.parse("rulee{do{set sound profile to silent}}").get
-    }
-
-    intercept[SyntaxError] {
-      RulesParser.Multi.parse("rule e_{do{set sound profile to silent}}").get
-    }
-
-    intercept[SyntaxError] {
-      RulesParser.Multi.parse("rule _e{do{set sound profile to silent}}").get
-    }
-
-    intercept[SyntaxError] {
-      RulesParser.Multi.parse("rule e_1_{do{set sound profile to silent}}").get
     }
 
     intercept[SyntaxError] {
@@ -82,13 +72,13 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
 
   it should "parse rule with no conditions" in {
     val expected = Rule(
-      name = "empty",
+      name = "e",
       branches = Branch(Seq.empty, Seq.empty) :: Nil,
       actions = Seq(ChangeSoundProfile(ChangeSoundProfile.Mode.Silent))
     ) :: Nil
     val actual = RulesParser.Multi.parse(
       """
-        |rule empty{do{set sound profile to silent}}
+        |rule e{do{set sound profile to silent}}
       """.stripMargin).get.value
 
     compareRules(actual = actual, expected = expected)
@@ -160,7 +150,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
 
   it should "parse dense script" in {
     val expected = Rule(
-      name = "dense",
+      name = "_rul3_dens3_",
       branches = Seq(
         Branch(conditions = List(Trigger.Condition[Battery](_.level <= ub"70")), timers = Nil),
         Branch(conditions = List(Trigger.Condition[Headset](_ == Headset.withName("disconnected"))), timers = Nil)
@@ -171,7 +161,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       )
     ) :: Nil
     val actual = RulesParser.Multi.parse(
-      "rule dense{when(or(battery level <= 70%,headset disconnected))do{set sound profile to silent;turn bluetooth off}}"
+      "rule _rul3_dens3_{when(or(battery level <= 70%,headset disconnected))do{set sound profile to silent;turn bluetooth off}}"
     ).get.value
 
     compareRules(actual = actual, expected = expected)

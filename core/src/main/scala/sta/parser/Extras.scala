@@ -17,7 +17,7 @@ trait Extras {
 }
 
 object Extras {
-  class Keyword(val keyword: String) extends AnyVal {
+  implicit class Keyword(val keyword: String) extends AnyVal {
     def withWS: Parser[Unit] = keyword ~ NoCut(Skip1)
 
     def splitWS: Parser[Unit] = {
@@ -28,8 +28,10 @@ object Extras {
     def push[T](value: T): Parser[T] = wspStr(keyword).map(_ => value)
   }
 
-  class ParserExtras[T](val parser: Parser[T]) extends AnyVal {
+  implicit class ParserExtras[T](val parser: Parser[T]) extends AnyVal {
     def withFilter(p: T => Boolean) = parser.filter(p)
+
+    def whole: P[T] = P(Start ~ parser ~ End)
 
     def ~~![V, R](p: P[V])(implicit ev: Sequencer[T, V, R]): P[R] = parser ~! p
 
