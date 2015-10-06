@@ -9,6 +9,8 @@ final case class SetToSettings(settings: (String, Int)*) extends SetTo {
     settings.foreach { case (name, value) =>
       Settings.System.putInt(ctx.getContentResolver, name, value)
     }
+
+  override def kind: ActionKind = ActionKind(settings.map(_._1)(collection.breakOut): Set[String])
 }
 
 object SetToSettings {

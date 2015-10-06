@@ -12,6 +12,8 @@ sealed abstract class LaunchApplication extends Action with Logging { this: Prod
     val pm = ctx.getPackageManager
     ctx.startActivity(pm.getLaunchIntentForPackage(getAppPackage(pm)))
   }
+
+  override def kind: ActionKind = ActionKind(this.getClass.getSuperclass)
 }
 
 object LaunchApplication {

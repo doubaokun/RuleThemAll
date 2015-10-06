@@ -318,9 +318,7 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
 
     Task {
       storage.rules.foreach(timers += _)
-
-      val state = rawState.get
-      storage.startupRules.foreach(_.execute(state))
+      storage.startupRules.foreach(_.execute)
     }.run(_ => ())
   }
 
@@ -358,10 +356,12 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
           changed = true
           state + (companion.Key -> liftedModel)
       }
-    }.fold(th => log.error("Error has occurred during updating state", th),
-        state => if (changed) for (rule <- storage.rules) {
-          rule.execute(state)
-        }
-      )
+    }.fold(
+      th => log.error("Error has occurred during updating state", th),
+      state => if (changed) {
+        ConflictSetResolution.default
+          .resolve(storage.rules.filter(_.satisfiedBy(state))).foreach(_.execute)
+      }
+    )
   }
 }

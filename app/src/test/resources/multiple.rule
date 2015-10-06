@@ -2,7 +2,7 @@ rule charger_connected {
     when (
         battery power connected
     ) do {
-        set brightness to 100%
+        set screen brightness to 100%
         set screen timeout to never
     }
 }
@@ -11,7 +11,7 @@ rule charger_disconnected {
     when (
         battery power disconnected
     ) do {
-        set brightness to 60%
+        set screen brightness to 60%
         set screen timeout to 1 minute
     }
 }

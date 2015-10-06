@@ -73,6 +73,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   it should "parse rule with no conditions" in {
     val expected = Rule(
       name = "e",
+      priority = UByte(0),
       branches = Branch(Seq.empty, Seq.empty) :: Nil,
       actions = Seq(ChangeSoundProfile(ChangeSoundProfile.Mode.Silent))
     ) :: Nil
@@ -87,6 +88,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   it should "parse scripts with single rule" in {
     val expected = Rule(
       name = "first_rule",
+      priority = UByte(0),
       branches = Seq(
         Branch(conditions = List(
           Trigger.Condition[Battery](_.plugged == Battery.Plugged.withName("ac")),
@@ -110,18 +112,21 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   it should "parse scripts with multiple rules" in {
     val expected = Rule(
       name = "charger_connected",
+      priority = UByte(0),
       branches = Seq(Branch(conditions = List(
         Trigger.Condition[PowerState](_ == PowerState.withName("connected"))
       ), timers = Nil)),
       actions = Seq(SetToSettings.brightness(UByte(100)), SetToSettings.timeout(Int.MaxValue))
     ) ::  Rule(
       name = "charger_disconnected",
+      priority = UByte(0),
       branches = Seq(Branch(conditions = List(
         Trigger.Condition[PowerState](_ == PowerState.withName("disconnected"))
       ), timers = Nil)),
       actions = Seq(SetToSettings.brightness(UByte(60)), SetToSettings.timeout(1.minute.toMillis.toInt))
     ) :: Rule(
       name = "music_player",
+      priority = UByte(0),
       branches = Seq(Branch(conditions = List(
         Trigger.Condition[Headset](_ == Headset.withName("connected")),
         Trigger.Condition[Network](_.state == Network.State.withName("connected"))
@@ -134,6 +139,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       )
     ) :: Rule(
       name = "no_music_player",
+      priority = UByte(0),
       branches = Seq(Branch(conditions = List(
         Trigger.Condition[Headset](_ == Headset.withName("disconnected"))
       ), timers = Nil)),
@@ -151,6 +157,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   it should "parse dense script" in {
     val expected = Rule(
       name = "_rul3_dens3_",
+      priority = UByte(0),
       branches = Seq(
         Branch(conditions = List(Trigger.Condition[Battery](_.level <= ub"70")), timers = Nil),
         Branch(conditions = List(Trigger.Condition[Headset](_ == Headset.withName("disconnected"))), timers = Nil)
@@ -170,6 +177,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
   it should "ignore comments" in {
     val expected = Rule(
       name = "dense",
+      priority = UByte(0),
       branches = Seq(
         Branch(conditions = List(
           Trigger.Condition[Headset](_ == Headset.withName("disconnected")),

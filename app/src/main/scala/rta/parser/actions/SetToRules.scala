@@ -10,7 +10,7 @@ object SetToRules extends ActionParser[SetTo] {
 
   def rules: Seq[(String, P[SetTo])] = Seq(
     "location" -> mapParser(SetLocationTo.Mode.namesToValuesMap).map(SetLocationTo(_)),
-    "brightness" -> Percent.map(SetToSettings.brightness),
+    "screen brightness" -> Percent.map(SetToSettings.brightness),
     "screen timeout" -> (Duration.map(_.toMillis.toInt) |
       "never".push(ScalaInt.MaxValue)).map(SetToSettings.timeout),
     "sound profile" -> mapParser(ChangeSoundProfile.Mode.namesToValuesMap).map(ChangeSoundProfile(_))

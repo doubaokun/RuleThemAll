@@ -5,9 +5,11 @@ import fastparse.noApi._
 import rta.model.Rule
 import rta.model.actions.Action
 import rta.model.triggers.Trigger
+import rta.parser.BasicRules._
 import rta.parser.Extras._
 import rta.parser.actions.ActionRules
 import rta.parser.triggers.TriggerRules
+import spire.syntax.literals._
 
 object RulesParser extends ActionRules with TriggerRules {
 
@@ -25,9 +27,9 @@ object RulesParser extends ActionRules with TriggerRules {
   )
 
   def Definition: P[Rule] = P(
-    ("rule".withWS ~ Name ~ {
+    ("rule".withWS ~ Name ~ ("with".withWS ~ "priority".withWS ~ Byte).? ~ {
       "{" ~ ("when" ~! Branches).?.map(_.getOrElse(Trigger.empty.flatten)) ~ "do" ~! Actions ~ "}"
-    }) map (v => Rule(v._1, v._2._1, v._2._2))
+    }) map (v => Rule(v._1, v._2.getOrElse(ub"127"), v._3._1, v._3._2))
   )
 
   def Multi: P[Seq[Rule]] = P(Start ~ Definition.rep(1) ~ End)

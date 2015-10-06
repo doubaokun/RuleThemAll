@@ -161,3 +161,5 @@ trait BasicRules {
       (UnsignedInt.filter(_.toInt <= 23) ~ NoCut(WS0) ~ variations("hour") map (_.toInt.hours))
   )
 }
+
+object BasicRules extends BasicRules

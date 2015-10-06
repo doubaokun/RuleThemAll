@@ -18,15 +18,16 @@ import rta.model.actions.Action
 import rta.model.triggers.Trigger.Branch
 import rta.model.triggers._
 import rta.service.RulesExecutor
+import spire.math.UByte
 
-final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
+final case class Rule(name: String, priority: UByte, branches: Seq[Trigger.Branch], actions: Seq[Action]) extends Logging {
   type Success = Unit
   type Fail = (String, Throwable)
   type FailNEL = NEL[Fail]
   type Result = Validated[FailNEL, Success]
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Var"))
-  private[this] var executed = false
+  @volatile private[this] var executed = false
 
   private[this] lazy val (direct, withTimer) = {
     val directBuilder = Seq.newBuilder[Branch]
@@ -36,26 +37,6 @@ final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[
       else withTimerBuilder += (UUID.randomUUID() -> branch)
     }
     (directBuilder.result(), withTimerBuilder.result())
-  }
-
-  private def executeRule(implicit ctx: RulesExecutor, appInfo: AppInfo): Unit = {
-    if (!executed) {
-      log.info(s"Executing actions in rule $name")
-      implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
-      val combine = (_: Unit, _: Unit) => ()
-      val result = actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>
-        (acc |@| ctx.executeAction(action)) map combine
-      }
-      result.fold(
-        errs => {
-          (errs.head :: errs.tail).foreach { case (action, th) =>
-            log.error(s"Error has occurred during running action $action in $name", th)
-          }
-          Notify(s"Failed to execute $name", Some(name)) // TODO add notification action
-        }, _ => Toast(s"Rule $name executed successfully")
-      )
-      executed = true
-    }
   }
 
   private def setAlarm(branch: Branch, branchId: UUID, intent: Intent,
@@ -78,17 +59,41 @@ final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[
 
   def prepare()(implicit ctx: Context): Unit = actions.foreach(_.prepare())
 
-  def execute(state: HMap[ModelKV])(implicit ctx: RulesExecutor, appInfo: AppInfo): Unit = {
-    if (direct.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
-    else executed = false
+  def wasRecentlyExecuted = executed
+
+  def satisfiedBy(state: HMap[ModelKV]): Boolean = {
+    val succeeded = direct.exists(_.conditions.forall(_.satisfiedBy(state)))
+    if (executed && !succeeded) executed = false
+    succeeded
+  }
+
+  def execute(implicit ctx: RulesExecutor, appInfo: AppInfo): Unit = {
+    log.info(s"Executing actions in rule $name")
+    implicit val nelSemigroup: Semigroup[FailNEL] = SemigroupK[NEL].algebra[Fail]
+    val combine = (_: Unit, _: Unit) => ()
+    val result = actions.foldLeft(valid[FailNEL, Success](())) { case (acc, action) =>
+      (acc |@| ctx.executeAction(action)) map combine
+    }
+    result.fold(
+      errs => {
+        (errs.head :: errs.tail).foreach { case (action, th) =>
+          log.error(s"Error has occurred during running action $action in $name", th)
+        }
+        Notify(s"Failed to execute $name", Some(name)) // TODO add notification action
+      }, _ => Toast(s"Rule $name executed successfully")
+    )
+    executed = true
   }
   
   def executeBranch(branchId: UUID, intent: Intent, state: HMap[ModelKV],
     timerFullyExecuted: Boolean)(implicit ctx: RulesExecutor, appInfo: AppInfo) = {
-    val branch = withTimer.get(branchId)
-    branch.foreach(setAlarm(_, branchId, intent, alarmManager, 60.seconds))
-    if (timerFullyExecuted && branch.exists(_.conditions.forall(_.satisfiedBy(state)))) executeRule
-    else if (timerFullyExecuted) executed = false
+    for (branch <- withTimer.get(branchId)) {
+      setAlarm(branch, branchId, intent, alarmManager, 60.seconds)
+      if (timerFullyExecuted) branch.conditions.forall(_.satisfiedBy(state)) match {
+        case true => execute
+        case false => executed = false // rule was executed previously but now failed to match so update flag
+      }
+    }
   }
 
   lazy val requires: Set[Requirement] = branches.flatMap(_.requires)(collection.breakOut)
@@ -113,7 +118,7 @@ final case class Rule(name: String, branches: Seq[Trigger.Branch], actions: Seq[
   override def hashCode(): Int = name.hashCode
 
   override def equals(o: Any): Boolean = o match {
-    case Rule(`name`, _, _) => true
+    case Rule(`name`, _, _, _) => true
     case _ => false
   }
 }

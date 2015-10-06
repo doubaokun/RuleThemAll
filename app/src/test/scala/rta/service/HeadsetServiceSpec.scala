@@ -1,10 +1,9 @@
-package rta.services
+package rta.service
 
 import android.content.Intent
 import org.robolectric.annotation.Config
 import org.scalatest.{FlatSpec, Matchers, RobolectricSuite}
 import rta.model.triggers.Implicits._
-import rta.service.HeadsetService
 
 @Config(sdk = Array(21), manifest = "app/src/test/AndroidManifest.xml")
 class HeadsetServiceSpec extends FlatSpec with RobolectricSuite with Matchers {

@@ -6,7 +6,7 @@ import rta.model.actions.Action
 import rta.parser.ActionParser
 
 trait ActionRules {
-  private[this] val parsers = mutable.HashMap.empty[Class[_], ActionParser[_ <: Action]]
+  private[this] val parsers = mutable.LinkedHashMap.empty[Class[_], ActionParser[_ <: Action]]
   addActionParser(LaunchApplicationRules)
   addActionParser(SetToRules)
   addActionParser(TurnOnOffRules)
