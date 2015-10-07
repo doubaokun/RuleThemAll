@@ -1,11 +1,11 @@
 package rta.parser.triggers
 
 import fastparse.noApi._
-import scala.collection.mutable
 import rta.model.BaseModel
 import rta.model.triggers._
 import rta.parser.Extras._
-import rta.parser.{Extras, TriggerParser}
+import rta.parser.TriggerParser
+import scala.collection.mutable
 
 trait TriggerRules {
   private[this] val parsers = mutable.HashMap.empty[String, TriggerParser[_ <: BaseModel]]
@@ -45,9 +45,13 @@ trait TriggerRules {
 
       P(parsers.valuesIterator.drop(1).foldLeft(single(parsers.head._2))(_ | single(_)))
     }
+    def negation: P[Trigger] = for {
+      Trigger.Negate(negated) <- nested
+    } yield negated
     lazy val logicOps: P[Trigger] = P(
       ("and" ~! twoOrMore(nested) map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-        ("or" ~! twoOrMore(nested) map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*)))
+        ("or" ~! twoOrMore(nested) map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+        ("not" ~! negation)
     )
     lazy val nested: P[Trigger] = P(triggers | logicOps)
     lazy val all: P[Trigger] = P(

@@ -9,7 +9,7 @@ rule charger_connected {
 
 rule charger_disconnected {
     when (
-        battery power disconnected
+        not battery power connected
     ) do {
         set screen brightness to 60%
         set screen timeout to 1 minute
@@ -30,7 +30,10 @@ rule music_player {
 
 rule no_music_player {
     when (
-        headset disconnected
+        not or (
+            headset connected,
+            network connected
+        )
     ) do {
         set music sound to 30%
         set ring sound to 100%

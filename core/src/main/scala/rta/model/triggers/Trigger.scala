@@ -12,7 +12,7 @@ import rta.common.{Requirement, Uses}
 import rta.cron.CronExpression
 import rta.logging.Logging
 import rta.model._
-import rta.model.triggers.functions.ModelFunction
+import rta.model.triggers.functions.{NotFunction, ModelFunction}
 import rta.{cron, logging}
 
 /** Base for all triggers either temporary or standalone. */
@@ -20,6 +20,8 @@ sealed abstract class Trigger {
   protected type FlatResult = Either[List[Trigger.Standalone[_]], List[Trigger.Branch]]
 
   protected def flatChildren: Seq[FlatResult]
+
+  def `unary_!`: Option[Trigger]
 
   /** Flattens arbitrary tree of [[Trigger]] into sequence of [[Trigger.Branch]]. */
   final def flatten: Seq[Trigger.Branch] = {
@@ -44,6 +46,10 @@ sealed abstract class Trigger {
 
 object Trigger {
 
+  object Negate {
+    def unapply(trigger: Trigger): Option[Trigger] = !trigger
+  }
+
   /** Denotes set of conditions with set of timers that
     * indicates date when such conditions should be fulfilled.
     */
@@ -55,35 +61,41 @@ object Trigger {
   def empty = Empty
 
   def apply(trigger: Trigger, triggers: Trigger*): Trigger = {
-    if (triggers.nonEmpty) And(trigger +: triggers)
+    if (triggers.nonEmpty) And((trigger +: triggers)(collection.breakOut))
     else trigger
   }
 
   def and(trigger1: Trigger, trigger2: Trigger, triggers: Trigger*): And = {
-    And(trigger1 +: trigger2 +: triggers)
+    And((trigger1 +: trigger2 +: triggers)(collection.breakOut))
   }
 
   def or(trigger1: Trigger, trigger2: Trigger, triggers: Trigger*): Or = {
-    Or(trigger1 +: trigger2 +: triggers)
+    Or((trigger1 +: trigger2 +: triggers)(collection.breakOut))
   }
 
   /** Special empty trigger that denotes empty branch. */
   object Empty extends Trigger {
     protected def flatChildren: Seq[FlatResult] = Seq.empty
+
+    def `unary_!`: Option[Trigger] = None
   }
 
   /** Temporary trigger that denotes conjunction of conditions. */
-  final case class And private[Trigger](triggers: Seq[Trigger]) extends Trigger {
+  final case class And private[Trigger](triggers: List[Trigger]) extends Trigger {
     protected def flatChildren: Seq[FlatResult] = triggers.flatMap(_.flatChildren)
+
+    def `unary_!`: Option[Trigger] = triggers.map(!_).sequenceU.map(Or(_))
   }
 
   /** Temporary trigger that denotes alternative of conditions.
     *
     * Note that each alternative results in separate [[Branch]].
     */
-  final case class Or private[Trigger](triggers: Seq[Trigger]) extends Trigger {
+  final case class Or private[Trigger](triggers: List[Trigger]) extends Trigger {
     protected def flatChildren: Seq[FlatResult] =
       Seq(Right(triggers.flatMap(_.flatten)(collection.breakOut)))
+
+    def `unary_!`: Option[Trigger] = triggers.map(!_).sequenceU.map(And(_))
   }
 
   /** Base for all triggers that should be part of a [[Branch]]. */
@@ -118,6 +130,8 @@ object Trigger {
     protected def fireAt(from: Date, context: Context): Option[(Date, Boolean)]
 
     protected def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
+
+    def `unary_!`: Option[Trigger] = None
   }
 
   object Timer {
@@ -130,15 +144,15 @@ object Trigger {
 
     /** Returns date that can be dynamically designated.
       *
-      * @param requires set of [[rta.common.Requirement]] that can influence timer behaviour
       * @param recheckAfter duration after which timer should be checked again
+      * @param requires set of [[rta.common.Requirement]] that can influence timer behaviour
       * @param fromContext function that accepts four arguments:
       *                     - `date` that is current time
       *                     - `timeWindow` that is equal to the [[recheckAfter]] field
       *                     - `context` that is [[android.content.Context]]
       *                    and returns date when timer is fulfilled.
       */
-    final case class Dynamic private[Timer](requires: Set[Requirement], recheckAfter: Duration)
+    final case class Dynamic private[Timer](recheckAfter: Duration, requires: Set[Requirement])
       (fromContext: (Date, Duration, Context) => Option[Date]) extends Timer {
       protected def fireAt(from: Date, context: Context) = {
         fromContext(from, recheckAfter, context).map(_ -> false).orElse {
@@ -167,7 +181,7 @@ object Trigger {
     @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.DefaultArguments"))
     def dynamic(recheckAfter: Duration, requirements: Set[Requirement] = Set.empty)
       (fromContext: (Date, Duration, Context) => Option[Date]) =
-      Dynamic(requirements, recheckAfter)(fromContext)
+      Dynamic(recheckAfter, requirements)(fromContext)
   }
 
   /** Standalone condition that gets model from a state and check it with [[ModelFunction]]. */
@@ -182,5 +196,7 @@ object Trigger {
     }
 
     def requires: Set[Requirement] = implicitly[Uses[M]].requirements
+
+    def `unary_!`: Option[Trigger] = Some(copy(function = !function))
   }
 }

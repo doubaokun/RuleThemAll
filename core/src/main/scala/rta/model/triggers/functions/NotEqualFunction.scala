@@ -6,5 +6,7 @@ import rta.model.BaseModel
 final case class NotEqualFunction[V, M <: BaseModel: Has[V]#Conversion](v: V) extends ModelFunction[M] {
   def apply(m: M): Boolean = implicitly[Has[V]#Conversion[M]].apply(m) != v
 
+  def `unary_!`: ModelFunction[M] = EqualFunction(v)
+
   override def toString(): String = s"x != $v"
 }

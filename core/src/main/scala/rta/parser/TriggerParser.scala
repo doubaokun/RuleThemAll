@@ -14,7 +14,7 @@ abstract class TriggerParser[M <: BaseModel] extends BasicRules with Extras with
 
   def Main: P[Trigger.Standalone[_ <: M]]
 
-  lazy val Rule: P[Trigger] = Main
+  def Rule: P[Trigger.Standalone[_ <: M]] = Main
 }
 
 private[parser] class TriggerParserMacros(val c: blackbox.Context) {

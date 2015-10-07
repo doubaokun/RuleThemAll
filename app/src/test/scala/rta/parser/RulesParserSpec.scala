@@ -1,22 +1,20 @@
 package rta.parser
 
 import scala.language.implicitConversions
-import fastparse.all._
 import fastparse.core.SyntaxError
 import java.io.InputStream
 import org.robolectric.annotation.Config
 import org.scalatest.{FlatSpec, Matchers, RobolectricSuite}
-import scala.concurrent.duration._
-import spire.implicits._
-import spire.math.UByte
 import rta.common.Uses._
 import rta.model.Rule
 import rta.model.actions._
 import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger.Branch
 import rta.model.triggers._
-import rta.parser.Extras._
 import rta.tests.PropertyChecks
+import scala.concurrent.duration._
+import spire.implicits._
+import spire.math.UByte
 
 @Config(sdk = Array(19), manifest = Config.NONE)
 class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks with Matchers {
@@ -121,7 +119,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
       name = "charger_disconnected",
       priority = UByte(0),
       branches = Seq(Branch(conditions = List(
-        Trigger.Condition[PowerState](_ == PowerState.withName("disconnected"))
+        Trigger.Condition[PowerState](_ != PowerState.withName("connected"))
       ), timers = Nil)),
       actions = Seq(SetToSettings.brightness(UByte(60)), SetToSettings.timeout(1.minute.toMillis.toInt))
     ) :: Rule(
@@ -140,9 +138,12 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
     ) :: Rule(
       name = "no_music_player",
       priority = UByte(0),
-      branches = Seq(Branch(conditions = List(
-        Trigger.Condition[Headset](_ == Headset.withName("disconnected"))
-      ), timers = Nil)),
+      branches = Seq(
+        Branch(conditions = List(
+          Trigger.Condition[Headset](_ != Headset.withName("connected")),
+          Trigger.Condition[Network](_.state != Network.State.withName("connected"))
+        ), timers = Nil)
+      ),
       actions = Seq(
         SetSoundTo.Volume(SetSoundTo.StreamType.Music, UByte(30)),
         SetSoundTo.Volume(SetSoundTo.StreamType.Ring, UByte(100)),

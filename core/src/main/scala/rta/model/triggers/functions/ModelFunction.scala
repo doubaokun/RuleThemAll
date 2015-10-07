@@ -7,7 +7,9 @@ import spire.algebra.Order
 import rta.model.BaseModel
 
 /** Base for all functions that predicates over [[BaseModel]]. */
-abstract class ModelFunction[M <: BaseModel] extends (M => Boolean)
+abstract class ModelFunction[M <: BaseModel] extends (M => Boolean) {
+  def `unary_!`: ModelFunction[M]
+}
 
 /** Special version of model predicate that can be checked using hash code. */
 abstract class HashBasedFunction[V, M <: BaseModel] extends ModelFunction[M] {
@@ -86,7 +88,11 @@ private[triggers] class ModelFunctionMacros(val c: blackbox.Context) {
         q"new ${ModelFunction1(typeOf[NotFunction[_]])}(${makeInstance[M](q"(..$params) => $v")})"
 
       case other =>
-        q"new ${ModelFunction1(typeOf[ModelFunction[_]])} { def apply(m: $tpeM) = $other(m) } "
+        q"""new ${ModelFunction1(typeOf[ModelFunction[_]])} {
+              def apply(m: $tpeM) = $other(m)
+
+              def `unary_!` = new ${ModelFunction1(typeOf[NotFunction[_]])}(this)
+            }"""
     }
   }
 }

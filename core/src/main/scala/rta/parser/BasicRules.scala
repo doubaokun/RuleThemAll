@@ -32,11 +32,11 @@ trait BasicRules {
     def unapply(s: String): Option[Double] = Try(java.lang.Double.parseDouble(s)).toOption
   }
 
-  lazy val Percent: P[UByte] = P(
+  def Percent: P[UByte] = P(
     ("0" | "100" | (digit19 ~ digit.?)).! ~ "%" map ((s: String) => UByte(s.toByte))
   )
 
-  lazy val Byte: P[UByte] = {
+  def Byte: P[UByte] = {
     val p16: P[UByte] = for {
       ToHexInt(v) <- "0x" ~ hexDigit.rep(1).! if v <= 255
     } yield UByte(v)
@@ -48,7 +48,7 @@ trait BasicRules {
     P(p16 | p10)
   }
 
-  lazy val UnsignedInt: P[UInt] = {
+  def UnsignedInt: P[UInt] = {
     val p16: P[UInt] = for {
       ToHexLong(v) <- "0x" ~ hexDigit.rep(1).! if v <= 4294967295L
     } yield UInt(v)
@@ -60,7 +60,7 @@ trait BasicRules {
     P(p16 | p10)
   }
 
-  lazy val Int: P[Int] = {
+  def Int: P[Int] = {
     val p = for {
       ToInt(v) <- ("-".? ~ ("0" | (digit19 ~ digit.rep))).!
     } yield v
@@ -68,15 +68,15 @@ trait BasicRules {
     P(p)
   }
 
-  lazy val Natural: P[Nat] = P(
+  def Natural: P[Nat] = P(
     P("0" | (digit19 ~ digit.rep)).! map (Nat(_))
   )
 
-  lazy val Integer: P[SafeLong] = P(
+  def Integer: P[SafeLong] = P(
     ("-".? ~ ("0" | (digit19 ~ digit.rep))).! map (s => SafeLong(BigInt(s)))
   )
 
-  lazy val Float: P[Float] = {
+  def Float: P[Float] = {
     val p = for {
       ToDouble(v) <- ("-".? ~ digit.rep(1) ~ ("." ~ digit.rep(1)).?).!
       if v >= scala.Float.MinValue && v <= scala.Float.MaxValue
@@ -85,13 +85,13 @@ trait BasicRules {
     P(p)
   }
 
-  lazy val Decimal: P[Rational] = P(
+  def Decimal: P[Rational] = P(
     ("-".? ~ ((digit.rep(1) ~ "/" ~ (digit19 ~ digit.rep)) |
       (digit.rep(1) ~ ("." ~ digit.rep(1) ~
         ("E" ~ "-".? ~ digit.rep(1)).?).?))).! map (Rational(_))
   )
 
-  lazy val SingleLineString: P[String] = {
+  def SingleLineString: P[String] = {
     val Q = "\""
     val NL = "\n"
     def singleChar = P("\\\"".! | "\\\\".! | (!(NL | Q) ~ AnyChar).!)
@@ -99,7 +99,7 @@ trait BasicRules {
     P(Q ~ singleChar.rep.! ~ Q)
   }
 
-  lazy val MultiLineString: P[String] = {
+  def MultiLineString: P[String] = {
     val Q = "\""
     val TQ = "\"\"\""
     def tripleChar = P((Q.? ~ Q.? ~ !Q ~ AnyChar).!)
@@ -107,9 +107,9 @@ trait BasicRules {
     P(TQ ~ tripleChar.rep.! ~ TQ)
   }
 
-  lazy val String: P[String] = P(MultiLineString | SingleLineString)
+  def String: P[String] = P(MultiLineString | SingleLineString)
 
-  lazy val MacAddress: P[String] =
+  def MacAddress: P[String] =
     P((hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~
       hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ ":" ~ hexDigit ~ hexDigit ~ !(hexDigit | ":")).!)
 
@@ -123,7 +123,7 @@ trait BasicRules {
     }
   }
 
-  lazy val CronExpr: P[CronExpression] = {
+  def CronExpr: P[CronExpression] = {
     def Value(min: Int, max: Int, abbreviations: Map[String, Int] = Map.empty) = {
       val ip = for {
         ToInt(v) <- digit.rep(1).! if v >= min && v <= max
@@ -155,7 +155,7 @@ trait BasicRules {
     })
   }
 
-  lazy val Duration: P[ScalaDuration] = P(
+  def Duration: P[ScalaDuration] = P(
     (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WS0) ~ variations("second") map(_.toInt.seconds)) |
       (UnsignedInt.filter(_.toInt <= 59) ~ NoCut(WS0) ~ variations("minute") map (_.toInt.minutes)) |
       (UnsignedInt.filter(_.toInt <= 23) ~ NoCut(WS0) ~ variations("hour") map (_.toInt.hours))

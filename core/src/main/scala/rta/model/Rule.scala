@@ -29,7 +29,7 @@ final case class Rule(name: String, priority: UByte, branches: Seq[Trigger.Branc
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Var"))
   @volatile private[this] var executed = false
 
-  private[this] lazy val (direct, withTimer) = {
+  val (direct, withTimer) = {
     val directBuilder = Seq.newBuilder[Branch]
     val withTimerBuilder = Map.newBuilder[UUID, Branch]
     for(branch <- branches) {

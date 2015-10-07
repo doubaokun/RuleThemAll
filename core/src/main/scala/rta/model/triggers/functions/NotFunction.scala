@@ -6,5 +6,7 @@ import rta.model.BaseModel
 final case class NotFunction[M <: BaseModel](fun: ModelFunction[M]) extends ModelFunction[M] {
   def apply(m: M): Boolean = !fun(m)
 
+  def `unary_!`: ModelFunction[M] = fun
+
   override def toString() = s"!($fun)"
 }

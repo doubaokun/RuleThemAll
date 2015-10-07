@@ -65,4 +65,37 @@ class ModelFunctionSpec extends FlatSpec with PropertyChecks with Matchers with 
     mat[TestModel](_.i % 2 == 1).apply(TestModel(4)) should === (false)
   }
 
+  it should "negate itself correctly" in {
+    import ModelFunction.{materializeModelFunction => mat}
+    val test = TestModel(1, "abc", TestModel.O.Object1)
+
+    val eq = mat[TestModel](_ == test)
+    !eq should ===(mat[TestModel](_ != test))
+    !(!eq) should ===(eq)
+
+    val neq = mat[TestModel](_.o != test.o)
+    !neq should ===(mat[TestModel](_.o == test.o))
+    !(!neq) should ===(neq)
+
+    val gt = mat[TestModel](_.i > 1)
+    !gt should ===(mat[TestModel](_.i <= 1))
+    !(!gt) should ===(gt)
+
+    val gteq = mat[TestModel](_.i >= (6 / 2))
+    !gteq should ===(mat[TestModel](_.i < (6 / 2)))
+    !(!gteq) should ===(gteq)
+
+    val lt = mat[TestModel](_.i < 1/12)
+    !lt should ===(mat[TestModel](_.i >= 1/12))
+    !(!lt) should ===(lt)
+
+    val lteq = mat[TestModel](_.i <= math.pow(2, 2).toInt)
+    !lteq should ===(mat[TestModel](_.i > math.pow(2, 2).toInt))
+    !(!lteq) should ===(lteq)
+
+    val not = mat[TestModel](v => !(v.s == "test"))
+    !not should ===(mat[TestModel](_.s == "test"))
+    !(!not) should ===(not)
+  }
+
 }

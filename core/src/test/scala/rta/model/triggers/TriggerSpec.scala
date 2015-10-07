@@ -1,6 +1,8 @@
 package rta.model.triggers
 
 import org.scalatest.{FlatSpec, Matchers}
+import rta.cron.CronExpression
+import scala.concurrent.duration.Duration
 import shapeless.HMap
 import spire.implicits._
 import rta.common.Uses
@@ -88,6 +90,46 @@ class TriggerSpec extends FlatSpec with PropertyChecks with Matchers with ModelH
         Branch(timers = Seq.empty, conditions = Seq(m7, m5, m6))
       )
     )
+  }
+
+  behavior of "!Trigger"
+
+  it should "yield negated version for Trigger.Condition" in {
+    !Trigger.Condition[TestModel](_.i == 1) should === (Some(Trigger.Condition[TestModel](_.i != 1)))
+  }
+
+  it should "obey De Morgan's laws" in {
+    !Trigger.or(
+      Trigger.and(Trigger.Condition[TestModel](_.s == "xyz"), Trigger.Condition[TestModel](_.i == 1)),
+      Trigger.Condition[TestModel](_.i > 1)
+    ) should === (Some(Trigger.and(
+      Trigger.or(Trigger.Condition[TestModel](_.s != "xyz"), Trigger.Condition[TestModel](_.i != 1)),
+      Trigger.Condition[TestModel](_.i <= 1)
+    )))
+  }
+
+  it should "yield None for Trigger.Timer" in {
+    !Trigger.Timer(CronExpression(
+      minute = CronExpression.Range(0, 59),
+      hour = CronExpression.Range(0, 23),
+      dayOfMonth = CronExpression.Range(1, 31),
+      month = CronExpression.Range(1, 12),
+      dayOfWeek = CronExpression.Range(0, 6),
+      year = None
+    )) should === (None)
+
+    !Trigger.Timer.dynamic(Duration.Zero, Set.empty)((_, _, _) => None) should === (None)
+  }
+
+  it should "yield None if any of nested standalone trigger is not Trigger.Condition" in {
+    !Trigger.or(
+      Trigger.and(
+        Trigger.Condition[TestModel](_.s == "xyz"),
+        Trigger.Condition[TestModel](_.i == 1),
+        Trigger.Timer.dynamic(Duration.Zero, Set.empty)((_, _, _) => None)
+      ),
+      Trigger.Condition[TestModel](_.i > 1)
+    ) should === (None)
   }
 
   behavior of "Trigger.Condition"
