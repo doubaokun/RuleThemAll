@@ -3,9 +3,10 @@ package rta.storage
 import android.content.Context
 import fastparse.core.{Result, SyntaxError}
 import java.io._
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.control.NonFatal
-import rta.common.{AppInfo, Notify, Toast}
+import rta.common._
 import rta.model.Rule
 import rta.parser.RulesParser
 
@@ -13,8 +14,8 @@ import rta.parser.RulesParser
 class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends RulesStorage {
   private[this] val rulesDir: File = ctx.getDir("rules", Context.MODE_PRIVATE)
 
-  private[this] val rawRules = {
-    val map = mutable.Map.empty[String, Rule]
+  private[this] val rawRules = Utils.withGC {
+    val map = TrieMap.empty[String, Rule]
     val files = rulesDir.listFiles(new FilenameFilter {
       def accept(dir: File, filename: String): Boolean = filename.endsWith(".rule")
     })
@@ -81,15 +82,15 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     }
   }
 
-  def allRules: Iterator[Rule] = synchronized {
+  def allRules: Iterator[Rule] = {
     rawRules.valuesIterator
   }
 
-  def get(name: String) = synchronized {
+  def get(name: String) = {
     rawRules.get(name)
   }
 
-  def register(from: File*): RegistrationInfo = synchronized {
+  def register(from: File*): RegistrationInfo = Utils.withGC(rawUses.synchronized {
     val parser = prepareParser(_)
     val added = Set.newBuilder[Int]
     val removed = Set.newBuilder[Int]
@@ -135,32 +136,34 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
       removedRequirements = removed.result() -- added.result(),
       addedRules = rules
     )
-  }
+  })
 
-  def unregister(names: String*): Set[Int] = synchronized {
+  def unregister(names: String*): Set[Int] = rawUses.synchronized {
     val removed = Set.newBuilder[Int]
-    val parser = RulesParser.cached(_.Single).andThen(_.get.value)
     val count = names.foldLeft(0) { (count, name) =>
       val file = new File(rulesDir, s"$name.rule")
-      if (file.exists()) {
-        val rule = parser(io.Source.fromFile(file).mkString)
+      file.delete
 
-        rawRules -= rule.name
-        file.delete()
-        for (
-          requirement <- rule.requires;
-          count <- rawUses.get(requirement.hashCode())
-        ) {
-          count match {
-            case 1 =>
-              removed += requirement.hashCode()
-              rawUses -= requirement.hashCode()
-            case _ =>
-              rawUses += (requirement.hashCode() -> (count - 1))
+      rawRules.get(name) match {
+        case Some(rule) =>
+          rawRules -= rule.name
+          file.delete()
+          for (
+            requirement <- rule.requires;
+            count <- rawUses.get(requirement.hashCode())
+          ) {
+            count match {
+              case 1 =>
+                removed += requirement.hashCode()
+                rawUses -= requirement.hashCode()
+              case _ =>
+                rawUses += (requirement.hashCode() -> (count - 1))
+            }
           }
-        }
-        count + 1
-      } else count
+          count + 1
+        case None =>
+          count
+      }
     }
 
     if (count > 0) Toast(txt = s"$count rules removed", length = Toast.Long)

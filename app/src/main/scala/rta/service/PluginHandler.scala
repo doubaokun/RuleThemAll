@@ -77,7 +77,7 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
     }
   }
 
-  private[this] val pluginLock = new ReentrantLock()
+  private[this] val handlerLock = new ReentrantLock()
 
   private[this] val plugins = new SparseArray[PluginConnection]()
   private[this] val pluginActionParsers = new SparseArray[Class[_]]()
@@ -101,11 +101,11 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
   }
 
   @inline private def inLock(body: => Unit) = {
-    pluginLock.lock()
+    handlerLock.lock()
     try {
       body
     } finally {
-      pluginLock.unlock()
+      handlerLock.unlock()
     }
   }
 

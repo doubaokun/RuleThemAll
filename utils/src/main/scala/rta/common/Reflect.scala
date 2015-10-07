@@ -30,8 +30,7 @@ private class ReflectMacros(val c: blackbox.Context) {
   private def getThis(prefix: Tree, objType: Type, retType: Type): Tree = {
     prefix match {
       case q"""$_[..${List(tptT)}](...${List(List(Literal(Constant(`objType`))))}).reflect[..${List(tptU)}](...${List(List(self))})"""
-        if tptT.tpe =:= objType && tptU.tpe =:= retType  =>
-        self
+        if tptT.tpe =:= objType && tptU.tpe =:= retType  => self
       case _ => c.abort(c.enclosingPosition, s"Invalid prefix tree: $prefix")
     }
   }
