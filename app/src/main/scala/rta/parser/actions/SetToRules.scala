@@ -20,7 +20,7 @@ object SetToRules extends ActionParser[SetTo] {
       "unmuted".push(SetSoundTo.Muted(st, mute = false)))
   }
 
-  val Rule: P[SetTo] = {
+  def Rule: P[SetTo] = {
     def single(kv: (String, P[SetTo])): P[SetTo] = {
       val (prefix, value) = kv
       prefix.splitWS.withWS ~! "to" ~! P(value)(prefix)

@@ -11,11 +11,11 @@ trait ActionRules {
   addActionParser(SetToRules)
   addActionParser(TurnOnOffRules)
 
-  def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
+  private[rta] def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
     parsers += (parser.actionClass -> parser)
   }
 
-  def removeActionParser(parserClass: Class[_]): Unit = {
+  private[rta] def removeActionParser(parserClass: Class[_]): Unit = {
     parsers -= parserClass
   }
 
