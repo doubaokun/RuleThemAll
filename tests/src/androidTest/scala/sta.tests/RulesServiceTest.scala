@@ -52,9 +52,9 @@ class RulesServiceTest extends ServiceTestCase[RulesService](classOf[RulesServic
     plugins.size should === (0)
 
     // remember amount of trigger amd action parsers
-    val actionParsers = classOf[ActionRules].reflect[mutable.HashMap[Class[_], ActionParser[_]]](RulesParser)
+    val actionParsers = classOf[ActionRules].reflect[mutable.LinkedHashMap[Class[_], ActionParser[_]]](RulesParser)
       .`rta$parser$actions$ActionRules$$parsers`()
-    val triggerParsers = classOf[TriggerRules].reflect[mutable.HashMap[String, TriggerParser[_]]](RulesParser)
+    val triggerParsers = classOf[TriggerRules].reflect[mutable.LinkedHashMap[String, TriggerParser[_]]](RulesParser)
       .`rta$parser$triggers$TriggerRules$$parsers`()
     val actionParsersSize = actionParsers.size
     val triggerParsersSize = triggerParsers.size

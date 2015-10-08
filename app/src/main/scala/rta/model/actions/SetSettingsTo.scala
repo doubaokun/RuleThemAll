@@ -10,7 +10,9 @@ final case class SetToSettings(settings: (String, Int)*) extends SetTo {
       Settings.System.putInt(ctx.getContentResolver, name, value)
     }
 
-  override def kind: ActionKind = ActionKind(settings.map(_._1)(collection.breakOut): Set[String])
+  override def kind: ActionKind = ActionKind(
+    classOf[SetToSettings] -> Some(settings.map(_._1)(collection.breakOut): Set[String])
+  )
 }
 
 object SetToSettings {

@@ -7,6 +7,8 @@
     <!-- ScalaMeter -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <application android:label="@string/app_name" android:icon="@drawable/update_icon">
         <activity android:name=".BenchmarkActivity">
             <intent-filter>

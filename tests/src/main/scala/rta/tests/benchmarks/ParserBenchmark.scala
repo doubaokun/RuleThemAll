@@ -1,56 +1,50 @@
 package rta.tests.benchmarks
 
 import android.content.res.AssetManager
+import java.io.File
 import rta.parser.RulesParser
 
 class ParserBenchmark(assetManager: AssetManager) extends Benchmark {
-  def withFile(filename: String)(f: String => Unit): Unit = {
-    f(scala.io.Source.fromInputStream(assetManager.open(s"benchmarks/$filename")).mkString)
+  def withFile(file: File)(f: String => Unit): Unit = {
+    f(scala.io.Source.fromFile(file).mkString)
   }
   
-  def run(): String = {
+  def run(file: File): String = {
     val builder = new StringBuilder
 
-    val singleParser = RulesParser.cached(_.Single).andThen(_.get)
-    val multiParser = RulesParser.cached(_.Multi).andThen(_.get)
-    val annotatedMultiParser = RulesParser.cached(_.AnnotatedMulti).andThen(_.get)
+    val multiParser = (str: String) => RulesParser.Multi.parse(str)
+    val multiParserCached = RulesParser.cached(_.Multi)
+    val annotatedMultiParser = (str: String) => RulesParser.AnnotatedMulti.parse(str)
+    val annotatedMultiParserCached = RulesParser.cached(_.AnnotatedMulti)
 
-    withFile("single.rule") { content =>
-      builder ++= "|------------------|\n"
-      builder ++= "| File single.rule |\n"
-      builder ++= "|------------------|\n"
+    withFile(file) { content =>
+      val name = file.getName
+      val span = name.length + 4 + 3
 
-      builder ++= "  "
-      builder ++= bench("Single parser", 100) {
-        singleParser(content)
-      }
-
-      builder ++= "\n  "
-      builder ++= bench("Multi parser", 100) {
-        multiParser(content)
-      }
-
-      builder ++= "\n  "
-      builder ++= bench("AnnotatedMulti parser", 100) {
-        annotatedMultiParser(content)
-      }
-      builder ++= "\n"
-    }
-
-    withFile("multiple.rule") { content =>
-      builder ++= "|--------------------|\n"
-      builder ++= "| File multiple.rule |\n"
-      builder ++= "|--------------------|\n"
+      builder ++= "|" + ("-" * span) + "|\n"
+      builder ++= s"| File $name |\n"
+      builder ++= "|" + ("-" * span) + "|\n"
 
       builder ++= "  "
-      builder ++= bench("Multi parser", 100) {
-        multiParser(content)
+      builder ++= bench("Multi parser", 10) {
+        multiParser(content).get
       }
 
       builder ++= "\n  "
-      builder ++= bench("AnnotatedMulti parser", 100) {
-        annotatedMultiParser(content)
+      builder ++= bench("Multi.cached parser", 10) {
+        multiParserCached(content).get
       }
+
+      builder ++= "\n  "
+      builder ++= bench("AnnotatedMulti parser", 10) {
+        annotatedMultiParser(content).get
+      }
+
+      builder ++= "\n  "
+      builder ++= bench("AnnotatedMulti.cached parser", 10) {
+        annotatedMultiParserCached(content).get
+      }
+
       builder ++= "\n"
     }
 

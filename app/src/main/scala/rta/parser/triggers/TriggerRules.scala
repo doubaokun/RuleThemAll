@@ -8,7 +8,7 @@ import rta.parser.TriggerParser
 import scala.collection.mutable
 
 trait TriggerRules {
-  private[this] val parsers = mutable.HashMap.empty[String, TriggerParser[_ <: BaseModel]]
+  private[this] val parsers = mutable.LinkedHashMap.empty[String, TriggerParser[_ <: BaseModel]]
   addTriggerParser(BatteryRules)
   addTriggerParser(BluetoothRules)
   addTriggerParser(CalendarRules)

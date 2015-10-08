@@ -7,7 +7,7 @@ import android.content.Context
 abstract class Action extends Serializable {
   def name: String = toString
 
-  def kind: ActionKind = ActionKind(this.getClass)
+  def kind: ActionKind = ActionKind(this.getClass -> None)
 
   def execute()(implicit ctx: Context): Unit
 

@@ -120,7 +120,9 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
     override def handleMessage(msg: Message): Unit = try {
       msg.what match {
         case LOAD =>
-          val info = storage.register(msg.obj.asInstanceOf[Array[String]].map(new File(_)): _*)
+          val files: List[File] = msg.obj.asInstanceOf[Array[String]].map(new File(_))(collection.breakOut)
+          log.info(s"Loading rules from $files")
+          val info = storage.register(files: _*)
           info.addedRules.foreach(timers += _)
           if (info.addedRequirements.nonEmpty || info.removedRequirements.nonEmpty)
             update(onAdd(info.addedRequirements, info.removedRequirements))
@@ -131,7 +133,8 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
             }
           }
         case UNLOAD =>
-          val ruleNames = msg.obj.asInstanceOf[Array[String]]
+          val ruleNames: List[String] = msg.obj.asInstanceOf[Array[String]].toList
+          log.info(s"Unloading rules $ruleNames")
           val toRemove = storage.unregister(ruleNames: _*)
           ruleNames.foreach(timers -= _)
           if (toRemove.nonEmpty) update(onRemove(toRemove))

@@ -27,6 +27,6 @@ object SetToRules extends ActionParser[SetTo] {
     }
     val seq = rules
 
-    "set".withWS ~! seq.tail.foldLeft(single(seq.head)) { _ | single(_) }
+    "set".withWS ~ seq.tail.foldLeft(single(seq.head)) { _ | single(_) }
   }
 }

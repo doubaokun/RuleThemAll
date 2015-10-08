@@ -139,11 +139,11 @@ class MainActivity extends Activity with Logging with Contexts[Activity] with Id
     setMargins(10, 0, 0, 0)
 
   def loadButton = text(R.string.load_rules) + On.click(Ui {
-    val choseRuleIntent = new Intent(Intent.ACTION_GET_CONTENT)
-    choseRuleIntent.setType("*/*")
-    choseRuleIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true)
-    choseRuleIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-    startActivityForResult(choseRuleIntent, RULE_LOAD_REQUEST)
+    val chooseRuleIntent = new Intent(Intent.ACTION_GET_CONTENT)
+    chooseRuleIntent.setType("text/*")
+    chooseRuleIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+    chooseRuleIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+    startActivityForResult(chooseRuleIntent, RULE_LOAD_REQUEST)
   }) + lp[RelativeLayout](LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) +
     addRules(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.ALIGN_PARENT_RIGHT)
 

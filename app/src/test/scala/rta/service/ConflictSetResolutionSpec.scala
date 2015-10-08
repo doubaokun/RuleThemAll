@@ -2,7 +2,7 @@ package rta.service
 
 import org.scalatest.{FlatSpec, Matchers}
 import rta.model.Rule
-import rta.model.actions.{LaunchApplication, SetToSettings, TurnOnOff, ChangeSoundProfile}
+import rta.model.actions._
 import spire.syntax.literals._
 
 class ConflictSetResolutionSpec extends FlatSpec with Matchers {
@@ -39,15 +39,15 @@ class ConflictSetResolutionSpec extends FlatSpec with Matchers {
       actions = Seq(SetToSettings.timeout(30))
     )
     val rule4d = Rule("rule4d", ub"100", branches = Seq.empty,
-      actions = Seq(LaunchApplication.UsingAppName("aaa"))
+      actions = Seq(AlterApplication.Launch("aaa", (_, _) => "pkg.aaa"))
     )
     val rule4e = Rule("rule4e", ub"100", branches = Seq.empty,
-      actions = Seq(TurnOnOff.WiFi(false), LaunchApplication.FromPackage("pkg.aaa"))
+      actions = Seq(TurnOnOff.WiFi(false), AlterApplication.Launch("pkg.aaa", (_, _) => "pkg.aaa"))
     )
   }
 
   "ConflictSetResolution.default" should "resolve various" in new Data {
-    // first winds
+    // first wins
     ConflictSetResolution.default.resolve(Iterator(rule1a, rule1b)) should
       contain theSameElementsAs Set(rule1a)
 

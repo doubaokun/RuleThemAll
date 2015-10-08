@@ -130,7 +130,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
         Trigger.Condition[Network](_.state == Network.State.withName("connected"))
       ), timers = Nil)),
       actions = Seq(
-        LaunchApplication.UsingAppName("Spotify"),
+        AlterApplication.Launch("Spotify", AlterApplication.Resolver.fromAppName),
         SetSoundTo.Volume(SetSoundTo.StreamType.Music, UByte(70)),
         SetSoundTo.Volume(SetSoundTo.StreamType.Ring, UByte(50)),
         SetSoundTo.Muted(SetSoundTo.StreamType.Notification, mute = true)

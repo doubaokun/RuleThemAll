@@ -10,5 +10,5 @@ package object actions {
 }
 
 package actions {
-  final case class ActionKind(data: Any)
+  final case class ActionKind(data: (Class[_], Option[Any]))
 }

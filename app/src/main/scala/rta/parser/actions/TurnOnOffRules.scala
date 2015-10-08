@@ -7,7 +7,7 @@ import rta.parser.ActionParser
 object TurnOnOffRules extends ActionParser[TurnOnOff] {
   import white._
 
-  def Rule: P[TurnOnOff] = "turn".withWS ~! (
+  def Rule: P[TurnOnOff] = "turn".withWS ~ (
     "airplane" ~ "mode".push(TurnOnOff.AirplaneMode.apply _) |
       "bluetooth".push(TurnOnOff.Bluetooth.apply _) |
       "mobile" ~ "network".push(TurnOnOff.MobileNetwork.apply _) |

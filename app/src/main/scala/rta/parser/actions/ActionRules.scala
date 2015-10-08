@@ -7,7 +7,7 @@ import rta.parser.ActionParser
 
 trait ActionRules {
   private[this] val parsers = mutable.LinkedHashMap.empty[Class[_], ActionParser[_ <: Action]]
-  addActionParser(LaunchApplicationRules)
+  addActionParser(AlterApplicationRules)
   addActionParser(SetToRules)
   addActionParser(TurnOnOffRules)
 
