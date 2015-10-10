@@ -12,6 +12,7 @@ trait TriggerRules {
   addTriggerParser(BatteryRules)
   addTriggerParser(BluetoothRules)
   addTriggerParser(CalendarRules)
+  addTriggerParser(DockRules)
   addTriggerParser(HeadsetRules)
   addTriggerParser(NetworkRules)
   addTriggerParser(TimeRules)
@@ -40,7 +41,9 @@ trait TriggerRules {
           Skip0 ~~ "(" ~ (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) ~ ")"
         )(multipleErr)
 
-        trigger.Prefix.splitWS ~~! conditions
+        trigger.Prefix.splitWS ~~! ((for {
+          Trigger.Negate(negated) <- Skip1 ~~ "not" ~~! conditions
+        } yield negated) | conditions)
       }
 
       P(parsers.valuesIterator.drop(1).foldLeft(single(parsers.head._2))(_ | single(_)))

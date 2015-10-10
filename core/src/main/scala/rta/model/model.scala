@@ -50,12 +50,19 @@ abstract class MultiModel[M <: MultiModel[M]](override val companion: MultiModel
 }
 
 sealed abstract class BaseModelCompanion[+M <: BaseModel] { root =>
-  type R[+S]// <: {def exists(p: S => Boolean): Boolean}
+  type R[+S]
 
   def exists[S >: M <: BaseModel](s: R[S], p: S => Boolean): Boolean
 
   case object Key {
-    override def hashCode(): Int = root.hashCode() // in order to be properly handled in HMap
+    // overriding because it's indistinguishable from `Key` in different companion
+    override def hashCode(): Int = root.hashCode()
+
+    // overriding together with `hashCode`, but it seems to work correctly with default implementation
+    override def equals(o: Any): Boolean = o match {
+      case _: this.type => true
+      case _ => false
+    }
   }
 
   implicit def ev: ModelKV[Key.type, R[M]] = new ModelKV

@@ -17,7 +17,7 @@ object NetworkRules extends TriggerParser[Network] {
       case (connection, state) =>
         val network = Network(connection, state)
         Trigger.Condition[Network](_ == network)
-    } | mapParser(State.namesToValuesMap)map(state => Trigger.Condition[Network](_.state == state))
+    } | mapParser(State.namesToValuesMap).map(state => Trigger.Condition[Network](_.state == state))
 
   def Main: P[Trigger.Standalone[_ <: Network]] = network
 }

@@ -10,5 +10,5 @@ package object triggers {
   }
 
   object Implicits extends BatteryModels with BluetoothModels with CalendarModels with
-    HeadsetModels with NetworkModels with WiFiModels
+    DockModels with HeadsetModels with NetworkModels with WiFiModels
 }

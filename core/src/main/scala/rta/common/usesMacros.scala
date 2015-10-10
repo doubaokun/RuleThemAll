@@ -17,6 +17,8 @@ class data(uri: Uri) extends StaticAnnotation
 object Uses {
   implicit def materializeUses[T]: Uses[T] = macro UsesImpl.usesOf[T]
 
+  def actionFor[T]: String = macro UsesImpl.actionFor[T]
+
   def categoryOf[T]: String = macro UsesImpl.categoryOf[T]
 
   def dataOf[T]: Uri = macro UsesImpl.dataOf[T]
@@ -63,6 +65,14 @@ private class UsesImpl(val c: blackbox.Context) {
         case (None, None) => None
       }
     }
+  }
+
+  def actionFor[T: WeakTypeTag] = {
+    val tpe = weakTypeOf[T]
+
+    allParentAnnotationsFor(tpe).map(_.tree).collectFirst {
+      case q"""new $annotation($arg)""" if annotation.tpe =:= typeOf[action] => arg
+    }.getOrElse(c.abort(c.enclosingPosition, s"Cannot find action for $tpe."))
   }
 
   def categoryOf[T: WeakTypeTag] = {
