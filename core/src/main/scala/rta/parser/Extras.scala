@@ -47,13 +47,9 @@ object Extras {
       def parseRec(cfg: ParseCtx, index: Int) = {
         var curr = index
         val input = cfg.input
-        while(curr < input.length - 1 && input(curr) != '*' && input(curr + 1) != '/') {
-          input(curr + 1) match {
-            case '*' => curr += 1
-            case _ => curr += 2
-          }
-        }
-        success(cfg.success, (), curr, Nil, false)
+        while(curr < input.length - 1 && (input(curr) != '*' || input(curr + 1) != '/')) curr += 1
+        if (curr == input.length - 1) fail(cfg.failure, curr)
+        else success(cfg.success, (), curr, Nil, false)
       }
     }
     val MultiLine = "/*" ~ inComment ~ "*/"
@@ -67,7 +63,7 @@ object Extras {
 
   def Skip0 = NoTrace(WS0 ~ (Comment ~ WS0).rep)
 
-  def Skip1 = P(WS1 ~ (Comment ~ WS0).rep)("at least one whitespace")
+  def Skip1 = P(Comment.? ~ WS1 ~ (Comment ~ WS0).rep)("at least one whitespace")
 
   lazy val white = WhitespaceApi.Wrapper(Skip0)
 }

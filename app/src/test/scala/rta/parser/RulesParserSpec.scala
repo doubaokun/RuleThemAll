@@ -200,15 +200,15 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
         |    when (
         |        headset
         |            disconnected,
-        |        battery(
+        |        battery/**/(
         |            level > 80%,
         |            power connected
         |        )
-        |        //
-        |        // network connected,
-        |        //time matches "* * * * *"
-        |        //
-        |    ) do {
+        |        /** network connected,
+        |          * time matches "* * * * *"
+        |          */
+        |    /**/
+        |    ) do { /**/
         |        set sound profile to silent/**/;turn wifi on
         |        /* and this is a
         |             multiline comment*/
