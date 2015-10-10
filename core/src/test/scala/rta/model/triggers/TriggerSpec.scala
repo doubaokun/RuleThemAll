@@ -50,8 +50,8 @@ class TriggerSpec extends FlatSpec with PropertyChecks with Matchers with ModelH
 
   behavior of "Trigger.flatten"
 
-  it should "have one empty branch on Trigger.empty" in new Instances {
-    compare(Trigger.empty, List(Branch(Seq.empty, Seq.empty)))
+  it should "have no branches when flattening Trigger.empty" in new Instances {
+    compare(Trigger.empty, Nil)
   }
 
   it should "flatten combination of conditions" in new Instances {

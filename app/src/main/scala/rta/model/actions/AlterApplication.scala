@@ -12,7 +12,7 @@ sealed abstract class AlterApplication extends Action with Logging {
   def resolver: AlterApplication.Resolver
 
   override def kind: ActionKind =
-    ActionKind(classOf[AlterApplication] -> None) // TODO differentiate
+    classOf[AlterApplication] -> None // TODO differentiate
 }
 
 object AlterApplication {

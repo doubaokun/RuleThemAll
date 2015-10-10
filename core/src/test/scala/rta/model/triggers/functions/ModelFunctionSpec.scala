@@ -93,8 +93,8 @@ class ModelFunctionSpec extends FlatSpec with PropertyChecks with Matchers with 
     !lteq should ===(mat[TestModel](_.i > math.pow(2, 2).toInt))
     !(!lteq) should ===(lteq)
 
-    val not = mat[TestModel](v => !(v.s == "test"))
-    !not should ===(mat[TestModel](_.s == "test"))
+    val not = mat[TestModel](v => !v.s.contains("test"))
+    !not should ===(not.asInstanceOf[NotFunction[TestModel]].fun)
     !(!not) should ===(not)
   }
 

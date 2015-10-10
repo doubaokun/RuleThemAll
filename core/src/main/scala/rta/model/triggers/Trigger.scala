@@ -24,7 +24,7 @@ sealed abstract class Trigger {
   def `unary_!`: Option[Trigger]
 
   /** Flattens arbitrary tree of [[Trigger]] into sequence of [[Trigger.Branch]]. */
-  final def flatten: Seq[Trigger.Branch] = {
+  def flatten: Seq[Trigger.Branch] = {
     val timers = IndexedSeq.newBuilder[Trigger.Timer]
     val triggers = Seq.newBuilder[Trigger.Condition[_]]
     val cross = List.newBuilder[List[Trigger.Branch]]
@@ -54,6 +54,8 @@ object Trigger {
     * indicates date when such conditions should be fulfilled.
     */
   final case class Branch(conditions: Seq[Condition[_]], timers: Seq[Timer]) {
+    lazy val uuid: UUID = UUID.randomUUID()
+
     lazy val requires: Set[Requirement] =
       (timers.flatMap(_.requires) ++ conditions.flatMap(_.requires))(collection.breakOut)
   }
@@ -78,6 +80,9 @@ object Trigger {
     protected def flatChildren: Seq[FlatResult] = Seq.empty
 
     def `unary_!`: Option[Trigger] = None
+
+    /** Flattens arbitrary tree of [[Trigger]] into sequence of [[Trigger.Branch]]. */
+    override def flatten: Seq[Branch] = Seq.empty
   }
 
   /** Temporary trigger that denotes conjunction of conditions. */
@@ -188,6 +193,10 @@ object Trigger {
   final case class Condition[M <: BaseModel: BaseModelCompanion: Uses](function: ModelFunction[M])
     extends Standalone[M] {
     protected def flatChildren: Seq[FlatResult] = Seq(Left(List(this)))
+
+    def companion = implicitly[BaseModelCompanion[M]]
+
+    def satisfiedBy(model: M): Boolean = function(model)
 
     def satisfiedBy(state: HMap[ModelKV]): Boolean = {
       val companion = implicitly[BaseModelCompanion[M]]
