@@ -35,7 +35,8 @@ lazy val app = project.in(file("app")).settings(
   libraryDependencies ++= Seq(
     `android-support-v4`
   )
-).settings(libAndroidSettings: _*).dependsOnLocal(core, utils).excludeFromLinting(
+).configs(Benchmark).settings(libAndroidSettings ++ benchSettings: _*)
+  .dependsOnLocal(core, utils).excludeFromLinting(
     _ / "rta" / "parser" / **,
     _ / "rta" / "service" / "PluginHandler",
     _ / "rta" / "service" / "RulesService"

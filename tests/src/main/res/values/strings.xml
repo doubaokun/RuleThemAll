@@ -2,5 +2,6 @@
 <resources>
     <string name="app_name">Rule \'Em All</string>
     <string name="benchmark_headline">Available benchmarks:</string>
-    <string name="parser_benchmark">Parser</string>
+    <string name="custom_parser_benchmark">Parse custom file</string>
+    <string name="predefined_parser_benchmark">Parse predefined files</string>
 </resources>

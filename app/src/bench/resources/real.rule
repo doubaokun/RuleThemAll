@@ -1,0 +1,96 @@
+rule charger_connected_1 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_1 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_1 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_1 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_1 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_1 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_1 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_1 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}

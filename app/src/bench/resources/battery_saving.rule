@@ -1,4 +1,4 @@
-def charger_connected {
+rule charger_connected {
     when (
         battery power connected
     ) do {
@@ -7,45 +7,39 @@ def charger_connected {
     }
 }
 
-def charger_disconnected {
+rule charger_disconnected {
     when (
         battery power disconnected
     ) do {
-        set screen brightness to 60%
+        set screen brightness to 80%
         set screen timeout to 1 minute
     }
 }
 
-def calendar_event_test_1 {
+rule battery_saving {
     when (
-        calendar event (
-            title contains "Meeting"
-        ) starts
+        battery power disconnected,
+        battery level <= 50%
     ) do {
-       set sound profile to silent
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       turn gps off
     }
 }
 
-def calendar_event_test_2 {
+rule battery_saving_critical {
     when (
-        calendar event (
-            title contains "Meeting"
-        ) ends
+        battery power disconnected,
+        battery level <= 50%
     ) do {
-       set sound profile to normal
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
     }
 }
 
-def timer_test {
-    when (
-        time matches "5-55/5 * * * *",
-        headset connected
-    ) do {
-       set sound profile to vibrate
-    }
-}
-
-def music_player {
+rule music_player {
     when (
         headset connected,
         network connected
@@ -57,9 +51,12 @@ def music_player {
     }
 }
 
-def no_music_player {
+rule no_music_player {
     when (
-        headset disconnected
+        or (
+            headset disconnected,
+            network disconnected
+        )
     ) do {
         set music sound to 30%
         set ring sound to 100%

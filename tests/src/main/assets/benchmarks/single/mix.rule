@@ -1,0 +1,10 @@
+rule mix {
+    when (
+        bluetooth connected to "TV",
+        calendar event (
+            description contains "#party"
+        ) starts
+    ) do {
+        launch app "RemoteController"
+    }
+}

@@ -1,0 +1,14 @@
+rule no_work_meeting {
+    when (
+        or (
+            // spotkania trwają z reguły godzinę
+            time matches "0 12 * * FRI",
+            calendar event (
+                title contains "#praca",
+                location matches "^Pokój spotkań$"
+            ) ends
+        )
+    ) do {
+        set sound profile to normal
+    }
+}

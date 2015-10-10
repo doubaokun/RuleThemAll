@@ -5,17 +5,16 @@ import android.content._
 import android.net.Uri
 import android.os._
 import java.io.File
+import rta.common.{Utils, AppInfo, Notify, Requirement}
+import rta.concurrent.ExecutionContext.Implicits._
+import rta.concurrent.{Atomic, Task}
+import rta.model.BaseModel
+import rta.model.triggers.Trigger
+import rta.storage.PlaintextStorage
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NonFatal
-import shapeless.HMap
-import rta.common.{AppInfo, Notify, Requirement}
-import rta.concurrent.{Task, Atomic}
-import rta.concurrent.ExecutionContext.Implicits._
-import rta.model.triggers.Trigger
-import rta.model.{BaseModel, ModelKV}
-import rta.storage.PlaintextStorage
 
 object RulesService {
   val BACKGROUND_ACTION = "rta.background_action"
@@ -129,9 +128,12 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
           if (subscribers.nonEmpty) {
             val all = storage.allRules.map(_.name).toArray
             for (subscriber <- subscribers) {
-              subscriber.send(rulesMsg(all))
+              Utils.remote(subscribers -= subscriber) {
+                subscriber.send(rulesMsg(all))
+              }
             }
           }
+          rawState.reset()
         case UNLOAD =>
           val ruleNames: List[String] = msg.obj.asInstanceOf[Array[String]].toList
           log.info(s"Unloading rules $ruleNames")
@@ -141,9 +143,12 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
           if (subscribers.nonEmpty) {
             val all = storage.allRules.map(_.name).toArray
             for (subscriber <- subscribers) {
-              subscriber.send(rulesMsg(all))
+              Utils.remote(subscribers -= subscriber) {
+                subscriber.send(rulesMsg(all))
+              }
             }
           }
+          rawState.reset()
         case LIST if msg.replyTo != null =>
           msg.replyTo.send(rulesMsg(storage.allRules.map(_.name).toArray))
         case SUBSCRIBE if msg.replyTo != null =>
@@ -258,7 +263,7 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
 
   private[this] lazy val timers = new TimerMap
 
-  private[this] val rawState = Atomic(HMap.empty[ModelKV])
+  private[this] lazy val rawState = new RulesState
 
   private[this] var started = false
 
@@ -285,7 +290,7 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
           Task.runWithWakeLock {
             for (rule <- storage.get(ruleName)) {
               rawServices.get.runAllTasks(rule.requires)
-              rule.executeBranch(branchId, intent, rawState.get, !partial)
+              rule.executeBranch(branchId, intent, rawState.snapshot, !partial)
             }
           }
         case _ =>
@@ -344,27 +349,5 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
 
   def resetTimers(requirements: Set[Requirement]): Unit = requirements.foreach(timers.reset)
 
-  def updateState(model: BaseModel) = {
-    import model._
-
-    var changed = false
-    val liftedModel = model.lift
-    rawState.update { state =>
-      state.get(companion.Key) match {
-        case Some(`liftedModel`) => state
-        case Some(other) =>
-          changed = true
-          state + (companion.Key -> model.mergeTo(other))
-        case None =>
-          changed = true
-          state + (companion.Key -> liftedModel)
-      }
-    }.fold(
-      th => log.error("Error has occurred during updating state", th),
-      state => if (changed) {
-        ConflictSetResolution.default
-          .resolve(storage.rules.filter(_.satisfiedBy(state))).foreach(_.execute)
-      }
-    )
-  }
+  def updateState(model: BaseModel) = rawState.update(model).foreach(_.execute)
 }

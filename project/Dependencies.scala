@@ -51,9 +51,9 @@ object Dependencies {
 
   val enumeratum = "com.beachape" %% "enumeratum" % "1.2.3"
 
-  val benchmarks = Seq(
-    "com.storm-enroute" %% "scalameter-core" % versions.tests.scalameter
-  )
+  val `scalameter-core` = "com.storm-enroute" %% "scalameter-core" % versions.tests.scalameter
+
+  val scalameter = "com.storm-enroute" %% "scalameter" % versions.tests.scalameter
 
   val tests = Seq(
     "org.scalacheck" %% "scalacheck" % versions.tests.scalacheck,

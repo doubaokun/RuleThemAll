@@ -1,5 +1,6 @@
 package rta.service
 
+import java.util.UUID
 import rta.model.triggers.Trigger
 import rta.model.{BaseModel, Rule}
 import scala.annotation.tailrec
@@ -7,18 +8,22 @@ import scala.collection.mutable
 
 @SuppressWarnings(Array(
   "org.brianmckenna.wartremover.warts.MutableDataStructures",
+  "org.brianmckenna.wartremover.warts.Null",
   "org.brianmckenna.wartremover.warts.Var"
 ))
 sealed class ExecutionNetwork {
   type ConflictSet = mutable.Set[Rule]
+  type RuleContext = (String, UUID)
 
   sealed trait Node {
-    def activate(set: ConflictSet, wasSatisfied: Boolean, model: BaseModel): Unit
+    def activate(resultSoFar: Boolean, context: RuleContext, model: BaseModel, set: ConflictSet): Boolean
   }
 
   private[this] object Node {
-    case class Alpha(condition: Trigger.Condition[BaseModel], successors: mutable.AnyRefMap[Node]) extends Node {
+    final case class Alpha(condition: Trigger.Condition[BaseModel],
+      successors: mutable.AnyRefMap[RuleContext, Node]) extends Node {
       private[this] var satisfied = false
+      private[this] var last: BaseModel = null
 
       override def equals(o: Any): Boolean = o match {
         case other: Alpha => condition.equals(other.condition)
@@ -27,74 +32,87 @@ sealed class ExecutionNetwork {
 
       override def hashCode(): Int = condition.hashCode()
 
-      def activate(set: ConflictSet, wasSatisfied: Boolean, model: BaseModel): Unit = {
-        if (model.companion.Key.hashCode() == condition.key.hashCode()) {
-          satisfied = condition.satisfiedBy(model)
+      def activate(resultSoFar: Boolean, context: RuleContext, model: BaseModel, set: ConflictSet): Boolean = {
+        if (model != last) {
+          last = model
+          if (model.companion.Key.hashCode() == condition.companion.Key.hashCode()) {
+            satisfied = condition.satisfiedBy(model)
+          }
         }
-        successors.foreach(_.activate(set, wasSatisfied && satisfied, model))
+        successors(context).activate(resultSoFar && satisfied, context, model, set)
       }
     }
 
     case class Terminal(ruleName: String) extends Node {
-      def activate(set: ConflictSet, wasSatisfied: Boolean, model: BaseModel): Unit = if (wasSatisfied) {
-        set += rules(ruleName)
-      }
+      def activate(resultSoFar: Boolean, context: RuleContext, model: BaseModel, set: ConflictSet): Boolean =
+        if (resultSoFar && ruleName == context._1) {
+          set += rules(ruleName)
+          true
+        } else false
     }
   }
 
-  private[this] val network = mutable.Set.empty[Node.Alpha]
+  private[this] val network = mutable.AnyRefMap.empty[String, Seq[(UUID, Node.Alpha)]]
 
   private[this] val rules = mutable.AnyRefMap.empty[String, Rule]
 
-  private def compile(from: Iterator[Rule]): Unit = {
+  def compile(from: Iterator[Rule]): Unit = {
     network.clear()
     rules.clear()
 
-    val alphas = mutable.LongMap.empty[Node.Alpha]
+    val alphas = mutable.AnyRefMap.empty[Trigger.Condition[_], Node.Alpha].withDefault(cond =>
+      new Node.Alpha(cond.asInstanceOf[Trigger.Condition[BaseModel]], mutable.AnyRefMap.empty)
+    )
 
-    @tailrec def rec(terminal: Node.Terminal, current: Trigger.Condition[_], tail: Seq[Trigger.Condition[_]]): Unit = {
-      @inline def add(node: Node): Unit = {
-        val hash = current.hashCode().toLong
-        if (alphas.contains(hash)) {
-          val alpha = alphas(hash)
-//          println(s"Modifying current alpha node $alpha with hash $hash")
-          alpha.successors += node
-        } else {
-//          println(s"Adding new alpha node $current with hash $hash")
-          val alpha = new Node.Alpha(current.asInstanceOf[Trigger.Condition[BaseModel]], mutable.Set(node))
-          alphas += (hash, alpha)
-        }
-      }
-
+    @tailrec def rec(ctx: RuleContext, terminal: Node.Terminal,
+      current: Node.Alpha, tail: Seq[Trigger.Condition[_]]): Unit = {
       if (tail.isEmpty) {
-//        println(s"Adding terminal ${terminal.ruleName} for $current")
-        add(terminal)
+        current.successors += (ctx, terminal)
       } else {
-        val next = tail.head
-//        println(s"Adding successor $next for $current")
-        add(alphas.getOrElse(next.hashCode().toLong,
-          new Node.Alpha(next.asInstanceOf[Trigger.Condition[BaseModel]], mutable.Set.empty)))
-        rec(terminal, next, tail.tail)
+        val next = alphas(tail.head)
+        if (!next.successors.contains(ctx)) {
+          alphas += (next.condition -> next)
+          current.successors +=(ctx, next)
+          rec(ctx, terminal, next, tail.tail)
+        } else rec(ctx, terminal, current, tail.tail)
       }
     }
 
     for(rule <- from) {
+      lazy val terminal = new Node.Terminal(rule.name)
+      val inner = Seq.newBuilder[(UUID, Node.Alpha)]
       for(branch <- rule.direct) {
-        val first = branch.conditions.head
-        rec(new Node.Terminal(rule.name), first, branch.conditions.tail)
-        network += alphas(first.hashCode().toLong)
+        val ctx = (rule.name, branch.uuid)
+        val alpha = alphas(branch.conditions.head)
+        alphas += (alpha.condition -> alpha)
+        inner += (branch.uuid -> alpha)
+
+        rec(ctx, terminal, alpha, branch.conditions.tail)
       }
+      network += (rule.name, inner.result())
       rules += (rule.name, rule)
     }
 
+    network.repack()
     rules.repack()
   }
 
-  def activate(model: BaseModel): ConflictSet = {
+  def activate(model: BaseModel): TraversableOnce[Rule] = {
     val conflictSet = mutable.Set.empty[Rule]
-    network.foreach(_.activate(conflictSet, true, model))
+    network.foreach { branches =>
+      lazy val rule = rules(branches._1)
+      var satisfied = false
+      branches._2.foreach { kv =>
+        val newSatisfied = kv._2.activate(true, (branches._1, kv._1), model, conflictSet)
+        satisfied = satisfied || newSatisfied
+      }
+      if (!satisfied && rule.executed) rule.executed = false
+    }
     conflictSet
   }
+
+  def feed(initial: TraversableOnce[BaseModel]): TraversableOnce[Rule] =
+    initial.map(activate).toVector.last
 }
 
 object ExecutionNetwork {
@@ -103,4 +121,6 @@ object ExecutionNetwork {
     network.compile(from)
     network
   }
+
+  def apply() = new ExecutionNetwork
 }

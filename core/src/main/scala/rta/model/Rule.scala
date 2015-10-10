@@ -27,14 +27,14 @@ final case class Rule(name: String, priority: UByte, branches: Seq[Trigger.Branc
   type Result = Validated[FailNEL, Success]
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Var"))
-  @volatile private[this] var executed = false
+  @volatile private[rta] var executed = false // FIXME
 
   val (direct, withTimer) = {
     val directBuilder = Seq.newBuilder[Branch]
     val withTimerBuilder = Map.newBuilder[UUID, Branch]
     for(branch <- branches) {
       if (branch.timers.isEmpty) directBuilder += branch
-      else withTimerBuilder += (UUID.randomUUID() -> branch)
+      else withTimerBuilder += (branch.uuid -> branch)
     }
     (directBuilder.result(), withTimerBuilder.result())
   }
@@ -58,8 +58,6 @@ final case class Rule(name: String, priority: UByte, branches: Seq[Trigger.Branc
   }
 
   def prepare()(implicit ctx: Context): Unit = actions.foreach(_.prepare())
-
-  def wasRecentlyExecuted = executed
 
   def satisfiedBy(state: HMap[ModelKV]): Boolean = {
     val succeeded = direct.exists(_.conditions.forall(_.satisfiedBy(state)))

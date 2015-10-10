@@ -15,8 +15,8 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.model.triggers.Trigger.Branch
 import rta.parser.{ActionParser, TriggerParser, RulesParser}
-import rta.parser.actions.ActionRules
-import rta.parser.triggers.TriggerRules
+import rta.parser.actions.ActionParsers
+import rta.parser.triggers.ConditionParsers
 import rta.service.{PluginHandler, RulesService}
 import rta.storage.RulesStorage
 import rta.tests.plugin.ExamplePlugin
@@ -52,9 +52,9 @@ class RulesServiceTest extends ServiceTestCase[RulesService](classOf[RulesServic
     plugins.size should === (0)
 
     // remember amount of trigger amd action parsers
-    val actionParsers = classOf[ActionRules].reflect[mutable.LinkedHashMap[Class[_], ActionParser[_]]](RulesParser)
+    val actionParsers = classOf[ActionParsers].reflect[mutable.LinkedHashMap[Class[_], ActionParser[_]]](RulesParser)
       .`rta$parser$actions$ActionRules$$parsers`()
-    val triggerParsers = classOf[TriggerRules].reflect[mutable.LinkedHashMap[String, TriggerParser[_]]](RulesParser)
+    val triggerParsers = classOf[ConditionParsers].reflect[mutable.LinkedHashMap[String, TriggerParser[_]]](RulesParser)
       .`rta$parser$triggers$TriggerRules$$parsers`()
     val actionParsersSize = actionParsers.size
     val triggerParsersSize = triggerParsers.size

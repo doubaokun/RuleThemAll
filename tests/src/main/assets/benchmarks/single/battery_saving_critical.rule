@@ -1,0 +1,15 @@
+/** Reguła battery_saving nie wykona się ponownie jeśli
+  * nie podłączymy telefonu do ładowarki, ale ,,dla pewności''
+  * podbijemy priorytet na maksymalny (standardowy to 127)
+  */
+rule battery_saving_critical with priority 255 {
+    when (
+        battery power disconnected,
+        battery level <= 20%
+    ) do {
+        set screen brightness to 40%
+        set screen timeout to 15 seconds
+        turn wifi off
+        set location to none
+    }
+}

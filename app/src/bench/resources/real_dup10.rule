@@ -1,0 +1,969 @@
+rule charger_connected_1 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_1 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_1 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_1 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_1 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_1 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_1 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_1 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_2 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_2 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_2 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_2 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_2 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_2 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_2 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_2 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_3 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_3 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_3 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_3 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_3 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_3 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_3 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_3 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_4 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_4 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_4 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_4 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_4 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_4 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_4 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_4 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_5 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_5 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_5 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_5 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_5 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_5 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_5 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_5 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_6 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_6 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_6 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_6 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_6 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_6 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_6 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_6 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_7 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_7 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_7 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_7 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_7 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_7 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_7 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_7 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_8 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_8 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_8 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_8 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_8 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_8 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_8 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_8 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_9 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_9 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_9 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_9 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_9 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_9 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_9 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_9 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}
+
+rule charger_connected_10 {
+    when (
+        battery power connected
+    ) do {
+        set screen brightness to 100%
+        set screen timeout to never
+    }
+}
+
+rule charger_disconnected_10 {
+    when (
+        battery power disconnected
+    ) do {
+        set screen brightness to 80%
+        set screen timeout to 1 minute
+    }
+}
+
+rule battery_saving_10 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to none
+    }
+}
+
+rule battery_saving_critical_10 {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       turn wifi off
+    }
+}
+
+rule music_player_10 {
+    when (
+        headset connected,
+        network connected
+    ) do {
+        launch app "Spotify"
+        set music sound to 70%
+        set ring sound to 50%
+        set notification sound to muted
+    }
+}
+
+rule no_music_player_10 {
+    when (
+        or (
+            headset disconnected,
+            network disconnected
+        )
+    ) do {
+        set music sound to 30%
+        set ring sound to 100%
+        set notification sound to unmuted
+    }
+}
+
+rule connected_to_car_10 with priority 255 {
+    when (
+        wifi connected to "HomeWiFi",
+        or (
+            dock car connected,
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors
+        launch app "Navigation"
+    }
+}
+
+rule disconnected_from_car_10 with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and (
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        set notification sound to unmuted
+        set ring sound to 100%
+        set location to none
+    }
+}

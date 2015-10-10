@@ -19,7 +19,7 @@ object ConflictSetResolution {
     def resolve(conflictSet: TraversableOnce[Rule]): Set[Rule] = {
       val acc = mutable.LinkedHashMap.empty[Set[ActionKind], Set[Rule]]
       conflictSet.foreach {
-        case r@KindExtractor(kinds) if !r.wasRecentlyExecuted =>
+        case r@KindExtractor(kinds) if !r.executed =>
           val kv = acc.collectFirst {
             case (k, v) if kinds.exists(k.contains) => (k, v + r)
           }.getOrElse(kinds -> Set(r))

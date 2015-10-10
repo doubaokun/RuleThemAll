@@ -1,0 +1,113 @@
+rule connected_to_car with priority 255 {
+    when (
+        /** Nie chcemy włączyć nawigacji kiedy siedzimy
+          * w zaparkowanym pod domem samochodzie
+          */
+        wifi not connected to "HomeWiFi",
+        or (
+            dock car connected,
+            /** Nasz dock się czasem psuje więc na wszelki wypadek
+              * sprawdzamy po połączeniu bluetooth
+              */
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        // wycisz dzwonek i wyłacz dźwięk notyfikacji (SMS, mail, etc.)
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors // włącz pozycjonowanie po gps
+        launch app "Navigation" // i ulubioną aplikację do nawigacji
+    }
+}
+
+rule disconnected_from_car with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and ( // nie jesteśmy już w samochodzie
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        // przywróć ustawienie dźwiękowe do poprzedniego poziomu
+        set notification sound to unmuted
+        set ring sound to 100%
+        // wyłącz ustawienia lokalizacyjne w celu oszczędzenia energii
+        set location to none
+        /** Aplikacje moglibyśmy ubić, ale to nieelegancki sposób.
+          * Android sam to zrobi jeśli będzie potrzebować pamięci.
+          */
+    }
+}
+
+rule battery_saving {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to battery saving
+    }
+}
+
+/** Reguła battery_saving nie wykona się ponownie jeśli
+  * nie podłączymy telefonu do ładowarki, ale ,,dla pewności''
+  * podbijemy priorytet na maksymalny (standardowy to 127)
+  */
+rule battery_saving_critical with priority 255 {
+    when (
+        battery power disconnected,
+        battery level <= 20%
+    ) do {
+        set screen brightness to 40%
+        set screen timeout to 15 seconds
+        turn wifi off
+        set location to none
+    }
+}
+
+rule work_meeting {
+    when (
+        or (
+            time matches "0 11 * * FRI", // w piątki o 11 mamy sprinty
+            calendar event (
+                // możemy zarówno sprawdzić czy
+                // podany tekst zawiera się w polu
+                title contains "#praca",
+                // jak i wyrażen regularnych
+                location matches "^Pokój spotkań$"
+            ) starts
+        )
+    ) do {
+        set sound profile to silent
+    }
+}
+
+rule no_work_meeting {
+    when (
+        or (
+            // spotkania trwają z reguły godzinę
+            time matches "0 12 * * FRI",
+            calendar event (
+                title contains "#praca",
+                location matches "^Pokój spotkań$"
+            ) ends
+        )
+    ) do {
+        set sound profile to normal
+    }
+}
+
+rule mix {
+    when (
+        bluetooth connected to "TV",
+        calendar event (
+            description contains "#party"
+        ) starts
+    ) do {
+        launch app "RemoteController"
+    }
+}

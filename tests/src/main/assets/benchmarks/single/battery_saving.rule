@@ -1,0 +1,11 @@
+rule battery_saving {
+    when (
+        battery power disconnected,
+        battery level <= 50%
+    ) do {
+       set screen brightness to 60%
+       set screen timeout to 30 seconds
+       kill app "Messenger"
+       set location to battery saving
+    }
+}

@@ -57,6 +57,8 @@ object Settings {
     }
   }
 
+  lazy val Benchmark = config("bench") extend Test
+
   def commonSettings: Seq[Def.Setting[_]] = Seq(
     scalaVersion := versions.scala,
     incOptions := incOptions.value.withNameHashing(nameHashing = true)
@@ -69,6 +71,14 @@ object Settings {
     addCompilerPlugin(paradise),
 
     libraryDependencies ++= tests.map(_ % "test")
+  )
+
+  def benchSettings: Seq[Def.Setting[_]] = inConfig(Benchmark)(Defaults.testSettings ++ Seq(
+    parallelExecution := false,
+    logBuffered := false
+  )) ++ Seq(
+    libraryDependencies += scalameter % "bench",
+    testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
   )
 
   def androidSettings: Seq[Def.Setting[_]] = commonSettings ++ Seq(
@@ -95,7 +105,9 @@ object Settings {
 
   def testsSettings: Seq[Def.Setting[_]] =
     androidBuild ++ androidSettings ++ Seq(
-      libraryDependencies ++= benchmarks ++ tests,
+      libraryDependencies ++= Seq(
+        `scalameter-core`
+      ) ++ tests,
 
       debugIncludesTests in Android := true,
 
@@ -167,7 +179,8 @@ object Settings {
       Wart.Any, Wart.Nothing, Wart.Product, Wart.Serializable, Wart.IsInstanceOf, Wart.AsInstanceOf,
       Wart.Throw, Wart.NoNeedForMonad),
     wartremoverExcluded ++= sources(target.value / "android") ++
-      sources(sourceDirectory.value / "test" / "scala")
+      sources(sourceDirectory.value / "test" / "scala") ++
+      sources(sourceDirectory.value / "bench" / "scala")
   ) ++ ScalastylePlugin.projectSettings ++ Seq(
     ScalastylePlugin.scalastyleFailOnError := true
   )

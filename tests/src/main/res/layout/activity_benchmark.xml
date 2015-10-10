@@ -15,12 +15,16 @@
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/parser_benchmark"
-            android:id="@+id/parserBenchmark"
+            android:text="@string/custom_parser_benchmark"
+            android:id="@+id/customParserBenchmark"
             android:layout_gravity="center_horizontal"
-            android:layout_row="10"
-            android:layout_column="17"
             android:singleLine="false"
+            android:onClick="runCustomParserBenchmark"/>
+    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/predefined_parser_benchmark"
+            android:id="@+id/predefinedParserBenchmark" android:layout_gravity="center_horizontal"
             android:onClick="runParserBenchmark"/>
 
     <TextView

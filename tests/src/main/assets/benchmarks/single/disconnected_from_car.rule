@@ -1,0 +1,20 @@
+rule disconnected_from_car with priority 255 {
+    when (
+        or (
+            wifi connected to "HomeWiFi",
+            and ( // nie jesteśmy już w samochodzie
+                dock not connected,
+                bluetooth not connected to "MyCar"
+            )
+        )
+    ) do {
+        // przywróć ustawienie dźwiękowe do poprzedniego poziomu
+        set notification sound to unmuted
+        set ring sound to 100%
+        // wyłącz ustawienia lokalizacyjne w celu oszczędzenia energii
+        set location to none
+        /** Aplikacje moglibyśmy ubić, ale to nieelegancki sposób.
+          * Android sam to zrobi jeśli będzie potrzebować pamięci.
+          */
+    }
+}

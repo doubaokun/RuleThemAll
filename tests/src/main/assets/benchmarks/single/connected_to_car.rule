@@ -1,0 +1,21 @@
+rule connected_to_car with priority 255 {
+    when (
+        /** Nie chcemy włączyć nawigacji kiedy siedzimy
+          * w zaparkowanym pod domem samochodzie
+          */
+        wifi not connected to "HomeWiFi",
+        or (
+            dock car connected,
+            /** Nasz dock się czasem psuje więc na wszelki wypadek
+              * sprawdzamy po połączeniu bluetooth
+              */
+            bluetooth connected to "MyCar"
+        )
+    ) do {
+        // wycisz dzwonek i wyłacz dźwięk notyfikacji (SMS, mail, etc.)
+        set notification sound to muted
+        set ring sound to 50%
+        set location to sensors // włącz pozycjonowanie po gps
+        launch app "Navigation" // i ulubioną aplikację do nawigacji
+    }
+}

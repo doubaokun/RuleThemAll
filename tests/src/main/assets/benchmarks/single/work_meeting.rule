@@ -1,0 +1,16 @@
+rule work_meeting {
+    when (
+        or (
+            time matches "0 11 * * FRI", // w piątki o 11 mamy sprinty
+            calendar event (
+                // możemy zarówno sprawdzić czy
+                // podany tekst zawiera się w polu
+                title contains "#praca",
+                // jak i wyrażen regularnych
+                location matches "^Pokój spotkań$"
+            ) starts
+        )
+    ) do {
+        set sound profile to silent
+    }
+}
