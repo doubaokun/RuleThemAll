@@ -4,7 +4,7 @@ import fastparse.noApi._
 import rta.model.actions._
 import rta.parser.ActionParser
 
-object AlterApplicationRules extends ActionParser[AlterApplication] {
+object AlterApplicationParser extends ActionParser[AlterApplication] {
   import white._
   import AlterApplication._
 

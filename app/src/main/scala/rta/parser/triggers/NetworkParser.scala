@@ -6,7 +6,7 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object NetworkRules extends TriggerParser[Network] {
+object NetworkParser extends TriggerParser[Network] {
   import Network._
   import white._
 

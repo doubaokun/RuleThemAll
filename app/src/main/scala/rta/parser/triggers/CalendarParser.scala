@@ -7,7 +7,7 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object CalendarRules extends TriggerParser[CalendarEvent] {
+object CalendarParser extends TriggerParser[CalendarEvent] {
   import CalendarEvent._
   import white._
 

@@ -4,7 +4,7 @@ import fastparse.noApi._
 import rta.model.actions.TurnOnOff
 import rta.parser.ActionParser
 
-object TurnOnOffRules extends ActionParser[TurnOnOff] {
+object TurnOnOffParser extends ActionParser[TurnOnOff] {
   import white._
 
   def Rule: P[TurnOnOff] = "turn".withWS ~ (

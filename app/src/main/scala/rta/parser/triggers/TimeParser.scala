@@ -4,7 +4,7 @@ import fastparse.noApi._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object TimeRules extends TriggerParser[Nothing] {
+object TimeParser extends TriggerParser[Nothing] {
   import white._
 
   def Prefix: String = "time"

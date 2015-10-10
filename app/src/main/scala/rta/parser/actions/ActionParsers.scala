@@ -5,11 +5,11 @@ import scala.collection.mutable
 import rta.model.actions.Action
 import rta.parser.ActionParser
 
-trait ActionRules {
+trait ActionParsers {
   private[this] val parsers = mutable.LinkedHashMap.empty[Class[_], ActionParser[_ <: Action]]
-  addActionParser(AlterApplicationRules)
-  addActionParser(SetToRules)
-  addActionParser(TurnOnOffRules)
+  addActionParser(AlterApplicationParser)
+  addActionParser(SetToParser)
+  addActionParser(TurnOnOffParser)
 
   private[rta] def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
     parsers += (parser.actionClass -> parser)

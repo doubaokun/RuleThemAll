@@ -5,7 +5,7 @@ import scala.{Int => ScalaInt}
 import rta.model.actions._
 import rta.parser.ActionParser
 
-object SetToRules extends ActionParser[SetTo] {
+object SetToParser extends ActionParser[SetTo] {
   import white._
 
   def rules: Seq[(String, P[SetTo])] = Seq(

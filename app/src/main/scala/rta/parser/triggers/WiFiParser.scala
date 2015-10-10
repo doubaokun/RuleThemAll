@@ -6,7 +6,7 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object WiFiRules extends TriggerParser[WiFi] {
+object WiFiParser extends TriggerParser[WiFi] {
   import white._
 
   def Prefix: String = Uses.categoryOf[WiFi]

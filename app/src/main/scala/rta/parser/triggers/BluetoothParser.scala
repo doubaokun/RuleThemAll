@@ -7,7 +7,7 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object BluetoothRules extends TriggerParser[Bluetooth] {
+object BluetoothParser extends TriggerParser[Bluetooth] {
   import white._
 
   def Prefix: String = Uses.categoryOf[Bluetooth]

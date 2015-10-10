@@ -6,7 +6,7 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object BatteryRules extends TriggerParser[BatteryLike] {
+object BatteryParser extends TriggerParser[BatteryLike] {
   import Battery._
   import white._
 

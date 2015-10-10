@@ -6,7 +6,7 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object HeadsetRules extends TriggerParser[Headset] {
+object HeadsetParser extends TriggerParser[Headset] {
   import white._
 
   def Prefix: String = Uses.categoryOf[Headset]

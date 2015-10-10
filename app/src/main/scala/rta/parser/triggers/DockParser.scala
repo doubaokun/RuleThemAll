@@ -6,7 +6,7 @@ import rta.model.triggers.Implicits._
 import rta.model.triggers.Trigger
 import rta.parser.TriggerParser
 
-object DockRules extends TriggerParser[DockState] {
+object DockParser extends TriggerParser[DockState] {
   import white._
 
   def Prefix: String = Uses.categoryOf[DockState]

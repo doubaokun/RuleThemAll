@@ -7,11 +7,11 @@ import rta.model.actions.Action
 import rta.model.triggers.Trigger
 import rta.parser.BasicRules._
 import rta.parser.Extras._
-import rta.parser.actions.ActionRules
-import rta.parser.triggers.TriggerRules
+import rta.parser.actions.ActionParsers
+import rta.parser.triggers.ConditionParsers
 import spire.syntax.literals._
 
-object RulesParser extends ActionRules with TriggerRules {
+object RulesParser extends ActionParsers with ConditionParsers {
 
   import white._
 

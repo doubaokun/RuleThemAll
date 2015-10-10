@@ -7,16 +7,16 @@ import rta.parser.Extras._
 import rta.parser.TriggerParser
 import scala.collection.mutable
 
-trait TriggerRules {
+trait ConditionParsers {
   private[this] val parsers = mutable.LinkedHashMap.empty[String, TriggerParser[_ <: BaseModel]]
-  addTriggerParser(BatteryRules)
-  addTriggerParser(BluetoothRules)
-  addTriggerParser(CalendarRules)
-  addTriggerParser(DockRules)
-  addTriggerParser(HeadsetRules)
-  addTriggerParser(NetworkRules)
-  addTriggerParser(TimeRules)
-  addTriggerParser(WiFiRules)
+  addTriggerParser(BatteryParser)
+  addTriggerParser(BluetoothParser)
+  addTriggerParser(CalendarParser)
+  addTriggerParser(DockParser)
+  addTriggerParser(HeadsetParser)
+  addTriggerParser(NetworkParser)
+  addTriggerParser(TimeParser)
+  addTriggerParser(WiFiParser)
 
   def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
     parsers += (parser.Prefix -> parser)

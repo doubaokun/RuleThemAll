@@ -22,6 +22,7 @@ private[parser] class TriggerParserMacros(val c: blackbox.Context) {
   
   def ConditionTrigger(tpe: Type) = appliedType(typeOf[Trigger.Condition[_]].typeConstructor, tpe)
 
+  // TODO add dedicated functions for better interaction with `ExecutionNetwork`
   def matchStringParser[M <: BaseModel: WeakTypeTag](extractor: c.Expr[M => String]): Tree = {
     val tpe = weakTypeOf[M]
 
