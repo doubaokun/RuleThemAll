@@ -11,13 +11,14 @@ trait ActionParsers {
   addActionParser(SetToParser)
   addActionParser(TurnOnOffParser)
 
-  private[rta] def addActionParser(parser: ActionParser[_ <: Action]): Unit = {
-    parsers += (parser.actionClass -> parser)
-  }
+  private[rta] def addActionParser(parser: ActionParser[_ <: Action]): Boolean =
+    if (parsers.contains(parser.actionClass)) false
+    else {
+      parsers += (parser.actionClass -> parser)
+      true
+    }
 
-  private[rta] def removeActionParser(parserClass: Class[_]): Unit = {
-    parsers -= parserClass
-  }
+  private[rta] def removeActionParser(parserClass: Class[_]): Unit = parsers -= parserClass
 
   final def Action: P[Action] = {
     parsers.valuesIterator.drop(1).foldLeft(parsers.head._2.Rule.asInstanceOf[P[Action]]) {

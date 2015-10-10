@@ -18,13 +18,14 @@ trait ConditionParsers {
   addTriggerParser(TimeParser)
   addTriggerParser(WiFiParser)
 
-  def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Unit = {
-    parsers += (parser.Prefix -> parser)
-  }
+  private[rta] def addTriggerParser(parser: TriggerParser[_ <: BaseModel]): Boolean  =
+    if (parsers.contains(parser.Prefix)) false
+    else {
+      parsers += (parser.Prefix -> parser)
+      true
+    }
 
-  def removeTriggerParser(parserPrefix: String): Unit = {
-    parsers -= parserPrefix
-  }
+  private[rta] def removeTriggerParser(parserPrefix: String): Unit = parsers -= parserPrefix
 
   import white._
 

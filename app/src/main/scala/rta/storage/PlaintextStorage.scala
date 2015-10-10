@@ -3,6 +3,7 @@ package rta.storage
 import android.content.Context
 import fastparse.core.{Result, SyntaxError}
 import java.io._
+import rta.parser.RulesParser.Cached
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.control.NonFatal
@@ -11,7 +12,11 @@ import rta.model.Rule
 import rta.parser.RulesParser
 
 @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.MutableDataStructures"))
-class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends RulesStorage {
+class PlaintextStorage(implicit ctx: Context, val info: AppInfo) extends RulesStorage {
+  type T = Seq[(Rule, Int)]
+
+  def parserCacheRegen: () => Cached[T] = () => RulesParser.cached(_.AnnotatedMulti)
+
   private[this] val rulesDir: File = ctx.getDir("rules", Context.MODE_PRIVATE)
 
   private[this] val rawRules = Utils.withGC {
@@ -19,10 +24,10 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
     val files = rulesDir.listFiles(new FilenameFilter {
       def accept(dir: File, filename: String): Boolean = filename.endsWith(".rule")
     })
-    lazy val parser = RulesParser.cached(_.Single).andThen(_.get.value)
+    lazy val parse = parser.andThen(_.get.value.head._1)
     for (file <- files) {
       try {
-        val rule = parser(io.Source.fromFile(file).mkString)
+        val rule = parse(io.Source.fromFile(file).mkString)
         rule.prepare()
         map += (rule.name -> rule)
       } catch {
@@ -47,10 +52,10 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
   }
 
   private def prepareParser: File => Set[Rule] = {
-    val parser = RulesParser.cached(_.AnnotatedMulti)
+    val parse = parser
     from => {
       val input = io.Source.fromFile(from).mkString
-      val rules = parser(input) match {
+      val rules = parse(input) match {
         case fail: Result.Failure =>
           val err = new SyntaxError(fail)
           log.error(s"Failed to parse rules from ${from.getPath}", err)
@@ -91,11 +96,11 @@ class PlaintextStorage(implicit val ctx: Context, val info: AppInfo) extends Rul
   }
 
   def register(from: File*): RegistrationInfo = Utils.withGC(rawUses.synchronized {
-    val parser = prepareParser(_)
+    val parse = prepareParser(_)
     val added = Set.newBuilder[Int]
     val removed = Set.newBuilder[Int]
     val rules: Set[Rule] = from.flatMap { f =>
-      val rules = parser(f)
+      val rules = parse(f)
       // remove old uses
       for (
         rule <- rules;

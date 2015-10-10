@@ -257,7 +257,7 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
     smallIcon = getApplicationInfo.icon
   )
 
-  private[this] implicit lazy val storage = new PlaintextStorage
+  protected[this] implicit lazy val storage = new PlaintextStorage
 
   private[this] lazy val rawServices = Atomic(ServicesMap())
 
@@ -345,9 +345,25 @@ class RulesService extends RulesExecutor with PluginHandler { root =>
     }
   }
 
-  def onBind(intent: Intent): IBinder = requestProcessor.getBinder
-
   def resetTimers(requirements: Set[Requirement]): Unit = requirements.foreach(timers.reset)
 
   def updateState(model: BaseModel) = rawState.update(model).foreach(_.execute)
+
+  def onBind(intent: Intent): IBinder = {
+    Task {
+      storage.cacheParser()
+    }.run(_ => ())
+    requestProcessor.getBinder
+  }
+
+  override def onRebind(intent: Intent): Unit = {
+    Task {
+      storage.cacheParser()
+    }.run(_ => ())
+  }
+
+  override def onUnbind(intent: Intent): Boolean = {
+    storage.invalidateParser()
+    true
+  }
 }

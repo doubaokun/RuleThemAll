@@ -6,13 +6,16 @@ import android.os._
 import android.util.SparseArray
 import java.util
 import java.util.concurrent.locks.ReentrantLock
+import rta.concurrent.Task
+import rta.storage.RulesStorage
 import scala.util.control.NonFatal
-import rta.common.{Common, Requirement}
+import rta.common.{Utils, Common, Requirement}
 import rta.logging.Logging
 import rta.model.BaseModel
 import rta.model.actions.Action
 import rta.parser.{ActionParser, RulesParser, TriggerParser}
 import rta.plugin.{IPlugin, OnNewModel, OnResetTimers, Plugin, RemoteObject}
+import rta.concurrent.ExecutionContext.Implicits._
 
 trait PluginHandler extends RulesExecutor with Common with Logging { root =>
   private object OnNewModelImpl extends OnNewModel.Stub {
@@ -49,20 +52,32 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
       val id = name.hashCode()
 
       plugin = IPlugin.Stub.asInterface(service)
-      plugin.register(OnNewModelImpl, OnResetTimersImpl)
 
-      inLock {
-        plugin.actionParser().as[Option[ActionParser[Action]]].foreach { p =>
+      Utils.inLock(handlerLock) {
+        val recacheAP = plugin.actionParser().as[Option[ActionParser[Action]]].map { p =>
           registerActionExecutor(p.actionClass, executeAction)
-          pluginActionParsers.put(id, p.actionClass)
-          RulesParser.addActionParser(p)
+          if (RulesParser.addActionParser(p)) {
+            pluginActionParsers.put(id, p.actionClass)
+            true
+          } else false
         }
-        plugin.triggerParser().as[Option[TriggerParser[BaseModel]]].foreach { p =>
-          pluginTriggerParsers.put(id, p.Prefix)
-          RulesParser.addTriggerParser(p)
+        val recacheTP = plugin.triggerParser().as[Option[TriggerParser[BaseModel]]].map { p =>
+          if (RulesParser.addTriggerParser(p)) {
+            pluginTriggerParsers.put(id, p.Prefix)
+            true
+          } else false
         }
 
-        plugins.put(id, this)
+        if (recacheAP.exists(identity) || recacheTP.exists(identity)) Task {
+          storage.recacheParser()
+        }.run(_ => ())
+
+        if (recacheAP.contains(false) || recacheTP.contains(false)) {
+          // TODO notofication on discared plugin
+        } else {
+          plugin.register(OnNewModelImpl, OnResetTimersImpl)
+          plugins.put(id, this)
+        }
       }
     }
 
@@ -71,11 +86,13 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
 
       plugin = null
 
-      inLock {
+      Utils.inLock(handlerLock) {
         plugins.remove(id)
       }
     }
   }
+
+  protected[this] def storage: RulesStorage
 
   private[this] val handlerLock = new ReentrantLock()
 
@@ -100,15 +117,6 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
     }
   }
 
-  @inline private def inLock(body: => Unit) = {
-    handlerLock.lock()
-    try {
-      body
-    } finally {
-      handlerLock.unlock()
-    }
-  }
-
   @inline private def bindToService(service: ServiceInfo): Unit = {
     val name = new ComponentName(service.packageName, service.name)
     log.info(s"Registering plugin $name")
@@ -129,14 +137,22 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
       log.info(s"Deregistering plugin $name")
 
       val id = name.hashCode()
-      inLock {
-        Option(pluginActionParsers.get(id)).foreach { clazz =>
+      Utils.inLock(handlerLock) {
+        val recacheAP = Option(pluginActionParsers.get(id)).exists { clazz =>
           removeActionExecutor(clazz)
           RulesParser.removeActionParser(clazz)
+          true
         }
         pluginActionParsers.remove(id)
-        Option(pluginTriggerParsers.get(id)).foreach(RulesParser.removeTriggerParser)
+        val recacheTP = Option(pluginTriggerParsers.get(id)).exists { prfx =>
+          RulesParser.removeTriggerParser(prfx)
+          true
+        }
         pluginTriggerParsers.remove(id)
+
+        if (recacheAP || recacheTP) Task {
+          storage.recacheParser()
+        }.run(_ => ())
 
         unbindService(plugins.get(id))
         plugins.remove(id)

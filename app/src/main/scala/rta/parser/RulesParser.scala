@@ -12,6 +12,7 @@ import rta.parser.triggers.ConditionParsers
 import spire.syntax.literals._
 
 object RulesParser extends ActionParsers with ConditionParsers {
+  type Cached[T] = String => Result[T]
 
   import white._
 
@@ -40,7 +41,7 @@ object RulesParser extends ActionParsers with ConditionParsers {
   def Single: P[Rule] = P(Start ~ Definition ~ End)
 
   /** Returns initialized version of selected parser. */
-  def cached[T](selector: this.type => P[T]): String => Result[T] = {
+  def cached[T](selector: this.type => P[T]): Cached[T] = {
     val parser = selector(this)
     str => parser.parse(str)
   }
