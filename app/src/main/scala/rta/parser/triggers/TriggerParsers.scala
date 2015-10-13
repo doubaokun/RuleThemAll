@@ -7,7 +7,7 @@ import rta.parser.Extras._
 import rta.parser.TriggerParser
 import scala.collection.mutable
 
-trait ConditionParsers {
+trait TriggerParsers {
   private[this] val parsers = mutable.LinkedHashMap.empty[String, TriggerParser[_ <: BaseModel]]
   addTriggerParser(BatteryParser)
   addTriggerParser(BluetoothParser)
@@ -35,33 +35,26 @@ trait ConditionParsers {
     val triggers = {
       def single(trigger: TriggerParser[_ <: BaseModel]) = {
         val main = trigger.Rule
-        val singleErr = "single condition"
-        val multipleErr = """multiple conditions inside "(...)" separated by ",""""
 
-        val conditions = P(Skip1 ~~ main)(singleErr) | P(
-          Skip0 ~~ "(" ~ (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) ~ ")"
-        )(multipleErr)
+        val conditions = (Skip1 ~~ main) |
+          (Skip0 ~~ "(" ~ (main.rep(1, sep = ",") map (ts => Trigger(ts.head, ts.tail: _*))) ~ ")")
 
         trigger.Prefix.splitWS ~~! ((for {
           Trigger.Negate(negated) <- Skip1 ~~ "not" ~~! conditions
         } yield negated) | conditions)
       }
 
-      P(parsers.valuesIterator.drop(1).foldLeft(single(parsers.head._2))(_ | single(_)))
+      parsers.valuesIterator.drop(1).foldLeft(single(parsers.head._2))(_ | single(_))
     }
-    def negation: P[Trigger] = for {
-      Trigger.Negate(negated) <- nested
+    lazy val negation: P[Trigger] = for {
+      Trigger.Negate(negated) <- triggers | logicOps
     } yield negated
     lazy val logicOps: P[Trigger] = P(
-      ("and" ~! twoOrMore(nested) map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |
-        ("or" ~! twoOrMore(nested) map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+      ("and" ~! twoOrMore(triggers | logicOps) map (ts => Trigger.and(ts.head, ts.tail.head, ts.tail.tail: _*))) |
+        ("or" ~! twoOrMore(triggers | logicOps) map (ts => Trigger.or(ts.head, ts.tail.head, ts.tail.tail: _*))) |
         ("not" ~! negation)
     )
-    lazy val nested: P[Trigger] = P(triggers | logicOps)
-    lazy val all: P[Trigger] = P(
-      nested.rep(1, sep = ",").map(ts => Trigger(ts.head, ts.tail: _*)) | logicOps
-    )
 
-    all
+    (triggers | logicOps).rep(1, sep = ",").map(ts => Trigger(ts.head, ts.tail: _*))
   }
 }

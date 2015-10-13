@@ -16,7 +16,7 @@ import rta.model.triggers.Trigger
 import rta.model.triggers.Trigger.Branch
 import rta.parser.{ActionParser, TriggerParser, RulesParser}
 import rta.parser.actions.ActionParsers
-import rta.parser.triggers.ConditionParsers
+import rta.parser.triggers.TriggerParsers
 import rta.service.{PluginHandler, RulesService}
 import rta.storage.RulesStorage
 import rta.tests.plugin.ExamplePlugin
@@ -53,9 +53,9 @@ class RulesServiceTest extends ServiceTestCase[RulesService](classOf[RulesServic
 
     // remember amount of trigger amd action parsers
     val actionParsers = classOf[ActionParsers].reflect[mutable.LinkedHashMap[Class[_], ActionParser[_]]](RulesParser)
-      .`rta$parser$actions$ActionRules$$parsers`()
-    val triggerParsers = classOf[ConditionParsers].reflect[mutable.LinkedHashMap[String, TriggerParser[_]]](RulesParser)
-      .`rta$parser$triggers$TriggerRules$$parsers`()
+      .`rta$parser$actions$ActionParsers$$parsers`()
+    val triggerParsers = classOf[TriggerParsers].reflect[mutable.LinkedHashMap[String, TriggerParser[_]]](RulesParser)
+      .`rta$parser$triggers$TriggerParsers$$parsers`()
     val actionParsersSize = actionParsers.size
     val triggerParsersSize = triggerParsers.size
 
@@ -82,8 +82,7 @@ class RulesServiceTest extends ServiceTestCase[RulesService](classOf[RulesServic
       }
     }
     service.send(RulesService.loadRules(files: _*))
-    val storage = classOf[RulesService].reflect[RulesStorage](getService)
-      .`rta$service$RulesService$$storage`
+    val storage = classOf[RulesService].reflect[RulesStorage](getService).`storage`
     wait(30.seconds, 250.millis)(storage.allRules.nonEmpty)
     val rules = storage.allRules.toList
     rules.size should === (1)

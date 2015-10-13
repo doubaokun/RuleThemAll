@@ -3,7 +3,6 @@ package rta.misc
 import rta.model.BaseModel
 import rta.model.triggers.Implicits._
 import scala.collection.Iterator
-import scala.collection.mutable
 import spire.math._
 
 trait StateGen {
@@ -61,5 +60,5 @@ trait StateGen {
   }
 
   lazy val sizes: Vector[Int] =
-    Iterator.iterate(singleSize)(_ * 20).takeWhile(_ <= allLength).toVector
+    Iterator.iterate(singleSize)(_ * 10).takeWhile(_ <= allLength).toVector
 }

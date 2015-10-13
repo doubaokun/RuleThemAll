@@ -44,7 +44,7 @@ abstract class RulesStorage(implicit ctx: Context, info: AppInfo) extends Loggin
   def startupRules: Iterator[Rule] = allRules.filter(_.branches.isEmpty)
   
   def cacheParser(): Unit = Utils.inLock(lock.writeLock()) {
-    if (rawParserCache == null) rawParserCache = parserCacheRegen()
+    if (rawParserCache eq null) rawParserCache = parserCacheRegen()
   }
   
   def invalidateParser(): Unit = Utils.withGC(Utils.inLock(lock.writeLock()) {
@@ -52,10 +52,10 @@ abstract class RulesStorage(implicit ctx: Context, info: AppInfo) extends Loggin
   })
 
   def recacheParser(): Unit = Utils.inLock(lock.writeLock()) {
-    if (rawParserCache != null) rawParserCache = parserCacheRegen()
+    if (rawParserCache ne null) rawParserCache = parserCacheRegen()
   }
   
   def parser: RulesParser.Cached[T] = Utils.inLock(lock.readLock()) {
-    if (rawParserCache != null) rawParserCache else parserCacheRegen()
+    if (rawParserCache ne null) rawParserCache else parserCacheRegen()
   }
 }

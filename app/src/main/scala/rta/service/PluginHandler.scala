@@ -7,7 +7,6 @@ import android.util.SparseArray
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import rta.concurrent.Task
-import rta.storage.RulesStorage
 import scala.util.control.NonFatal
 import rta.common.{Utils, Common, Requirement}
 import rta.logging.Logging
@@ -17,7 +16,7 @@ import rta.parser.{ActionParser, RulesParser, TriggerParser}
 import rta.plugin.{IPlugin, OnNewModel, OnResetTimers, Plugin, RemoteObject}
 import rta.concurrent.ExecutionContext.Implicits._
 
-trait PluginHandler extends RulesExecutor with Common with Logging { root =>
+trait PluginHandler extends RulesExecutor with Common with Logging { root: RulesService =>
   private object OnNewModelImpl extends OnNewModel.Stub {
     def onNewModel(model: RemoteObject): Unit = try {
       log.info("Handling external updateState request")
@@ -91,8 +90,6 @@ trait PluginHandler extends RulesExecutor with Common with Logging { root =>
       }
     }
   }
-
-  protected[this] def storage: RulesStorage
 
   private[this] val handlerLock = new ReentrantLock()
 

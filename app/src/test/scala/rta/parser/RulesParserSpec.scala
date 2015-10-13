@@ -72,7 +72,7 @@ class RulesParserSpec extends FlatSpec with RobolectricSuite with PropertyChecks
     val expected = Rule(
       name = "e",
       priority = UByte(0),
-      branches = Branch(Seq.empty, Seq.empty) :: Nil,
+      branches = Nil,
       actions = Seq(ChangeSoundProfile(ChangeSoundProfile.Mode.Silent))
     ) :: Nil
     val actual = RulesParser.Multi.parse(

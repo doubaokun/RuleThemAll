@@ -109,6 +109,7 @@ class MainActivity extends Activity with Logging with Contexts[Activity] with Id
     view.getLayoutParams.asInstanceOf[ViewGroup.MarginLayoutParams].setMargins(left, top, right, bottom)
   }
 
+  // taken from http://stackoverflow.com/a/27487587
   def findSuitableBackgroundColor(color: Int) = {
     val hsv = new Array[Float](3)
     Color.RGBToHSV(Color.red(color), Color.green(color), Color.blue(color), hsv)

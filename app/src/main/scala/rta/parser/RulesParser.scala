@@ -8,30 +8,25 @@ import rta.model.triggers.Trigger
 import rta.parser.BasicRules._
 import rta.parser.Extras._
 import rta.parser.actions.ActionParsers
-import rta.parser.triggers.ConditionParsers
+import rta.parser.triggers.TriggerParsers
 import spire.syntax.literals._
 
-object RulesParser extends ActionParsers with ConditionParsers {
+object RulesParser extends ActionParsers with TriggerParsers {
   type Cached[T] = String => Result[T]
 
   import white._
 
-  def Name: P[String] = P(
-    (CharPred(c => c.isLetter | c == '_') ~~
-      CharsWhile(c => c.isLetterOrDigit | c == '_', min = 0)).!
-  )
+  def Name: P[String] = (CharPred(c => c.isLetter | c == '_') ~~
+    CharsWhile(c => c.isLetterOrDigit | c == '_', min = 0)).!
 
-  def Branches: P[Seq[Trigger.Branch]] = P("(" ~ Triggers.map(_.flatten) ~ ")")
+  def Branches: P[Seq[Trigger.Branch]] = "(" ~ Triggers.map(_.flatten) ~ ")"
 
-  def Actions: P[Seq[Action]] = P(
+  def Actions: P[Seq[Action]] =
     "{" ~ Action.repX(1, sep = Comment.? ~~ ((WS0 ~~ NoTrace(";") ~~ WS0) | WS1) ~~ Skip0) ~ "}"
-  )
 
-  def Definition: P[Rule] = P(
-    ("rule".withWS ~ Name ~ ("with".withWS ~ "priority".withWS ~ Byte).? ~ {
-      "{" ~ ("when" ~! Branches).?.map(_.getOrElse(Trigger.empty.flatten)) ~ "do" ~! Actions ~ "}"
-    }) map (v => Rule(v._1, v._2.getOrElse(ub"127"), v._3._1, v._3._2))
-  )
+  def Definition: P[Rule] = ("rule".withWS ~ Name ~ ("with".withWS ~ "priority".withWS ~ Byte).? ~ {
+    "{" ~ ("when" ~! Branches).?.map(_.getOrElse(Trigger.empty.flatten)) ~ "do" ~! Actions ~ "}"
+  }) map (v => Rule(v._1, v._2.getOrElse(ub"127"), v._3._1, v._3._2))
 
   def Multi: P[Seq[Rule]] = P(Start ~ Definition.rep(1) ~ End)
 

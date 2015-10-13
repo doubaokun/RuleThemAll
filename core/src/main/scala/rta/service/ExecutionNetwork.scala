@@ -21,7 +21,7 @@ sealed class ExecutionNetwork {
 
   private[this] object Node {
     final case class Alpha(condition: Trigger.Condition[BaseModel],
-      successors: mutable.AnyRefMap[RuleContext, Node]) extends Node {
+      successors: mutable.HashMap[RuleContext, Node]) extends Node {
       private[this] var satisfied = false
       private[this] var last: BaseModel = null
 
@@ -33,7 +33,7 @@ sealed class ExecutionNetwork {
       override def hashCode(): Int = condition.hashCode()
 
       def activate(resultSoFar: Boolean, context: RuleContext, model: BaseModel, set: ConflictSet): Boolean = {
-        if (model != last) {
+        if (model ne last) {
           last = model
           if (model.companion.Key.hashCode() == condition.companion.Key.hashCode()) {
             satisfied = condition.satisfiedBy(model)
@@ -61,18 +61,18 @@ sealed class ExecutionNetwork {
     rules.clear()
 
     val alphas = mutable.AnyRefMap.empty[Trigger.Condition[_], Node.Alpha].withDefault(cond =>
-      new Node.Alpha(cond.asInstanceOf[Trigger.Condition[BaseModel]], mutable.AnyRefMap.empty)
+      new Node.Alpha(cond.asInstanceOf[Trigger.Condition[BaseModel]], mutable.HashMap.empty)
     )
 
     @tailrec def rec(ctx: RuleContext, terminal: Node.Terminal,
       current: Node.Alpha, tail: Seq[Trigger.Condition[_]]): Unit = {
       if (tail.isEmpty) {
-        current.successors += (ctx, terminal)
+        current.successors += (ctx -> terminal)
       } else {
         val next = alphas(tail.head)
         if (!next.successors.contains(ctx)) {
           alphas += (next.condition -> next)
-          current.successors +=(ctx, next)
+          current.successors +=(ctx -> next)
           rec(ctx, terminal, next, tail.tail)
         } else rec(ctx, terminal, current, tail.tail)
       }
